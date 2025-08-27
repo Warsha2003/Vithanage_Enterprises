@@ -1,0 +1,25 @@
+{
+  "name": "vithanage_enterprises",
+  "version": "1.0.0",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon app.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Warsha2003/Vithanage_Enterprises.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Warsha2003/Vithanage_Enterprises/issues"
+  },
+  "homepage": "https://github.com/Warsha2003/Vithanage_Enterprises#readme",
+  "description": "",
+  "dependencies": {
+    "express": "^5.1.0",
+    "mongoose": "^8.18.0",
+    "nodemon": "^3.1.10"
+  }
+}
