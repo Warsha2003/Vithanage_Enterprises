@@ -1,0 +1,168 @@
+/* Navbar.css */
+.navbar {
+  background-color: #232f3e;
+  color: white;
+  padding: 15px 0;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.navbar-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 20px;
+}
+
+.navbar-logo h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+.search-bar {
+  flex: 1;
+  display: flex;
+  margin: 0 20px;
+  max-width: 600px;
+}
+
+.search-bar input {
+  width: 100%;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 4px 0 0 4px;
+  font-size: 1rem;
+}
+
+.search-button {
+  background-color: #ff9900;
+  color: #232f3e;
+  border: none;
+  padding: 10px 15px;
+  font-size: 1rem;
+  border-radius: 0 4px 4px 0;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.search-button:hover {
+  background-color: #ff8c00;
+}
+
+.navbar-links {
+  display: flex;
+  align-items: center;
+}
+
+.nav-link {
+  margin-left: 20px;
+  font-size: 1rem;
+  cursor: pointer;
+  position: relative;
+}
+
+.nav-link:hover {
+  text-decoration: underline;
+}
+
+.cart, .user {
+  font-size: 1.2rem;
+}
+
+.cart-count {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background-color: #ff9900;
+  color: #232f3e;
+  font-size: 0.7rem;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* User menu and dropdown */
+.user-menu {
+  position: relative;
+  margin-left: 20px;
+}
+
+.user-name {
+  margin-left: 5px;
+  font-size: 0.9rem;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  width: 180px;
+  background-color: white;
+  border-radius: 4px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  margin-top: 10px;
+  display: none;
+  z-index: 1001;
+}
+
+.user-menu:hover .dropdown-menu {
+  display: block;
+}
+
+.dropdown-item {
+  padding: 12px 15px;
+  color: #333;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+
+.dropdown-item:hover {
+  background-color: #f7f7f7;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .navbar-container {
+    flex-direction: column;
+  }
+  
+  .navbar-logo {
+    margin-bottom: 10px;
+  }
+  
+  .search-bar {
+    margin: 10px 0;
+    max-width: 100%;
+  }
+  
+  .navbar-links {
+    width: 100%;
+    justify-content: space-around;
+    margin-top: 10px;
+  }
+  
+  .nav-link {
+    margin: 0;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .navbar-links {
+    flex-wrap: wrap;
+  }
+  
+  .nav-link {
+    margin: 5px;
+  }
+}

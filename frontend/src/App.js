@@ -1,23 +1,25 @@
-import logo from './logo.svg';
+import React from 'react';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import './App.css';
+import Navbar from './Components/Navbar/Navbar';
+import Home from './Components/Home/Home';
+import Login from './Components/User/Login';
+import Footer from './Components/Footer/Footer';
+import AdminDashboard from './Components/Admin/AdminDashboard';
 
 function App() {
+  const location = useLocation();
+  const isAdminPage = location.pathname.startsWith('/admin');
+
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      {!isAdminPage && <Navbar />}
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/admin" element={<AdminDashboard />} />
+      </Routes>
+      {!isAdminPage && <Footer />}
     </div>
   );
 }
