@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import './AdminDashboard.css';
+import './stat-detail.css';
+import './dashboard-header.css';
 // Add Font Awesome for icons
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
@@ -19,6 +21,8 @@ const AdminDashboard = () => {
   const [notifications, setNotifications] = useState(3); // Example notification count
   const [stats, setStats] = useState({
     totalUsers: 0,
+    regularUsers: 0,
+    adminUsers: 0,
     totalProducts: 0,
     totalOrders: 0,
     totalRevenue: 0,
@@ -93,16 +97,60 @@ const AdminDashboard = () => {
   };
 
   const fetchDashboardStats = async () => {
-    // This would normally fetch real stats from your backend
-    // For now we'll use dummy data
-    setStats({
-      totalUsers: 127,
-      totalProducts: 94,
-      totalOrders: 56,
-      totalRevenue: 12750.75,
-      pendingOrders: 8,
-      lowStockItems: 5
-    });
+    try {
+      console.log('Fetching dashboard stats...');
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('No token found in localStorage');
+        return;
+      }
+      
+      console.log('Using token:', token.substring(0, 10) + '...');
+      
+      const response = await fetch('http://localhost:5000/api/admin/dashboard-stats', {
+        headers: {
+          'x-auth-token': token
+        }
+      });
+      
+      console.log('Response status:', response.status);
+      const data = await response.json();
+      console.log('Dashboard stats received:', data);
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to fetch dashboard stats');
+      }
+      
+      setStats({
+        totalUsers: data.totalUsers,
+        regularUsers: data.regularUsers,
+        adminUsers: data.adminUsers,
+        totalProducts: data.totalProducts,
+        totalOrders: data.totalOrders,
+        totalRevenue: data.totalRevenue,
+        pendingOrders: data.pendingOrders,
+        lowStockItems: data.lowStockItems
+      });
+      
+      console.log('Stats updated:', {
+        totalUsers: data.totalUsers,
+        regularUsers: data.regularUsers,
+        adminUsers: data.adminUsers
+      });
+    } catch (error) {
+      console.error('Error fetching dashboard stats:', error);
+      // Fallback to default stats if fetch fails
+      setStats({
+        totalUsers: 0,
+        regularUsers: 0,
+        adminUsers: 0,
+        totalProducts: 0,
+        totalOrders: 0,
+        totalRevenue: 0,
+        pendingOrders: 0,
+        lowStockItems: 0
+      });
+    }
   };
 
   const handleLogout = () => {
@@ -274,7 +322,16 @@ const AdminDashboard = () => {
 
   const renderDashboard = () => (
     <div className="dashboard-content">
-      <h2><FontAwesomeIcon icon={faHome} /> Dashboard Overview</h2>
+      <div className="dashboard-header">
+        <h2><FontAwesomeIcon icon={faHome} /> Dashboard Overview</h2>
+        <button 
+          className="refresh-btn" 
+          onClick={fetchDashboardStats}
+          title="Refresh Dashboard Stats"
+        >
+          <FontAwesomeIcon icon={faUsers} /> Refresh Stats
+        </button>
+      </div>
       
       <div className="stats-grid">
         <div className="stat-card">
@@ -282,6 +339,10 @@ const AdminDashboard = () => {
           <div className="stat-info">
             <h3>Total Users</h3>
             <p>{stats.totalUsers}</p>
+            <div className="stat-detail">
+              <span>Regular Users: {stats.regularUsers}</span>
+              <span>Admin Users: {stats.adminUsers}</span>
+            </div>
           </div>
         </div>
         

@@ -2,9 +2,11 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../Models/User');
+const Admin = require('../Models/Admin');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { authMiddleware, adminMiddleware } = require('../Controllers/authMiddleware');
+const { authMiddleware, adminAuthMiddleware } = require('../Controllers/authMiddleware');
+const { getDashboardStats } = require('../Controllers/adminController');
 
 // JWT Secret
 const JWT_SECRET = 'vithanage_enterprises_secret';
@@ -12,27 +14,29 @@ const JWT_SECRET = 'vithanage_enterprises_secret';
 // Create admin user (this should be protected in production)
 router.post('/create-admin', async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, role = 'admin' } = req.body;
     
-    // Check if user already exists
-    let user = await User.findOne({ email });
-    if (user) {
-      return res.status(400).json({ message: 'User already exists' });
+    // Check if admin already exists
+    let existingAdmin = await Admin.findOne({ email });
+    if (existingAdmin) {
+      return res.status(400).json({ message: 'Admin already exists' });
     }
     
-    // Hash password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    // Check if regular user exists with this email
+    let existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: 'Email already in use by a regular user' });
+    }
     
     // Create admin user
-    user = new User({
+    const admin = new Admin({
       name,
       email,
-      password: hashedPassword,
-      isAdmin: true // This is what makes it an admin account
+      password,
+      role: role
     });
     
-    await user.save();
+    await admin.save();
     
     res.status(201).json({ message: 'Admin created successfully' });
   } catch (error) {
@@ -42,7 +46,7 @@ router.post('/create-admin', async (req, res) => {
 });
 
 // Get all users (admin only)
-router.get('/users', authMiddleware, adminMiddleware, async (req, res) => {
+router.get('/users', authMiddleware, adminAuthMiddleware, async (req, res) => {
   try {
     const users = await User.find().select('-password');
     res.json(users);
@@ -53,61 +57,62 @@ router.get('/users', authMiddleware, adminMiddleware, async (req, res) => {
 });
 
 // Update admin profile
-router.put('/profile', authMiddleware, adminMiddleware, async (req, res) => {
+router.put('/profile', authMiddleware, adminAuthMiddleware, async (req, res) => {
   try {
     const { name, email, currentPassword, newPassword } = req.body;
 
     // Find the admin user
-    const user = await User.findById(req.user.id);
+    const admin = await Admin.findById(req.admin.id);
 
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+    if (!admin) {
+      return res.status(404).json({ message: 'Admin not found' });
     }
 
     // Check if email is unique (if changing email)
-    if (email !== user.email) {
+    if (email !== admin.email) {
+      const existingAdmin = await Admin.findOne({ email });
       const existingUser = await User.findOne({ email });
-      if (existingUser) {
+      if (existingAdmin || existingUser) {
         return res.status(400).json({ message: 'Email already in use' });
       }
     }
 
     // Update basic info
-    user.name = name || user.name;
-    user.email = email || user.email;
+    admin.name = name || admin.name;
+    admin.email = email || admin.email;
 
     // Update password if provided
     if (newPassword) {
       // Verify current password
-      const isMatch = await bcrypt.compare(currentPassword, user.password);
+      const isMatch = await admin.comparePassword(currentPassword);
       if (!isMatch) {
         return res.status(400).json({ message: 'Current password is incorrect' });
       }
 
-      // Hash new password
-      const salt = await bcrypt.genSalt(10);
-      user.password = await bcrypt.hash(newPassword, salt);
+      // New password will be hashed by the pre-save hook
+      admin.password = newPassword;
     }
 
-    await user.save();
+    await admin.save();
 
-    // Create new JWT token with updated user info
+    // Create new JWT token with updated admin info
     const payload = {
-      user: {
-        id: user.id,
-        isAdmin: user.isAdmin
+      admin: {
+        id: admin.id,
+        role: admin.role
       }
     };
 
-    jwt.sign(payload, JWT_SECRET, { expiresIn: '1h' }, (err, token) => {
+    jwt.sign(payload, JWT_SECRET, { expiresIn: '2h' }, (err, token) => {
       if (err) throw err;
       res.json({
         token,
         user: {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          isAdmin: user.isAdmin
+          id: admin.id,
+          name: admin.name,
+          email: admin.email,
+          isAdmin: true,
+          role: admin.role
         },
         message: 'Profile updated successfully'
       });
@@ -117,5 +122,8 @@ router.put('/profile', authMiddleware, adminMiddleware, async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 });
+
+// Get dashboard stats
+router.get('/dashboard-stats', authMiddleware, adminAuthMiddleware, getDashboardStats);
 
 module.exports = router;

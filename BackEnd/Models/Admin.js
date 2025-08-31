@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
-const userSchema = new mongoose.Schema({
+const AdminSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true
@@ -15,15 +15,10 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  phone: {
-    type: String
-  },
-  address: {
-    street: String,
-    city: String,
-    state: String,
-    postalCode: String,
-    country: String
+  role: {
+    type: String,
+    enum: ['admin', 'super_admin'],
+    default: 'admin'
   },
   createdAt: {
     type: Date,
@@ -32,7 +27,7 @@ const userSchema = new mongoose.Schema({
 });
 
 // Pre-save hook to hash password
-userSchema.pre('save', async function(next) {
+AdminSchema.pre('save', async function(next) {
   if (!this.isModified('password')) {
     return next();
   }
@@ -47,8 +42,8 @@ userSchema.pre('save', async function(next) {
 });
 
 // Method to compare password
-userSchema.methods.comparePassword = async function(candidatePassword) {
+AdminSchema.methods.comparePassword = async function(candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
-module.exports = mongoose.model('User', userSchema);
+module.exports = mongoose.model('Admin', AdminSchema);

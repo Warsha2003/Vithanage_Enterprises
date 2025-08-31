@@ -1,7 +1,35 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './Home.css';
 
 function Home() {
+  const [user, setUser] = useState(null);
+  const navigate = useNavigate();
+  
+  useEffect(() => {
+    // Check if user is logged in
+    const storedUser = localStorage.getItem('user');
+    const token = localStorage.getItem('token');
+    
+    // Only consider user as logged in if both user data and token exist
+    if (storedUser && token) {
+      setUser(JSON.parse(storedUser));
+    } else {
+      // Clear any incomplete auth data
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      setUser(null);
+    }
+  }, []);
+  
+  const handleShopNowClick = () => {
+    if (user) {
+      navigate('/products');
+    } else {
+      navigate('/login');
+    }
+  };
+
   // Featured products data (in a real app, this would come from an API)
   const featuredProducts = [
     {
@@ -49,7 +77,21 @@ function Home() {
         <div className="hero-content">
           <h1>Welcome to Vithanage Enterprises</h1>
           <p>Your one-stop shop for premium electrical appliances</p>
-          <button className="shop-now-btn">Shop Now</button>
+          {!user && (
+            <div style={{ 
+              backgroundColor: '#f8d7da', 
+              color: '#721c24', 
+              padding: '10px 15px', 
+              borderRadius: '5px',
+              marginBottom: '15px',
+              border: '1px solid #f5c6cb'
+            }}>
+              <strong>Please Note:</strong> You need to login or register to view and purchase products.
+            </div>
+          )}
+          <button className="shop-now-btn" onClick={handleShopNowClick}>
+            {user ? 'Shop Now' : 'Login to Shop'}
+          </button>
         </div>
       </div>
 
@@ -77,7 +119,12 @@ function Home() {
                 <h3>{product.name}</h3>
                 <p className="product-category">{product.category}</p>
                 <p className="product-price">${product.price.toFixed(2)}</p>
-                <button className="add-to-cart-btn">Add to Cart</button>
+                <button 
+                  className="add-to-cart-btn"
+                  onClick={user ? () => alert('Added to cart!') : () => navigate('/login')}
+                >
+                  {user ? 'Add to Cart' : 'Login to Buy'}
+                </button>
               </div>
             </div>
           ))}
@@ -92,14 +139,18 @@ function Home() {
             <div className="offer-content">
               <h3>Summer Sale</h3>
               <p>Get up to 30% off on selected items</p>
-              <button className="view-offers-btn">View Offers</button>
+              <button className="view-offers-btn" onClick={user ? () => navigate('/products') : () => navigate('/login')}>
+                {user ? 'View Offers' : 'Login to View'}
+              </button>
             </div>
           </div>
           <div className="offer-card">
             <div className="offer-content">
               <h3>New Arrivals</h3>
               <p>Check out our latest products</p>
-              <button className="view-offers-btn">View Products</button>
+              <button className="view-offers-btn" onClick={user ? () => navigate('/products') : () => navigate('/login')}>
+                {user ? 'View Products' : 'Login to View'}
+              </button>
             </div>
           </div>
         </div>

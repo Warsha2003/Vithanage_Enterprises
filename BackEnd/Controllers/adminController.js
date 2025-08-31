@@ -1,4 +1,6 @@
 const User = require('../Models/User');
+const Admin = require('../Models/Admin');
+const Product = require('../Models/Product');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
@@ -92,4 +94,44 @@ const updateAdminProfile = async (req, res) => {
   }
 };
 
-module.exports = { getAllUsers, updateAdminProfile };
+// Get dashboard stats with real counts
+const getDashboardStats = async (req, res) => {
+  try {
+    // Count regular users
+    const userCount = await User.countDocuments();
+    
+    // Count admins
+    const adminCount = await Admin.countDocuments();
+    
+    // Count products
+    const productCount = await Product.countDocuments();
+    
+    // Total users (regular + admin)
+    const totalUsers = userCount + adminCount;
+    
+    console.log('Dashboard stats:', {
+      totalUsers,
+      regularUsers: userCount,
+      adminUsers: adminCount,
+      totalProducts: productCount
+    });
+    
+    // You can add more stats here (e.g., orders, revenue)
+    
+    res.json({
+      totalUsers: totalUsers,
+      regularUsers: userCount,
+      adminUsers: adminCount,
+      totalProducts: productCount,
+      totalOrders: 56, // Placeholder - replace with real data when you have Orders model
+      totalRevenue: 12750.75, // Placeholder - replace with real data when you have Orders model
+      pendingOrders: 8, // Placeholder
+      lowStockItems: 5 // Placeholder
+    });
+  } catch (error) {
+    console.error('Error fetching dashboard stats:', error.message);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+module.exports = { getAllUsers, updateAdminProfile, getDashboardStats };

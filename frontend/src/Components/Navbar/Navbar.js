@@ -6,18 +6,42 @@ function Navbar() {
   const [user, setUser] = useState(null);
   
   useEffect(() => {
-    // Check if user is logged in
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
+    // Check if user is logged in - check both localStorage and sessionStorage
+    const storedUser = localStorage.getItem('user') || sessionStorage.getItem('user');
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+    
+    // Only consider user as logged in if both user data and token exist
+    if (storedUser && token) {
+      try {
+        setUser(JSON.parse(storedUser));
+        console.log("Navbar: User is logged in", JSON.parse(storedUser).name);
+      } catch (err) {
+        console.error("Error parsing user data:", err);
+        // Clear invalid data
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem('user');
+        setUser(null);
+      }
+    } else {
+      // Clear any incomplete auth data
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      sessionStorage.removeItem('token');
+      sessionStorage.removeItem('user');
+      setUser(null);
     }
   }, []);
   
   const handleLogout = () => {
+    // Clear from both storage types
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('user');
     setUser(null);
-    window.location.href = '/';
+    window.location.replace('/');
   };
 
   return (
@@ -36,13 +60,14 @@ function Navbar() {
         
         <div className="navbar-links">
           <Link to="/" className="nav-link" style={{ textDecoration: 'none', color: 'white' }}>Home</Link>
-          <div className="nav-link">Products</div>
           <div className="nav-link">Deals</div>
           <div className="nav-link">Contact</div>
-          <div className="nav-link cart">
-            <i className="fas fa-shopping-cart"></i>
-            <span className="cart-count">0</span>
-          </div>
+          {user && (
+            <div className="nav-link cart">
+              <i className="fas fa-shopping-cart"></i>
+              <span className="cart-count">0</span>
+            </div>
+          )}
           
           {user ? (
             <div className="user-menu">
@@ -56,6 +81,9 @@ function Navbar() {
                     Admin Dashboard
                   </Link>
                 )}
+                <Link to="/products" className="dropdown-item">
+                  View Products
+                </Link>
                 <div className="dropdown-item">My Profile</div>
                 <div className="dropdown-item">My Orders</div>
                 <div className="dropdown-item" onClick={handleLogout}>Logout</div>

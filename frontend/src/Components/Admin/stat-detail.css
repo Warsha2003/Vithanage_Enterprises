@@ -1,0 +1,19 @@
+.stat-detail {
+  margin-top: 8px;
+  font-size: 0.75rem;
+  color: #666;
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-detail span {
+  margin-bottom: 3px;
+  display: flex;
+  align-items: center;
+}
+
+.stat-detail span:before {
+  content: "•";
+  margin-right: 5px;
+  color: #ff9900;
+}

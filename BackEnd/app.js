@@ -5,6 +5,9 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const authRoutes = require('./Routes/authRoutes');
 const adminRoutes = require('./Routes/adminRoutes');
+const adminAuthRoutes = require('./Routes/adminAuthRoutes');
+const productRoutes = require('./Routes/productRoutes');
+const { createInitialAdmin } = require('./Controllers/adminAuthController');
 
 const app = express();
 
@@ -22,9 +25,18 @@ app.get('/', (req, res) => {
 app.use('/api/auth', authRoutes);
 // Admin routes
 app.use('/api/admin', adminRoutes);
+// Admin Auth routes
+app.use('/api/admin-auth', adminAuthRoutes);
+// Product routes
+app.use('/api/products', productRoutes);
 
 mongoose.connect("mongodb+srv://admin:V2ft5D1dbTssVJzR@cluster0.fq7u6hk.mongodb.net/")
-.then(()=> console.log("Connected to MongoDB"))
+.then(()=> {
+    console.log("Connected to MongoDB");
+    
+    // Create initial admin if none exists
+    createInitialAdmin();
+})
 .then(()=>{
     const PORT = process.env.PORT || 5000;
     const server = app.listen(PORT, () => {
