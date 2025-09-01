@@ -59,6 +59,13 @@ function Home() {
       price: 799.99,
       image: "https://images.unsplash.com/photo-1626806787461-102c1a7f1c62?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80",
       category: "Washing Machine"
+    },
+    {
+    id: 5,
+      name: "Samsung top Load Washing Machine",
+      price: 799.99,
+      image: "https://images.unsplash.com/photo-1626806787461-102c1a7f1c62?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80",
+      category: "Washing Machine"
     }
   ];
 
