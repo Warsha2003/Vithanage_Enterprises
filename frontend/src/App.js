@@ -92,14 +92,8 @@ function App() {
             </AdminRoute>
           } 
         />
-        <Route 
-          path="/products" 
-          element={
-            <ProtectedRoute>
-              <Products />
-            </ProtectedRoute>
-          } 
-        />
+        {/* Make products page accessible without login */}
+        <Route path="/products" element={<Products />} />
         {/* Catch-all redirect to home */}
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>

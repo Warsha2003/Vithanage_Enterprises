@@ -23,11 +23,8 @@ function Home() {
   }, []);
   
   const handleShopNowClick = () => {
-    if (user) {
-      navigate('/products');
-    } else {
-      navigate('/login');
-    }
+    // Go directly to products page without checking login
+    navigate('/products');
   };
 
   // Featured products data (in a real app, this would come from an API)

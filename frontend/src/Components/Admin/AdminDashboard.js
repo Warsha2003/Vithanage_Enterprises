@@ -3,6 +3,7 @@ import { Navigate } from 'react-router-dom';
 import './AdminDashboard.css';
 import './stat-detail.css';
 import './dashboard-header.css';
+import ProductManagement from './ProductManagement';
 // Add Font Awesome for icons
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
@@ -464,70 +465,7 @@ const AdminDashboard = () => {
   );
 
   const renderProducts = () => (
-    <div className="module-content">
-      <h2><FontAwesomeIcon icon={faBoxOpen} /> Product Management</h2>
-      
-      <div className="admin-actions">
-        <button className="primary-btn"><FontAwesomeIcon icon={faBoxOpen} /> Add New Product</button>
-        <div className="search-box">
-          <input type="text" placeholder="Search products..." />
-          <button>Search</button>
-        </div>
-      </div>
-      
-      <div className="admin-section">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Image</th>
-              <th>Name</th>
-              <th>Category</th>
-              <th>Price</th>
-              <th>Stock</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><div className="product-thumbnail"></div></td>
-              <td>Smart TV 55"</td>
-              <td>Televisions</td>
-              <td>$699.99</td>
-              <td><span className="badge in-stock">In Stock (12)</span></td>
-              <td className="action-buttons">
-                <button className="view-btn" title="View Details"><FontAwesomeIcon icon={faBoxOpen} /></button>
-                <button className="edit-btn" title="Edit Product"><FontAwesomeIcon icon={faCog} /></button>
-                <button className="delete-btn" title="Delete Product"><FontAwesomeIcon icon={faSignOutAlt} /></button>
-              </td>
-            </tr>
-            <tr>
-              <td><div className="product-thumbnail"></div></td>
-              <td>Microwave Oven</td>
-              <td>Kitchen Appliances</td>
-              <td>$129.99</td>
-              <td><span className="badge low-stock">Low Stock (2)</span></td>
-              <td className="action-buttons">
-                <button className="view-btn" title="View Details"><FontAwesomeIcon icon={faBoxOpen} /></button>
-                <button className="edit-btn" title="Edit Product"><FontAwesomeIcon icon={faCog} /></button>
-                <button className="delete-btn" title="Delete Product"><FontAwesomeIcon icon={faSignOutAlt} /></button>
-              </td>
-            </tr>
-            <tr>
-              <td><div className="product-thumbnail"></div></td>
-              <td>Refrigerator</td>
-              <td>Kitchen Appliances</td>
-              <td>$999.99</td>
-              <td><span className="badge in-stock">In Stock (5)</span></td>
-              <td className="action-buttons">
-                <button className="view-btn" title="View Details"><FontAwesomeIcon icon={faBoxOpen} /></button>
-                <button className="edit-btn" title="Edit Product"><FontAwesomeIcon icon={faCog} /></button>
-                <button className="delete-btn" title="Delete Product"><FontAwesomeIcon icon={faSignOutAlt} /></button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
+    <ProductManagement />
   );
 
   const renderOrders = () => (

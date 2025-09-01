@@ -1,9 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { 
+  faUser, 
+  faShoppingCart, 
+  faSearch, 
+  faSignOutAlt, 
+  faTachometerAlt, 
+  faBoxOpen, 
+  faUserCircle, 
+  faShoppingBag
+} from '@fortawesome/free-solid-svg-icons';
 import './Navbar.css';
 
 function Navbar() {
   const [user, setUser] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const navigate = useNavigate();
   
   useEffect(() => {
     // Check if user is logged in - check both localStorage and sessionStorage
@@ -43,55 +56,92 @@ function Navbar() {
     setUser(null);
     window.location.replace('/');
   };
+  
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      // Implement search functionality
+      navigate(`/products?search=${encodeURIComponent(searchQuery)}`);
+    }
+  };
 
   return (
     <nav className="navbar">
       <div className="navbar-container">
         <div className="navbar-logo">
-          <Link to="/" style={{ textDecoration: 'none', color: 'white' }}>
+          <Link to="/" style={{ textDecoration: 'none' }}>
             <h1>Vithanage Enterprises</h1>
           </Link>
         </div>
         
-        <div className="search-bar">
-          <input type="text" placeholder="Search for products..." />
-          <button className="search-button">Search</button>
-        </div>
+        <form className="search-bar" onSubmit={handleSearch}>
+          <input 
+            type="text" 
+            placeholder="Search for products..." 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          <button type="submit" className="search-button">
+            <FontAwesomeIcon icon={faSearch} />
+          </button>
+        </form>
         
         <div className="navbar-links">
-          <Link to="/" className="nav-link" style={{ textDecoration: 'none', color: 'white' }}>Home</Link>
-          <div className="nav-link">Deals</div>
-          <div className="nav-link">Contact</div>
+          <Link to="/" className="nav-link">
+            <span>Home</span>
+          </Link>
+          <Link to="/products" className="nav-link">
+            <span>Products</span>
+          </Link>
+          <Link to="/deals" className="nav-link">
+            <span>Deals</span>
+          </Link>
+          <Link to="/contact" className="nav-link">
+            <span>Contact</span>
+          </Link>
+          
           {user && (
-            <div className="nav-link cart">
-              <i className="fas fa-shopping-cart"></i>
+            <Link to="/cart" className="nav-link cart">
+              <FontAwesomeIcon icon={faShoppingCart} />
               <span className="cart-count">0</span>
-            </div>
+            </Link>
           )}
           
           {user ? (
             <div className="user-menu">
               <div className="nav-link user">
-                <i className="fas fa-user"></i>
+                <FontAwesomeIcon icon={faUserCircle} />
                 <span className="user-name">{user.name}</span>
               </div>
               <div className="dropdown-menu">
                 {user.isAdmin && (
                   <Link to="/admin" className="dropdown-item">
+                    <FontAwesomeIcon icon={faTachometerAlt} style={{ marginRight: '10px' }} />
                     Admin Dashboard
                   </Link>
                 )}
                 <Link to="/products" className="dropdown-item">
+                  <FontAwesomeIcon icon={faBoxOpen} style={{ marginRight: '10px' }} />
                   View Products
                 </Link>
-                <div className="dropdown-item">My Profile</div>
-                <div className="dropdown-item">My Orders</div>
-                <div className="dropdown-item" onClick={handleLogout}>Logout</div>
+                <Link to="/profile" className="dropdown-item">
+                  <FontAwesomeIcon icon={faUserCircle} style={{ marginRight: '10px' }} />
+                  My Profile
+                </Link>
+                <Link to="/orders" className="dropdown-item">
+                  <FontAwesomeIcon icon={faShoppingBag} style={{ marginRight: '10px' }} />
+                  My Orders
+                </Link>
+                <div className="dropdown-item" onClick={handleLogout}>
+                  <FontAwesomeIcon icon={faSignOutAlt} style={{ marginRight: '10px' }} />
+                  Logout
+                </div>
               </div>
             </div>
           ) : (
-            <Link to="/login" className="nav-link user" style={{ textDecoration: 'none', color: 'white' }}>
-              <i className="fas fa-user"></i>
+            <Link to="/login" className="nav-link user">
+              <FontAwesomeIcon icon={faUserCircle} />
+              <span style={{ marginLeft: '5px' }}>Login</span>
             </Link>
           )}
         </div>

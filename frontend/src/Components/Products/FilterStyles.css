@@ -1,0 +1,139 @@
+/* Filter styles for Products.css */
+/* Filter Sections */
+.filter-section {
+  margin-top: 25px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid var(--medium-gray);
+}
+
+.filter-section h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1rem;
+  margin-bottom: 15px;
+  color: var(--text-primary);
+}
+
+/* Price Filter */
+.price-filter {
+  padding: 0 5px;
+}
+
+.price-inputs {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 15px;
+}
+
+.price-input-group {
+  display: flex;
+  flex-direction: column;
+  width: 45%;
+}
+
+.price-input-group label {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-bottom: 5px;
+}
+
+.price-input-group input {
+  padding: 8px;
+  border: 1px solid var(--medium-gray);
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.price-range {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.price-range span {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.range-slider {
+  flex: 1;
+  height: 5px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--medium-gray);
+  border-radius: 5px;
+  outline: none;
+}
+
+.range-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  cursor: pointer;
+}
+
+.range-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  cursor: pointer;
+}
+
+/* Brand Filter */
+.brand-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.brand-list li {
+  margin-bottom: 10px;
+}
+
+.brand-checkbox {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.checkbox {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--medium-gray);
+  border-radius: 4px;
+  margin-right: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: white;
+}
+
+.checkbox .check-icon {
+  color: white;
+  font-size: 0.8rem;
+}
+
+/* Reset Filters Button */
+.reset-filters-btn {
+  margin-top: 20px;
+  width: 100%;
+  padding: 10px;
+  background-color: #f5f5f5;
+  color: var(--text-primary);
+  border: 1px solid var(--medium-gray);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.reset-filters-btn:hover {
+  background-color: var(--medium-gray);
+}
