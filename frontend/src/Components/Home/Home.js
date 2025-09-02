@@ -75,7 +75,7 @@ function Home() {
   ];
 
   return (
-    <div className="home" style={{ backgroundColor: '#f7f7f7', width: '100%', maxWidth: '1200px', margin: '0 auto', padding: '0 20px' }}>
+    <div className="home">
       {/* Hero Section */}
       <div className="hero-section">
         <div className="hero-content">

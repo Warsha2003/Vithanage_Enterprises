@@ -1,20 +1,6 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
-const CartItemSchema = new mongoose.Schema({
-  product: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Product',
-    required: true
-  },
-  quantity: {
-    type: Number,
-    required: true,
-    default: 1,
-    min: 1
-  }
-});
-
 const userSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -38,11 +24,6 @@ const userSchema = new mongoose.Schema({
     state: String,
     postalCode: String,
     country: String
-  },
-  cart: [CartItemSchema],
-  isAdmin: {
-    type: Boolean,
-    default: false
   },
   createdAt: {
     type: Date,

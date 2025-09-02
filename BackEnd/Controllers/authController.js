@@ -37,7 +37,7 @@ const register = async (req, res) => {
       }
     };
 
-    jwt.sign(payload, JWT_SECRET, { expiresIn: '24h' }, (err, token) => {
+    jwt.sign(payload, JWT_SECRET, { expiresIn: '1h' }, (err, token) => {
       if (err) throw err;
       res.status(201).json({ 
         token,
@@ -82,7 +82,7 @@ const login = async (req, res) => {
         }
       };
       
-      jwt.sign(payload, JWT_SECRET, { expiresIn: '24h' }, (err, token) => {
+      jwt.sign(payload, JWT_SECRET, { expiresIn: '1h' }, (err, token) => {
         if (err) {
           console.error("JWT Sign error:", err);
           throw err;
@@ -123,7 +123,7 @@ const login = async (req, res) => {
         }
       };
       
-      jwt.sign(payload, JWT_SECRET, { expiresIn: '24h' }, (err, token) => {
+      jwt.sign(payload, JWT_SECRET, { expiresIn: '2h' }, (err, token) => {
         if (err) {
           console.error("JWT Sign error:", err);
           throw err;

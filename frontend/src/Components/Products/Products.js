@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faUser, faShoppingCart, faStar, faCheck, faSliders, faTag, faSpinner } from '@fortawesome/free-solid-svg-icons';
+import { faUser, faShoppingCart, faStar, faCheck, faSliders, faTag } from '@fortawesome/free-solid-svg-icons';
 import './Products.css';
 import './FilterStyles.css';
-import '../Cart/CartIconStyles.css';
 
 const Products = () => {
   // States
@@ -17,28 +15,20 @@ const Products = () => {
   const [priceRange, setPriceRange] = useState({ min: 0, max: 2000 });
   const [currentPriceRange, setCurrentPriceRange] = useState({ min: 0, max: 2000 });
   const [userName, setUserName] = useState('Guest');
-  const [loading, setLoading] = useState(false);
-  const [cartCount, setCartCount] = useState(0);
-  const navigate = useNavigate();
 
   useEffect(() => {
     // Fetch user data
     const userData = localStorage.getItem('user');
-    const token = localStorage.getItem('token');
-    
     if (userData) {
       const user = JSON.parse(userData);
       setUserName(user.name || 'Guest');
     }
     
-    // Fetch cart count
-    fetchCartCount();
-    
     // Fetch products from API
     const fetchProducts = async () => {
       try {
         console.log('Fetching products from backend database...');
-        const response = await fetch('/api/products');
+        const response = await fetch('http://localhost:5000/api/products');
         
         if (response.ok) {
           const data = await response.json();
@@ -84,99 +74,8 @@ const Products = () => {
     };
     
     fetchProducts();
-    
-    // Listen for auth changes
-    window.addEventListener('auth-change', handleAuthChange);
-    
-    // Listen for cart updates
-    const handleCartUpdated = () => {
-      fetchCartCount();
-    };
-    
-    document.addEventListener('cartUpdated', handleCartUpdated);
-    window.addEventListener('storage', handleCartUpdated);
-    
-    return () => {
-      window.removeEventListener('auth-change', handleAuthChange);
-      document.removeEventListener('cartUpdated', handleCartUpdated);
-      window.removeEventListener('storage', handleCartUpdated);
-    };
   }, []);
-  
-  // Handle auth changes
-  const handleAuthChange = () => {
-    // Update user name
-    const userData = localStorage.getItem('user');
-    if (userData) {
-      const user = JSON.parse(userData);
-      setUserName(user.name || 'Guest');
-    } else {
-      setUserName('Guest');
-    }
-    
-    // Update cart count
-    fetchCartCount();
-  };
-  
-  // Fetch cart count
-  const fetchCartCount = async () => {
-    try {
-      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-      const storedUser = localStorage.getItem('user') || sessionStorage.getItem('user');
-      
-      // If user is not logged in, set cart count to 0
-      if (!token || !storedUser) {
-        setCartCount(0);
-        return;
-      }
-      
-      // First try to get cart from localStorage for immediate display
-      const savedCart = localStorage.getItem('userCart');
-      if (savedCart) {
-        try {
-          const parsedCart = JSON.parse(savedCart);
-          if (Array.isArray(parsedCart)) {
-            const count = parsedCart.length;
-            setCartCount(count);
-          } else if (parsedCart.items && Array.isArray(parsedCart.items)) {
-            const count = parsedCart.items.length;
-            setCartCount(count);
-          }
-        } catch (err) {
-          console.error("Error parsing cached cart:", err);
-          setCartCount(0);
-        }
-      } else {
-        setCartCount(0);
-      }
-      
-      // If user is logged in, fetch from server for accurate count
-      if (token && storedUser) {
-        const response = await fetch('/api/cart', {
-          headers: {
-            'x-auth-token': token,
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          const count = data.length;
-          setCartCount(count);
-          
-          // Update localStorage with fresh cart data
-          localStorage.setItem('userCart', JSON.stringify(data));
-        } else {
-          console.error('Failed to fetch cart count from server');
-          // Keep using the count from localStorage
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching cart count:', error);
-      // Keep using the count from localStorage
-    }
-  };
-  
+
   // Apply filters when any filter changes
   useEffect(() => {
     let result = products;
@@ -235,122 +134,6 @@ const Products = () => {
     setSelectedCategory('All');
     setSelectedBrands([]);
     setCurrentPriceRange(priceRange);
-  };
-  
-  // Handle cart icon click
-  const handleCartClick = () => {
-    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-    const storedUser = localStorage.getItem('user') || sessionStorage.getItem('user');
-    
-    // If user is logged in, navigate to cart page
-    if (token && storedUser) {
-      navigate('/cart');
-    } else {
-      // If user is not logged in, redirect to login page with return URL
-      sessionStorage.setItem('loginRedirect', '/cart');
-      navigate('/login');
-    }
-  };
-
-  // Add to cart handler
-  const handleAddToCart = async (product) => {
-    setLoading(true);
-    
-    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-    const storedUser = localStorage.getItem('user') || sessionStorage.getItem('user');
-    
-    try {
-      if (token && storedUser) {
-        // If user is logged in, add to server cart
-        const response = await fetch('/api/cart/add', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-auth-token': token
-          },
-          body: JSON.stringify({
-            productId: product._id,
-            quantity: 1
-          })
-        });
-        
-        if (response.ok) {
-          // Get updated cart from server
-          const cartResponse = await fetch('/api/cart', {
-            headers: {
-              'x-auth-token': token,
-              'Content-Type': 'application/json'
-            }
-          });
-          
-          if (cartResponse.ok) {
-            const cartData = await cartResponse.json();
-            
-            // Save the old count
-            const oldCount = cartCount;
-            
-            // Update cart count
-            const count = cartData.reduce((total, item) => total + item.quantity, 0);
-            setCartCount(count);
-            
-            // Save to localStorage for persistence between sessions
-            localStorage.setItem('userCart', JSON.stringify(cartData));
-            
-            // Use the global cart update function to notify all components
-            if (window.updateCartCount) {
-              window.updateCartCount();
-            }
-            
-            // Animate the cart count badge
-            if (count !== oldCount) {
-              animateCartCount();
-            }
-            
-            alert('Product added to cart!');
-          } else {
-            // If we can't get updated cart, still update the count optimistically
-            setCartCount(prevCount => prevCount + 1);
-            
-            // Use the global cart update function to notify all components
-            if (window.updateCartCount) {
-              window.updateCartCount();
-            }
-            
-            // Animate the cart count badge
-            animateCartCount();
-            
-            alert('Product added to cart!');
-          }
-        } else {
-          alert('Failed to add product to cart');
-        }
-      } else {
-        // For non-logged in users, redirect to login
-        alert('Please log in to add products to your cart');
-        sessionStorage.setItem('loginRedirect', '/products');
-        navigate('/login');
-      }
-    } catch (error) {
-      console.error('Error adding to cart:', error);
-      alert('Failed to add product to cart. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  // Animate cart count when it changes
-  const animateCartCount = () => {
-    const cartCountElement = document.querySelector('.products-display .cart-count');
-    if (cartCountElement) {
-      // Remove the class if it exists
-      cartCountElement.classList.remove('animate');
-      
-      // Force a reflow
-      void cartCountElement.offsetWidth;
-      
-      // Add the class back to trigger the animation
-      cartCountElement.classList.add('animate');
-    }
   };
 
   // Render star ratings
@@ -471,41 +254,9 @@ const Products = () => {
       <div className="products-display">
         <div className="products-header">
           <h2>{selectedCategory} Products</h2>
-          <div className="cart-container">
-            <div className="cart-icon-wrapper" onClick={handleCartClick} style={{
-              position: 'relative',
-              cursor: 'pointer',
-              padding: '5px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}>
-              <FontAwesomeIcon icon={faShoppingCart} style={{
-                fontSize: '22px',
-                color: '#232f3e'
-              }} />
-              {cartCount > 0 && (
-                <span className="cart-count" style={{
-                  position: 'absolute',
-                  top: '-8px',
-                  right: '-8px',
-                  backgroundColor: '#ff9900',
-                  color: '#232f3e',
-                  fontSize: '10px',
-                  minWidth: '18px',
-                  height: '18px',
-                  borderRadius: '10px',
-                  display: 'flex',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  fontWeight: 'bold',
-                  padding: '0 4px',
-                  boxShadow: '0 0 0 1px rgba(0, 0, 0, 0.1)'
-                }}>
-                  {cartCount}
-                </span>
-              )}
-            </div>
+          <div className="cart-icon">
+            <FontAwesomeIcon icon={faShoppingCart} />
+            <span className="cart-count">0</span>
           </div>
         </div>
         
@@ -525,14 +276,17 @@ const Products = () => {
                   <div className="product-price">${product.price}</div>
                   <button 
                     className="add-to-cart-btn"
-                    onClick={() => handleAddToCart(product)}
-                    disabled={loading}
+                    onClick={() => {
+                      const userData = localStorage.getItem('user');
+                      const token = localStorage.getItem('token');
+                      if (userData && token) {
+                        alert('Added to cart!');
+                      } else {
+                        window.location.href = '/login';
+                      }
+                    }}
                   >
-                    {loading ? (
-                      <FontAwesomeIcon icon={faSpinner} spin />
-                    ) : (
-                      'Add to Cart'
-                    )}
+                    {localStorage.getItem('token') ? 'Add to Cart' : 'Login to Buy'}
                   </button>
                 </div>
               </div>
