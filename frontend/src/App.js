@@ -7,8 +7,10 @@ import Login from './Components/User/Login';
 import Footer from './Components/Footer/Footer';
 import AdminDashboard from './Components/Admin/AdminDashboard';
 import Products from './Components/Products/Products';
+import Cart from './Components/Cart/Cart';
 
 // Direct approach to protected routes without state management
+// eslint-disable-next-line no-unused-vars
 const ProtectedRoute = ({ children }) => {
   // Check token presence synchronously
   const token = localStorage.getItem('token') || sessionStorage.getItem('token');
@@ -79,24 +81,28 @@ function App() {
   const isAdminPage = location.pathname.startsWith('/admin');
 
   return (
-    <div className="App">
+    <div className="App" style={{ backgroundColor: '#f7f7f7', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       {!isAdminPage && <Navbar />}
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/login" element={<Login />} />
-        <Route 
-          path="/admin" 
-          element={
-            <AdminRoute>
-              <AdminDashboard />
-            </AdminRoute>
-          } 
-        />
-        {/* Make products page accessible without login */}
-        <Route path="/products" element={<Products />} />
-        {/* Catch-all redirect to home */}
-        <Route path="*" element={<Navigate to="/" />} />
-      </Routes>
+      <main style={{ flex: 1, backgroundColor: '#f7f7f7', padding: '20px 0' }}>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+          <Route 
+            path="/admin" 
+            element={
+              <AdminRoute>
+                <AdminDashboard />
+              </AdminRoute>
+            } 
+          />
+          {/* Make products page accessible without login */}
+          <Route path="/products" element={<Products />} />
+          {/* Make cart accessible without login, checking will happen inside */}
+          <Route path="/cart" element={<Cart />} />
+          {/* Catch-all redirect to home */}
+          <Route path="*" element={<Navigate to="/" />} />
+        </Routes>
+      </main>
       {!isAdminPage && <Footer />}
     </div>
   );

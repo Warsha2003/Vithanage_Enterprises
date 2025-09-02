@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" style="background-color: #f7f7f7;">
   <head>
     <meta charset="utf-8" />
     <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
@@ -16,6 +16,29 @@
       user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
     -->
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    <link rel="stylesheet" href="%PUBLIC_URL%/global.css" />
+    <style>
+      html, body, #root {
+        background-color: #f7f7f7 !important;
+        margin: 0;
+        padding: 0;
+        min-height: 100vh;
+        width: 100%;
+      }
+      .navbar {
+        background-color: #232f3e !important;
+        color: white !important;
+      }
+      .nav-link {
+        color: white !important;
+      }
+    </style>
+    <script>
+      // Force background color immediately when the page loads
+      document.documentElement.style.backgroundColor = '#f7f7f7';
+      document.body.style.backgroundColor = '#f7f7f7';
+    </script>
+    <script src="%PUBLIC_URL%/cartEvents.js"></script>
     <!--
       Notice the use of %PUBLIC_URL% in the tags above.
       It will be replaced with the URL of the `public` folder during the build.

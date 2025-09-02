@@ -7,6 +7,7 @@ const authRoutes = require('./Routes/authRoutes');
 const adminRoutes = require('./Routes/adminRoutes');
 const adminAuthRoutes = require('./Routes/adminAuthRoutes');
 const productRoutes = require('./Routes/productRoutes');
+const cartRoutes = require('./Routes/cartRoutes');
 const { createInitialAdmin } = require('./Controllers/adminAuthController');
 
 const app = express();
@@ -29,6 +30,8 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/admin-auth', adminAuthRoutes);
 // Product routes
 app.use('/api/products', productRoutes);
+// Cart routes
+app.use('/api/cart', cartRoutes);
 
 mongoose.connect("mongodb+srv://admin:V2ft5D1dbTssVJzR@cluster0.fq7u6hk.mongodb.net/")
 .then(()=> {
