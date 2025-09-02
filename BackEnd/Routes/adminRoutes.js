@@ -6,6 +6,7 @@ const Admin = require('../Models/Admin');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { authMiddleware, adminAuthMiddleware } = require('../Controllers/authMiddleware');
+const { adminGetAllOrders, adminUpdateOrderStatus, adminUpdateProcessing } = require('../Controllers/orderController');
 const { getDashboardStats } = require('../Controllers/adminController');
 
 // JWT Secret
@@ -125,5 +126,10 @@ router.put('/profile', authMiddleware, adminAuthMiddleware, async (req, res) => 
 
 // Get dashboard stats
 router.get('/dashboard-stats', authMiddleware, adminAuthMiddleware, getDashboardStats);
+
+// Orders management (admin)
+router.get('/orders', authMiddleware, adminAuthMiddleware, adminGetAllOrders);
+router.put('/orders/:id/status', authMiddleware, adminAuthMiddleware, adminUpdateOrderStatus);
+router.put('/orders/:id/processing', authMiddleware, adminAuthMiddleware, adminUpdateProcessing);
 
 module.exports = router;

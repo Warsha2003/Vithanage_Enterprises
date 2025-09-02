@@ -7,33 +7,40 @@ const JWT_SECRET = 'vithanage_enterprises_secret'; // In production, use environ
 const authMiddleware = (req, res, next) => {
   // Get token from header
   const token = req.header('x-auth-token');
+  console.log('Auth middleware - Token received:', token ? 'Yes' : 'No');
 
   // Check if no token
   if (!token) {
+    console.log('Auth middleware - No token provided');
     return res.status(401).json({ message: 'No token, authorization denied' });
   }
 
   // Verify token
   try {
+    console.log('Auth middleware - Verifying token...');
     const decoded = jwt.verify(token, JWT_SECRET);
+    console.log('Auth middleware - Token verified, payload:', JSON.stringify(decoded));
     
     // Check if it's a user token
     if (decoded.user) {
+      console.log('Auth middleware - User token valid for ID:', decoded.user.id);
       req.user = decoded.user;
       return next();
     }
     
     // Check if it's an admin token
     if (decoded.admin) {
+      console.log('Auth middleware - Admin token valid for ID:', decoded.admin.id);
       req.admin = decoded.admin;
       // Admins can access user routes
       return next();
     }
     
+    console.log('Auth middleware - Invalid token structure');
     return res.status(401).json({ message: 'Invalid token structure' });
   } catch (error) {
     console.error('Token verification error:', error.message);
-    res.status(401).json({ message: 'Token is not valid' });
+    res.status(401).json({ message: 'Token is not valid', error: error.message });
   }
 };
 

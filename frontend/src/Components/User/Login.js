@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './Login.css';
 
 const Login = () => {
@@ -11,8 +12,18 @@ const Login = () => {
     confirmPassword: ''
   });
   const [error, setError] = useState('');
+  const navigate = useNavigate();
 
   const { name, email, password, confirmPassword } = formData;
+
+  // Check if we're coming from cart navigation
+  useEffect(() => {
+    const redirectSource = sessionStorage.getItem('loginRedirect');
+    if (redirectSource === '/cart') {
+      // We're coming from cart, show a message
+      console.log("Login required to view cart");
+    }
+  }, []);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -29,6 +40,41 @@ const Login = () => {
     setError('');
     setIsAdminLogin(!isAdminLogin);
     setIsLogin(true); // Always default to login mode when switching
+  };
+  
+  // Function to transfer guest cart to user cart
+  const transferGuestCartToUser = async () => {
+    try {
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      if (!token) {
+        console.error('No token available for transferring cart');
+        return;
+      }
+      
+      const guestCart = JSON.parse(localStorage.getItem('guestCart') || '{"items":[]}');
+      
+      if (guestCart.items && guestCart.items.length > 0) {
+        // Call API to transfer cart items to the user's cart
+        const response = await fetch('/api/cart/transfer', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-auth-token': token
+          },
+          body: JSON.stringify({ items: guestCart.items })
+        });
+        
+        if (response.ok) {
+          // Clear guest cart after successful transfer
+          localStorage.removeItem('guestCart');
+          console.log('Guest cart transferred successfully');
+        } else {
+          console.error('Failed to transfer guest cart:', response.statusText);
+        }
+      }
+    } catch (error) {
+      console.error('Error transferring guest cart:', error);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -62,6 +108,8 @@ const Login = () => {
       console.log("Sending request to:", `http://localhost:5000${endpoint}`);
       console.log("Request data:", dataToSend);
       
+      // IMPORTANT: If you need to preserve cart, read here before clearing auth
+      
       // Clear previous auth data before attempting login
       localStorage.removeItem('token');
       localStorage.removeItem('user');
@@ -84,26 +132,61 @@ const Login = () => {
         throw new Error(data.message || 'Authentication failed');
       }
       
+      // Ensure token exists
+      if (!data.token) {
+        throw new Error('No token received from server');
+      }
+      
+      console.log("Got token from server, length:", data.token.length);
+      
       // Store token and user data in both storage types for reliability
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
-      sessionStorage.setItem('token', data.token);
-      sessionStorage.setItem('user', JSON.stringify(data.user));
+      try {
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        sessionStorage.setItem('token', data.token);
+        sessionStorage.setItem('user', JSON.stringify(data.user));
+        
+        // Verify token was stored correctly
+        const storedToken = localStorage.getItem('token');
+        console.log("Token stored successfully:", !!storedToken, "length:", storedToken ? storedToken.length : 0);
+        
+        console.log("Auth data stored successfully:", data.user);
+        
+        // If we had existing cart data, we need to fetch from API but then merge with existing cart
+        // We'll do this by dispatching the auth-change event, which will trigger fetchCart in Navbar
+        // No need to manually merge - the backend handles persistent cart data for the user
+        
+        // Dispatch a custom event to notify other components about the login
+        window.dispatchEvent(new Event('auth-change'));
+        
+        // Transfer guest cart to user cart if needed
+        const guestCart = localStorage.getItem('guestCart');
+        if (guestCart) {
+          const parsedCart = JSON.parse(guestCart);
+          if (parsedCart.items && parsedCart.items.length > 0) {
+            console.log("Transferring guest cart to user cart:", parsedCart.items.length, "items");
+            await transferGuestCartToUser();
+          }
+        }
+        
+      } catch (storageError) {
+        console.error("Error storing auth data:", storageError);
+        alert("Error storing login information. Please try again.");
+        return;
+      }
       
-      console.log("Auth data stored successfully:", data.user);
+      // Determine redirect destination - if coming from cart page, go back to cart
+      const redirectDestination = sessionStorage.getItem('loginRedirect') || '/products';
+      sessionStorage.removeItem('loginRedirect');
       
-      // Check if user is admin and redirect accordingly with forced page reload
+      // Check if user is admin and redirect accordingly
       if (data.user && data.user.isAdmin) {
         console.log("Admin user detected, redirecting to admin dashboard");
-        setTimeout(() => {
-          window.location.href = '/admin';
-        }, 500);
+        navigate('/admin');
       } else {
-        // Redirect regular users to products page directly with forced page reload
-        console.log("Regular user detected, redirecting to products page");
-        setTimeout(() => {
-          window.location.href = '/products';
-        }, 500);
+        // Redirect regular users to the appropriate page
+        console.log("Regular user detected, redirecting to:", redirectDestination);
+        navigate(redirectDestination);
       }
     } catch (error) {
       console.error("Login error:", error);
@@ -148,6 +231,12 @@ const Login = () => {
       <div className="login-form-column">
         <div className="login-form-container">
           <h2>{isAdminLogin ? 'Admin Login' : (isLogin ? 'User Login' : 'User Registration')}</h2>
+          
+          {sessionStorage.getItem('loginRedirect') === '/cart' && (
+            <div className="login-message">
+              <p>Please log in to view your cart</p>
+            </div>
+          )}
           
           {error && <div className="error-message">{error}</div>}
           

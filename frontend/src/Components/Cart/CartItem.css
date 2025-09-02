@@ -1,0 +1,140 @@
+.cart-item {
+  display: flex;
+  align-items: center;
+  padding: 15px 0;
+  border-bottom: 1px solid #eee;
+  position: relative;
+}
+
+.cart-item:last-child {
+  border-bottom: none;
+}
+
+.cart-item-product {
+  display: flex;
+  align-items: center;
+  flex: 3;
+}
+
+.cart-item-image {
+  width: 80px;
+  height: 80px;
+  margin-right: 15px;
+  border-radius: 4px;
+  overflow: hidden;
+  background-color: #f8f8f8;
+}
+
+.cart-item-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.cart-item-details {
+  flex: 1;
+}
+
+.cart-item-details h3 {
+  margin: 0 0 5px 0;
+  font-size: 16px;
+  font-weight: 500;
+  color: #333;
+}
+
+.cart-item-category,
+.cart-item-brand {
+  margin: 0;
+  font-size: 13px;
+  color: #777;
+}
+
+.cart-item-price,
+.cart-item-total {
+  flex: 1;
+  text-align: center;
+  font-weight: 500;
+  color: #333;
+}
+
+.cart-item-quantity {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.quantity-btn {
+  background-color: #f8f8f8;
+  border: 1px solid #ddd;
+  width: 30px;
+  height: 30px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.quantity-btn:hover:not(:disabled) {
+  background-color: #e8e8e8;
+}
+
+.quantity-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.quantity-value {
+  margin: 0 10px;
+  font-weight: 500;
+  min-width: 30px;
+  text-align: center;
+}
+
+.cart-item-action {
+  flex: 0.5;
+  display: flex;
+  justify-content: center;
+}
+
+.remove-btn {
+  background: none;
+  border: none;
+  color: #ff4d4d;
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.2s;
+  padding: 5px;
+}
+
+.remove-btn:hover {
+  color: #ff0000;
+  transform: scale(1.1);
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .cart-item {
+    flex-wrap: wrap;
+    padding: 15px 10px;
+  }
+  
+  .cart-item-product {
+    flex: 100%;
+    margin-bottom: 15px;
+  }
+  
+  .cart-item-price, 
+  .cart-item-quantity, 
+  .cart-item-total {
+    flex: 1;
+  }
+  
+  .cart-item-action {
+    position: absolute;
+    top: 15px;
+    right: 10px;
+  }
+}

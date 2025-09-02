@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" style="background-color: #f7f7f7;">
   <head>
     <meta charset="utf-8" />
     <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
@@ -16,6 +16,32 @@
       user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
     -->
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    <link rel="stylesheet" href="%PUBLIC_URL%/global.css" />
+    <!-- jsPDF and AutoTable for admin PDF reports -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha512-YkG7fPSO2l7Y1c1m8b+u8Qql3poyp4m7uQkLQm4H5Zq1x+G1bQ0m0kLw3C0qQTBm9oS8lVQz1o6aHkJmQJ9w3g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.3/jspdf.plugin.autotable.min.js" integrity="sha512-+rO4mK0bQh9e3t8Qe4I3p0WbQJq1vQ8mL0y3WzI8Nw0a0f4Z3QkFK6cT0gY2S6m1k2K2w1Y3q9+9mC9gCj9Y8A==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <style>
+      html, body, #root {
+        background-color: #f7f7f7 !important;
+        margin: 0;
+        padding: 0;
+        min-height: 100vh;
+        width: 100%;
+      }
+      .navbar {
+        background-color: #232f3e !important;
+        color: white !important;
+      }
+      .nav-link {
+        color: white !important;
+      }
+    </style>
+    <script>
+      // Force background color immediately when the page loads
+      document.documentElement.style.backgroundColor = '#f7f7f7';
+      document.body.style.backgroundColor = '#f7f7f7';
+    </script>
+    <script src="%PUBLIC_URL%/cartEvents.js"></script>
     <!--
       Notice the use of %PUBLIC_URL% in the tags above.
       It will be replaced with the URL of the `public` folder during the build.

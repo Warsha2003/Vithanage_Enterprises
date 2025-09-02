@@ -9,8 +9,10 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faUsers, faBoxOpen, faShoppingCart, faMoneyBillWave, 
   faChartLine, faStar, faExchangeAlt, faHome, faBell,
-  faCog, faSignOutAlt, faClipboardList, faWarehouse, faPercent
+  faCog, faSignOutAlt, faClipboardList, faWarehouse, faPercent, faInfoCircle, faEye, faSearch, faFilePdf
 } from '@fortawesome/free-solid-svg-icons';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const AdminDashboard = () => {
   // Admin dashboard states
@@ -20,6 +22,10 @@ const AdminDashboard = () => {
   const [users, setUsers] = useState([]);
   const [error, setError] = useState('');
   const [notifications, setNotifications] = useState(3); // Example notification count
+  const [orders, setOrders] = useState([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
+  const [showOrderModal, setShowOrderModal] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState(null);
   const [stats, setStats] = useState({
     totalUsers: 0,
     regularUsers: 0,
@@ -30,6 +36,8 @@ const AdminDashboard = () => {
     pendingOrders: 0,
     lowStockItems: 0
   });
+  const [orderQuery, setOrderQuery] = useState('');
+  const [orderStatusFilter, setOrderStatusFilter] = useState('all');
   
   // Admin user state
   const [adminUser, setAdminUser] = useState({
@@ -97,6 +105,55 @@ const AdminDashboard = () => {
     }
   };
 
+  const filteredOrders = orders.filter((o) => {
+    const q = orderQuery.trim().toLowerCase();
+    const idMatch = (o._id || '').toLowerCase().includes(q);
+    const nameMatch = (o.customer?.fullName || '').toLowerCase().includes(q);
+    const statusMatch = orderStatusFilter === 'all' ? true : o.status === orderStatusFilter;
+    return (q ? (idMatch || nameMatch) : true) && statusMatch;
+  });
+
+  const generateOrdersReport = () => {
+    try {
+      const doc = new jsPDF('p', 'pt');
+      const margin = 40;
+      let y = margin;
+
+      doc.setFontSize(18);
+      doc.text('Orders Report', margin, y);
+      y += 24;
+
+      const totalOrders = filteredOrders.length;
+      const byStatus = filteredOrders.reduce((acc, o) => { acc[o.status] = (acc[o.status] || 0) + 1; return acc; }, {});
+      const totalRevenue = filteredOrders.reduce((s, o) => s + (o.totals?.total || 0), 0);
+      doc.setFontSize(12);
+      doc.text(`Total Orders: ${totalOrders}`, margin, y); y += 16;
+      doc.text(`Pending: ${byStatus.pending || 0}  Approved: ${byStatus.approved || 0}  Rejected: ${byStatus.rejected || 0}`, margin, y); y += 16;
+      doc.text(`Total Revenue: $${totalRevenue.toFixed(2)}`, margin, y); y += 24;
+
+      const rows = filteredOrders.map(o => [
+        o._id?.slice(-8),
+        o.customer?.fullName || '-',
+        o.customer?.email || '-',
+        o.status,
+        new Date(o.createdAt).toLocaleString(),
+        `$${(o.totals?.total || 0).toFixed(2)}`
+      ]);
+      autoTable(doc, {
+        startY: y,
+        head: [[ 'Order #', 'Customer', 'Email', 'Status', 'Date', 'Total' ]],
+        body: rows,
+        styles: { fontSize: 10 },
+        headStyles: { fillColor: [35, 47, 62] }
+      });
+
+      doc.save(`orders-report-${new Date().toISOString().slice(0,10)}.pdf`);
+    } catch (e) {
+      console.error('Report generation failed', e);
+      alert('Failed to generate report');
+    }
+  };
+
   const fetchDashboardStats = async () => {
     try {
       console.log('Fetching dashboard stats...');
@@ -153,6 +210,71 @@ const AdminDashboard = () => {
       });
     }
   };
+
+  const fetchAllOrders = async () => {
+    try {
+      setOrdersLoading(true);
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:5000/api/admin/orders', {
+        headers: { 'x-auth-token': token }
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Failed to fetch orders');
+      setOrders(data);
+    } catch (err) {
+      console.error('Fetch orders error:', err);
+    } finally {
+      setOrdersLoading(false);
+    }
+  };
+
+  const updateOrderStatus = async (orderId, status) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/admin/orders/${orderId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-auth-token': token
+        },
+        body: JSON.stringify({ status })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Failed to update status');
+      // refresh orders
+      fetchAllOrders();
+    } catch (err) {
+      console.error('Update order status error:', err);
+      alert(err.message || 'Failed to update order');
+    }
+  };
+
+  const updateProcessing = async (orderId, step) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/admin/orders/${orderId}/processing`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-auth-token': token
+        },
+        body: JSON.stringify({ step })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Failed to update processing');
+      fetchAllOrders();
+    } catch (err) {
+      console.error('Update processing error:', err);
+      alert(err.message || 'Failed to update processing');
+    }
+  };
+
+  // Load orders when Orders module is active
+  useEffect(() => {
+    if (activeModule === 'orders') {
+      fetchAllOrders();
+    }
+  }, [activeModule]);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -468,81 +590,207 @@ const AdminDashboard = () => {
     <ProductManagement />
   );
 
-  const renderOrders = () => (
-    <div className="module-content">
-      <h2><FontAwesomeIcon icon={faShoppingCart} /> Order Management</h2>
-      
-      <div className="admin-actions">
-        <div className="filter-group">
-          <select>
-            <option>All Orders</option>
-            <option>Pending</option>
-            <option>Processing</option>
-            <option>Shipped</option>
-            <option>Delivered</option>
-            <option>Cancelled</option>
-          </select>
+  const renderOrders = () => {
+    return (
+      <div className="module-content">
+        <h2><FontAwesomeIcon icon={faShoppingCart} /> Order Management</h2>
+        <div className="admin-actions">
+          <div className="search-box">
+            <input 
+              type="text" 
+              placeholder="Search by Order ID or Customer name" 
+              value={orderQuery}
+              onChange={(e) => setOrderQuery(e.target.value)}
+            />
+            <button onClick={fetchAllOrders}><FontAwesomeIcon icon={faSearch} /></button>
+          </div>
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+            <select
+              className="order-status-filter"
+              value={orderStatusFilter}
+              onChange={(e) => setOrderStatusFilter(e.target.value)}
+              style={{
+                padding: '6px 12px',
+                borderRadius: '4px',
+                border: '1px solid #ccc',
+                fontSize: '1rem',
+                background: '#fff',
+                color: '#333',
+                outline: 'none',
+                minWidth: '120px'
+              }}
+            >
+              <option value="all">All</option>
+              <option value="pending">Pending</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+            </select>
+            <button className="primary-btn" onClick={() => generateOrdersReport()}>
+              <FontAwesomeIcon icon={faFilePdf} /> Download Report
+            </button>
+          </div>
         </div>
-        <div className="search-box">
-          <input type="text" placeholder="Search order #..." />
-          <button>Search</button>
+
+        <div className="admin-section">
+          {ordersLoading ? (
+            <div>Loading orders...</div>
+          ) : (
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Order #</th>
+                  <th>Customer</th>
+                  <th>Status</th>
+                  <th>Email</th>
+                  <th>Phone</th>
+                  <th>Date</th>
+                  <th>Total</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredOrders.length === 0 ? (
+                  <tr><td colSpan="8" className="no-data">No orders</td></tr>
+                ) : (
+                  filteredOrders.map(o => (
+                    <tr key={o._id}>
+                      <td>{o._id?.slice(-8)}</td>
+                      <td>{o.customer?.fullName || '-'}</td>
+                      <td>
+                        <span className={`badge ${o.status}`}>{o.status}</span>
+                      </td>
+                      <td>{o.customer?.email || '-'}</td>
+                      <td>{o.customer?.phone || '-'}</td>
+                      <td>{new Date(o.createdAt).toLocaleString()}</td>
+                      <td>${o.totals?.total?.toFixed(2)}</td>
+                      <td className="action-buttons">
+                        <button
+                          className="view-btn"
+                          title="Details"
+                          onClick={() => { setSelectedOrder(o); setShowOrderModal(true); }}
+                          style={{ marginRight: '8px', background: 'none', boxShadow: 'none' }}
+                        >
+                          <FontAwesomeIcon icon={faEye} />
+                        </button>
+                        <button 
+                          title="Approve" 
+                          onClick={() => updateOrderStatus(o._id, 'approved')}
+                          style={{ 
+                            background: '#2e7d32', color: 'white', border: 'none', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer', marginRight: '6px'
+                          }}
+                        >Approve</button>
+                        <button 
+                          title="Reject" 
+                          onClick={() => updateOrderStatus(o._id, 'rejected')}
+                          style={{ 
+                            background: '#c62828', color: 'white', border: 'none', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer'
+                          }}
+                        >Reject</button>
+                        {o.status === 'approved' && (
+                          <select
+                            value={o.processing?.step || 'none'}
+                            onChange={(e) => updateProcessing(o._id, e.target.value)}
+                            style={{ padding: '6px', borderRadius: '4px', border: '1px solid #ccc' }}
+                          >
+                            <option value="none">Processing...</option>
+                            <option value="preparing">Preparing</option>
+                            <option value="packing">Packing</option>
+                            <option value="waiting_to_delivery">Waiting to delivery</option>
+                            <option value="on_the_way">On the way</option>
+                            <option value="finished">Finished</option>
+                          </select>
+                        )}
+                        
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          )}
         </div>
+
+        {showOrderModal && selectedOrder && (
+          <div className="modal-overlay" onClick={() => setShowOrderModal(false)}>
+            <div className="profile-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <h2><FontAwesomeIcon icon={faInfoCircle} /> Order Details</h2>
+                <button className="close-btn" onClick={() => setShowOrderModal(false)}>&times;</button>
+              </div>
+              <div className="modal-body">
+                <div className="admin-section">
+                  <h3>Order Info</h3>
+                  <div className="data-table" style={{ border: '1px solid #eee', borderRadius: '6px', padding: '12px' }}>
+                    <p><strong>Order ID:</strong> {selectedOrder._id}</p>
+                    <p><strong>Status:</strong> <span className={`badge ${selectedOrder.status}`}>{selectedOrder.status}</span></p>
+                    <p><strong>Date:</strong> {new Date(selectedOrder.createdAt).toLocaleString()}</p>
+                    <p><strong>Total:</strong> ${selectedOrder.totals?.total?.toFixed(2)}</p>
+                  </div>
+                </div>
+
+                <div className="admin-section">
+                  <h3>Customer</h3>
+                  <div className="data-table" style={{ border: '1px solid #eee', borderRadius: '6px', padding: '12px' }}>
+                    <p><strong>Name:</strong> {selectedOrder.customer?.fullName || '-'}</p>
+                    <p><strong>Email:</strong> {selectedOrder.customer?.email || '-'}</p>
+                    <p><strong>Phone:</strong> {selectedOrder.customer?.phone || '-'}</p>
+                  </div>
+                </div>
+
+                <div className="admin-section">
+                  <h3>Shipping Address</h3>
+                  <div className="data-table" style={{ border: '1px solid #eee', borderRadius: '6px', padding: '12px' }}>
+                    <p>{selectedOrder.shippingAddress?.addressLine1}</p>
+                    {selectedOrder.shippingAddress?.addressLine2 && <p>{selectedOrder.shippingAddress.addressLine2}</p>}
+                    <p>{selectedOrder.shippingAddress?.city}, {selectedOrder.shippingAddress?.state} {selectedOrder.shippingAddress?.postalCode}</p>
+                    <p>{selectedOrder.shippingAddress?.country}</p>
+                  </div>
+                </div>
+
+                <div className="admin-section">
+                  <h3>Payment</h3>
+                  <div className="data-table" style={{ border: '1px solid #eee', borderRadius: '6px', padding: '12px' }}>
+                    <p><strong>Method:</strong> {selectedOrder.payment?.method}</p>
+                    <p><strong>Status:</strong> {selectedOrder.payment?.status}</p>
+                    {selectedOrder.payment?.last4 && (
+                      <p><strong>Card Last4:</strong> **** **** **** {selectedOrder.payment.last4}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="admin-section">
+                  <h3>Items</h3>
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Qty</th>
+                        <th>Price</th>
+                        <th>Subtotal</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedOrder.items?.map((it, idx) => (
+                        <tr key={idx}>
+                          <td>{it.name}</td>
+                          <td>{it.quantity}</td>
+                          <td>${it.price?.toFixed(2)}</td>
+                          <td>${(it.price * it.quantity).toFixed(2)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button className="cancel-btn" onClick={() => setShowOrderModal(false)}>Close</button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
-      
-      <div className="admin-section">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Order #</th>
-              <th>Customer</th>
-              <th>Date</th>
-              <th>Total</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>#ORD7823</td>
-              <td>John Smith</td>
-              <td>29 Aug 2025</td>
-              <td>$175.99</td>
-              <td><span className="badge pending">Pending</span></td>
-              <td className="action-buttons">
-                <button className="view-btn" title="View Order"><FontAwesomeIcon icon={faShoppingCart} /></button>
-                <button className="edit-btn" title="Update Status"><FontAwesomeIcon icon={faCog} /></button>
-                <button className="print-btn" title="Print Invoice"><FontAwesomeIcon icon={faClipboardList} /></button>
-              </td>
-            </tr>
-            <tr>
-              <td>#ORD7822</td>
-              <td>Sarah Johnson</td>
-              <td>28 Aug 2025</td>
-              <td>$899.99</td>
-              <td><span className="badge processing">Processing</span></td>
-              <td className="action-buttons">
-                <button className="view-btn" title="View Order"><FontAwesomeIcon icon={faShoppingCart} /></button>
-                <button className="edit-btn" title="Update Status"><FontAwesomeIcon icon={faCog} /></button>
-                <button className="print-btn" title="Print Invoice"><FontAwesomeIcon icon={faClipboardList} /></button>
-              </td>
-            </tr>
-            <tr>
-              <td>#ORD7821</td>
-              <td>Michael Brown</td>
-              <td>27 Aug 2025</td>
-              <td>$249.50</td>
-              <td><span className="badge delivered">Delivered</span></td>
-              <td className="action-buttons">
-                <button className="view-btn" title="View Order"><FontAwesomeIcon icon={faShoppingCart} /></button>
-                <button className="edit-btn" title="Update Status"><FontAwesomeIcon icon={faCog} /></button>
-                <button className="print-btn" title="Print Invoice"><FontAwesomeIcon icon={faClipboardList} /></button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
+    );
+  };
 
   const renderInventory = () => (
     <div className="module-content">

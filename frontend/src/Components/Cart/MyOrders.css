@@ -1,0 +1,87 @@
+.orders-page {
+  background: #f7f7f7;
+  min-height: 100vh;
+  padding: 20px 0;
+}
+
+.orders-container {
+  width: 95%;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.orders-card {
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.orders-card.error {
+  color: #b00020;
+}
+
+.orders-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.order-item {
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.order-header {
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px solid #f0f0f0;
+  padding-bottom: 8px;
+  margin-bottom: 8px;
+}
+
+.order-items {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.order-line {
+  display: flex;
+  justify-content: space-between;
+}
+
+.order-totals {
+  margin-top: 8px;
+}
+
+.progress-steps {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.progress-step {
+  height: 6px;
+  border-radius: 4px;
+  background: #e0e0e0;
+}
+
+.progress-step.active {
+  background: linear-gradient(90deg, #ffcc33 0%, #ff9900 100%);
+}
+
+.total-row {
+  display: flex;
+  justify-content: space-between;
+  margin: 4px 0;
+}
+
+.total-row.total {
+  font-weight: 700;
+}
+
+

@@ -204,6 +204,17 @@
   font-size: 0.95rem;
 }
 
+.login-message {
+  background-color: #f0f7ff;
+  color: #2196F3;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 25px;
+  text-align: center;
+  border-left: 4px solid #2196F3;
+  font-size: 0.95rem;
+}
+
 /* Responsive Design */
 @media (max-width: 992px) {
   .modern-login-container {
