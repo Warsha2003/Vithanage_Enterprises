@@ -51,6 +51,56 @@ const AdminDashboard = () => {
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [profileUpdateMessage, setProfileUpdateMessage] = useState({ type: '', message: '' });
 
+  // User management state
+  const [showUserModal, setShowUserModal] = useState(false);
+  const [showUserViewModal, setShowUserViewModal] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [userMessage, setUserMessage] = useState({ type: '', message: '' });
+  const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [userForm, setUserForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    password: '',
+    isAdmin: false
+  });
+
+  // Admin management state
+  const [admins, setAdmins] = useState([]);
+  const [showAdminModal, setShowAdminModal] = useState(false);
+  const [showAdminViewModal, setShowAdminViewModal] = useState(false);
+  const [editingAdmin, setEditingAdmin] = useState(null);
+  const [selectedAdmin, setSelectedAdmin] = useState(null);
+  const [adminMessage, setAdminMessage] = useState({ type: '', message: '' });
+  const [adminSearchQuery, setAdminSearchQuery] = useState('');
+  const [adminForm, setAdminForm] = useState({
+    name: '',
+    email: '',
+    password: '',
+    role: 'admin'
+  });
+
+  // Product management state
+  const [products, setProducts] = useState([]);
+  const [showProductModal, setShowProductModal] = useState(false);
+  const [showProductViewModal, setShowProductViewModal] = useState(false);
+  const [editingProduct, setEditingProduct] = useState(null);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [productMessage, setProductMessage] = useState({ type: '', message: '' });
+  const [productSearchQuery, setProductSearchQuery] = useState('');
+  const [productForm, setProductForm] = useState({
+    name: '',
+    description: '',
+    price: '',
+    category: '',
+    brand: '',
+    imageUrl: '',
+    stock: '',
+    rating: '',
+    featured: false
+  });
+
   useEffect(() => {
     // Check if user is admin
     const user = JSON.parse(localStorage.getItem('user'));
@@ -64,6 +114,8 @@ const AdminDashboard = () => {
       }));
       // Fetch data for admin
       fetchUsers();
+      fetchAdmins();
+      fetchProducts();
       fetchDashboardStats();
     }
     setLoading(false);
@@ -87,7 +139,7 @@ const AdminDashboard = () => {
   const fetchUsers = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/admin/users', {
+      const response = await fetch('http://localhost:5000/api/users', {
         headers: {
           'x-auth-token': token
         }
@@ -100,6 +152,570 @@ const AdminDashboard = () => {
       }
       
       setUsers(data);
+    } catch (error) {
+      setError(error.message);
+    }
+  };
+
+  // User CRUD functions
+  const handleUserFormChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setUserForm(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+    
+    // Clear messages when user starts typing
+    if (userMessage.message) {
+      setUserMessage({ type: '', message: '' });
+    }
+  };
+
+  const resetUserForm = () => {
+    setUserForm({
+      name: '',
+      email: '',
+      phone: '',
+      password: '',
+      isAdmin: false
+    });
+    setEditingUser(null);
+    setUserMessage({ type: '', message: '' });
+  };
+
+  const viewUser = (user) => {
+    setSelectedUser(user);
+    setShowUserViewModal(true);
+  };
+
+  const editUser = (user) => {
+    setEditingUser(user);
+    setUserForm({
+      name: user.name,
+      email: user.email,
+      phone: user.phone || '',
+      password: '',
+      isAdmin: user.isAdmin
+    });
+    setShowUserModal(true);
+    setShowUserViewModal(false);
+  };
+
+  const saveUser = async () => {
+    try {
+      // Validate form
+      if (!userForm.name.trim() || !userForm.email.trim()) {
+        setUserMessage({ type: 'error', message: 'Name and email are required' });
+        return;
+      }
+
+      if (!editingUser && !userForm.password.trim()) {
+        setUserMessage({ type: 'error', message: 'Password is required for new users' });
+        return;
+      }
+
+      const token = localStorage.getItem('token');
+      const url = editingUser 
+        ? `http://localhost:5000/api/users/${editingUser._id}`
+        : 'http://localhost:5000/api/users';
+      
+      const method = editingUser ? 'PUT' : 'POST';
+      
+      const body = editingUser 
+        ? {
+            name: userForm.name,
+            email: userForm.email,
+            phone: userForm.phone,
+            isAdmin: userForm.isAdmin,
+            ...(userForm.password.trim() && { password: userForm.password })
+          }
+        : userForm;
+
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'x-auth-token': token
+        },
+        body: JSON.stringify(body)
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || `Failed to ${editingUser ? 'update' : 'create'} user`);
+      }
+
+      setUserMessage({ 
+        type: 'success', 
+        message: `User ${editingUser ? 'updated' : 'created'} successfully!` 
+      });
+      
+      // Refresh users list
+      fetchUsers();
+      
+      // Close modal after delay
+      setTimeout(() => {
+        setShowUserModal(false);
+        resetUserForm();
+      }, 1500);
+
+    } catch (error) {
+      setUserMessage({ type: 'error', message: error.message });
+    }
+  };
+
+  const deleteUser = async (userId) => {
+    if (!window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/users/${userId}`, {
+        method: 'DELETE',
+        headers: {
+          'x-auth-token': token
+        }
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to delete user');
+      }
+
+      setUserMessage({ type: 'success', message: 'User deleted successfully!' });
+      
+      // Refresh users list
+      fetchUsers();
+
+      // Clear message after delay
+      setTimeout(() => {
+        setUserMessage({ type: '', message: '' });
+      }, 3000);
+
+    } catch (error) {
+      setUserMessage({ type: 'error', message: error.message });
+    }
+  };
+
+  const searchUsers = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const url = userSearchQuery.trim() 
+        ? `http://localhost:5000/api/users?query=${encodeURIComponent(userSearchQuery.trim())}`
+        : 'http://localhost:5000/api/users';
+
+      const response = await fetch(url, {
+        headers: {
+          'x-auth-token': token
+        }
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to search users');
+      }
+
+      setUsers(data);
+    } catch (error) {
+      setError(error.message);
+    }
+  };
+
+  // Admin CRUD functions
+  const fetchAdmins = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:5000/api/admin/admin-management', {
+        headers: {
+          'x-auth-token': token
+        }
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to fetch admins');
+      }
+      
+      setAdmins(data);
+    } catch (error) {
+      setError(error.message);
+    }
+  };
+
+  const fetchProducts = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:5000/api/products', {
+        headers: {
+          'x-auth-token': token
+        }
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to fetch products');
+      }
+      
+      setProducts(data);
+    } catch (error) {
+      setError(error.message);
+    }
+  };
+
+  const handleAdminFormChange = (e) => {
+    const { name, value } = e.target;
+    setAdminForm(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    
+    // Clear messages when admin starts typing
+    if (adminMessage.message) {
+      setAdminMessage({ type: '', message: '' });
+    }
+  };
+
+  const resetAdminForm = () => {
+    setAdminForm({
+      name: '',
+      email: '',
+      password: '',
+      role: 'admin'
+    });
+    setEditingAdmin(null);
+    setAdminMessage({ type: '', message: '' });
+  };
+
+  const viewAdmin = (admin) => {
+    setSelectedAdmin(admin);
+    setShowAdminViewModal(true);
+  };
+
+  const editAdmin = (admin) => {
+    setEditingAdmin(admin);
+    setAdminForm({
+      name: admin.name,
+      email: admin.email,
+      password: '',
+      role: admin.role
+    });
+    setShowAdminModal(true);
+    setShowAdminViewModal(false);
+  };
+
+  const saveAdmin = async () => {
+    try {
+      // Validate form
+      if (!adminForm.name.trim() || !adminForm.email.trim()) {
+        setAdminMessage({ type: 'error', message: 'Name and email are required' });
+        return;
+      }
+
+      if (!editingAdmin && !adminForm.password.trim()) {
+        setAdminMessage({ type: 'error', message: 'Password is required for new admins' });
+        return;
+      }
+
+      const token = localStorage.getItem('token');
+      const url = editingAdmin 
+        ? `http://localhost:5000/api/admin/admin-management/${editingAdmin._id}`
+        : 'http://localhost:5000/api/admin/admin-management';
+      
+      const method = editingAdmin ? 'PUT' : 'POST';
+      
+      const body = editingAdmin 
+        ? {
+            name: adminForm.name,
+            email: adminForm.email,
+            role: adminForm.role,
+            ...(adminForm.password.trim() && { password: adminForm.password })
+          }
+        : adminForm;
+
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'x-auth-token': token
+        },
+        body: JSON.stringify(body)
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || `Failed to ${editingAdmin ? 'update' : 'create'} admin`);
+      }
+
+      setAdminMessage({ 
+        type: 'success', 
+        message: `Admin ${editingAdmin ? 'updated' : 'created'} successfully!` 
+      });
+      
+      // Refresh admins list
+      fetchAdmins();
+      
+      // Close modal after delay
+      setTimeout(() => {
+        setShowAdminModal(false);
+        resetAdminForm();
+      }, 1500);
+
+    } catch (error) {
+      setAdminMessage({ type: 'error', message: error.message });
+    }
+  };
+
+  const deleteAdmin = async (adminId) => {
+    if (!window.confirm('Are you sure you want to delete this admin? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/admin/admin-management/${adminId}`, {
+        method: 'DELETE',
+        headers: {
+          'x-auth-token': token
+        }
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to delete admin');
+      }
+
+      setAdminMessage({ type: 'success', message: 'Admin deleted successfully!' });
+      
+      // Refresh admins list
+      fetchAdmins();
+
+      // Clear message after delay
+      setTimeout(() => {
+        setAdminMessage({ type: '', message: '' });
+      }, 3000);
+
+    } catch (error) {
+      setAdminMessage({ type: 'error', message: error.message });
+    }
+  };
+
+  const searchAdmins = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const url = adminSearchQuery.trim() 
+        ? `http://localhost:5000/api/admin/admin-management?query=${encodeURIComponent(adminSearchQuery.trim())}`
+        : 'http://localhost:5000/api/admin/admin-management';
+
+      const response = await fetch(url, {
+        headers: {
+          'x-auth-token': token
+        }
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to search admins');
+      }
+
+      setAdmins(data);
+    } catch (error) {
+      setError(error.message);
+    }
+  };
+
+  // Product CRUD functions
+  const handleProductFormChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setProductForm(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+    
+    // Clear messages when user starts typing
+    if (productMessage.message) {
+      setProductMessage({ type: '', message: '' });
+    }
+  };
+
+  const resetProductForm = () => {
+    setProductForm({
+      name: '',
+      description: '',
+      price: '',
+      category: '',
+      brand: '',
+      imageUrl: '',
+      stock: '',
+      rating: '',
+      featured: false
+    });
+    setEditingProduct(null);
+    setProductMessage({ type: '', message: '' });
+  };
+
+  const viewProduct = (product) => {
+    setSelectedProduct(product);
+    setShowProductViewModal(true);
+  };
+
+  const editProduct = (product) => {
+    setEditingProduct(product);
+    setProductForm({
+      name: product.name,
+      description: product.description,
+      price: product.price.toString(),
+      category: product.category,
+      brand: product.brand,
+      imageUrl: product.imageUrl || '',
+      stock: product.stock.toString(),
+      rating: product.rating ? product.rating.toString() : '',
+      featured: product.featured || false
+    });
+    setShowProductModal(true);
+    setShowProductViewModal(false);
+  };
+
+  const saveProduct = async () => {
+    try {
+      // Validate form
+      if (!productForm.name.trim() || !productForm.description.trim() || !productForm.price || !productForm.category.trim() || !productForm.brand.trim() || !productForm.stock) {
+        setProductMessage({ type: 'error', message: 'Name, description, price, category, brand, and stock are required' });
+        return;
+      }
+
+      if (parseFloat(productForm.price) <= 0) {
+        setProductMessage({ type: 'error', message: 'Price must be greater than 0' });
+        return;
+      }
+
+      if (parseInt(productForm.stock) < 0) {
+        setProductMessage({ type: 'error', message: 'Stock cannot be negative' });
+        return;
+      }
+
+      const token = localStorage.getItem('token');
+      const url = editingProduct 
+        ? `http://localhost:5000/api/products/${editingProduct._id}`
+        : 'http://localhost:5000/api/products';
+      
+      const method = editingProduct ? 'PUT' : 'POST';
+      
+      const body = {
+        name: productForm.name,
+        description: productForm.description,
+        price: parseFloat(productForm.price),
+        category: productForm.category,
+        brand: productForm.brand,
+        imageUrl: productForm.imageUrl || '',
+        stock: parseInt(productForm.stock),
+        rating: productForm.rating ? parseFloat(productForm.rating) : undefined,
+        featured: productForm.featured
+      };
+
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'x-auth-token': token
+        },
+        body: JSON.stringify(body)
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || `Failed to ${editingProduct ? 'update' : 'create'} product`);
+      }
+
+      setProductMessage({ 
+        type: 'success', 
+        message: `Product ${editingProduct ? 'updated' : 'created'} successfully!` 
+      });
+      
+      // Refresh products list
+      fetchProducts();
+      
+      // Close modal after delay
+      setTimeout(() => {
+        setShowProductModal(false);
+        resetProductForm();
+      }, 1500);
+
+    } catch (error) {
+      setProductMessage({ type: 'error', message: error.message });
+    }
+  };
+
+  const deleteProduct = async (productId) => {
+    if (!window.confirm('Are you sure you want to delete this product? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/products/${productId}`, {
+        method: 'DELETE',
+        headers: {
+          'x-auth-token': token
+        }
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to delete product');
+      }
+
+      setProductMessage({ type: 'success', message: 'Product deleted successfully!' });
+      
+      // Refresh products list
+      fetchProducts();
+
+      // Clear message after delay
+      setTimeout(() => {
+        setProductMessage({ type: '', message: '' });
+      }, 3000);
+
+    } catch (error) {
+      setProductMessage({ type: 'error', message: error.message });
+    }
+  };
+
+  const searchProducts = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:5000/api/products', {
+        headers: {
+          'x-auth-token': token
+        }
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to search products');
+      }
+
+      // Filter products based on search query
+      const filteredProducts = data.filter(product => {
+        const query = productSearchQuery.toLowerCase().trim();
+        return !query || 
+               product.name.toLowerCase().includes(query) ||
+               product.category.toLowerCase().includes(query) ||
+               product.brand.toLowerCase().includes(query) ||
+               product.description.toLowerCase().includes(query);
+      });
+
+      setProducts(filteredProducts);
     } catch (error) {
       setError(error.message);
     }
@@ -426,6 +1042,8 @@ const AdminDashboard = () => {
         return renderDashboard();
       case 'users':
         return renderUsers();
+      case 'admins':
+        return renderAdmins();
       case 'products':
         return renderProducts();
       case 'orders':
@@ -540,12 +1158,28 @@ const AdminDashboard = () => {
       <h2><FontAwesomeIcon icon={faUsers} /> User Management</h2>
       
       {error && <div className="error-message">{error}</div>}
+      {userMessage.message && (
+        <div className={`message ${userMessage.type}`}>
+          <FontAwesomeIcon icon={userMessage.type === 'success' ? faUsers : faSignOutAlt} />
+          {userMessage.message}
+        </div>
+      )}
       
       <div className="admin-actions">
-        <button className="primary-btn"><FontAwesomeIcon icon={faUsers} /> Add New User</button>
+        <button className="primary-btn" onClick={() => {
+          resetUserForm();
+          setShowUserModal(true);
+        }}>
+          <FontAwesomeIcon icon={faUsers} /> Add New User
+        </button>
         <div className="search-box">
-          <input type="text" placeholder="Search users..." />
-          <button>Search</button>
+          <input 
+            type="text" 
+            placeholder="Search users..." 
+            value={userSearchQuery}
+            onChange={(e) => setUserSearchQuery(e.target.value)}
+          />
+          <button onClick={searchUsers}><FontAwesomeIcon icon={faSearch} /></button>
         </div>
       </div>
       
@@ -556,6 +1190,7 @@ const AdminDashboard = () => {
               <th>Name</th>
               <th>Email</th>
               <th>Role</th>
+              <th>Phone</th>
               <th>Registered</th>
               <th>Actions</th>
             </tr>
@@ -567,27 +1202,677 @@ const AdminDashboard = () => {
                   <td>{user.name}</td>
                   <td>{user.email}</td>
                   <td><span className={user.isAdmin ? 'badge admin' : 'badge user'}>{user.isAdmin ? 'Admin' : 'User'}</span></td>
+                  <td>{user.phone || 'N/A'}</td>
                   <td>{new Date(user.createdAt).toLocaleDateString()}</td>
                   <td className="action-buttons">
-                    <button className="view-btn" title="View Details"><FontAwesomeIcon icon={faUsers} /></button>
-                    <button className="edit-btn" title="Edit User"><FontAwesomeIcon icon={faCog} /></button>
-                    <button className="delete-btn" title="Delete User"><FontAwesomeIcon icon={faSignOutAlt} /></button>
+                    <button className="view-btn" title="View Details" onClick={() => viewUser(user)}>
+                      <FontAwesomeIcon icon={faEye} />
+                    </button>
+                    <button className="edit-btn" title="Edit User" onClick={() => editUser(user)}>
+                      <FontAwesomeIcon icon={faCog} />
+                    </button>
+                    <button className="delete-btn" title="Delete User" onClick={() => deleteUser(user._id)}>
+                      <FontAwesomeIcon icon={faSignOutAlt} />
+                    </button>
                   </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan="5" className="no-data">No users found</td>
+                <td colSpan="6" className="no-data">No users found</td>
               </tr>
             )}
           </tbody>
         </table>
       </div>
+
+      {/* User Modal for Create/Edit */}
+      {showUserModal && (
+        <div className="modal-overlay" onClick={() => setShowUserModal(false)}>
+          <div className="profile-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>
+                <FontAwesomeIcon icon={faUsers} /> 
+                {editingUser ? 'Edit User' : 'Create New User'}
+              </h2>
+              <button className="close-btn" onClick={() => {
+                setShowUserModal(false);
+                resetUserForm();
+              }}>&times;</button>
+            </div>
+            <div className="modal-body">
+              <div className="form-group">
+                <label><FontAwesomeIcon icon={faUsers} /> Name</label>
+                <input 
+                  type="text" 
+                  name="name" 
+                  value={userForm.name} 
+                  onChange={handleUserFormChange}
+                  placeholder="Enter user name" 
+                />
+              </div>
+              <div className="form-group">
+                <label><FontAwesomeIcon icon={faUsers} /> Email</label>
+                <input 
+                  type="email" 
+                  name="email" 
+                  value={userForm.email} 
+                  onChange={handleUserFormChange}
+                  placeholder="Enter email address" 
+                />
+              </div>
+              <div className="form-group">
+                <label><FontAwesomeIcon icon={faUsers} /> Phone</label>
+                <input 
+                  type="tel" 
+                  name="phone" 
+                  value={userForm.phone} 
+                  onChange={handleUserFormChange}
+                  placeholder="Enter phone number" 
+                />
+              </div>
+              {!editingUser && (
+                <div className="form-group">
+                  <label><FontAwesomeIcon icon={faSignOutAlt} /> Password</label>
+                  <input 
+                    type="password" 
+                    name="password" 
+                    value={userForm.password} 
+                    onChange={handleUserFormChange}
+                    placeholder="Enter password" 
+                  />
+                </div>
+              )}
+              <div className="form-group">
+                <label>
+                  <input 
+                    type="checkbox" 
+                    name="isAdmin" 
+                    checked={userForm.isAdmin} 
+                    onChange={handleUserFormChange}
+                  />
+                  <span style={{ marginLeft: '8px' }}>Admin User</span>
+                </label>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="cancel-btn" onClick={() => {
+                setShowUserModal(false);
+                resetUserForm();
+              }}>Cancel</button>
+              <button className="save-btn" onClick={saveUser}>
+                <FontAwesomeIcon icon={faCog} /> {editingUser ? 'Update' : 'Create'} User
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* User View Modal */}
+      {showUserViewModal && selectedUser && (
+        <div className="modal-overlay" onClick={() => setShowUserViewModal(false)}>
+          <div className="profile-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2><FontAwesomeIcon icon={faUsers} /> User Details</h2>
+              <button className="close-btn" onClick={() => setShowUserViewModal(false)}>&times;</button>
+            </div>
+            <div className="modal-body">
+              <div className="user-details">
+                <div className="detail-row">
+                  <strong>Name:</strong> {selectedUser.name}
+                </div>
+                <div className="detail-row">
+                  <strong>Email:</strong> {selectedUser.email}
+                </div>
+                <div className="detail-row">
+                  <strong>Phone:</strong> {selectedUser.phone || 'Not provided'}
+                </div>
+                <div className="detail-row">
+                  <strong>Role:</strong> 
+                  <span className={selectedUser.isAdmin ? 'badge admin' : 'badge user'}>
+                    {selectedUser.isAdmin ? 'Admin' : 'User'}
+                  </span>
+                </div>
+                <div className="detail-row">
+                  <strong>Registered:</strong> {new Date(selectedUser.createdAt).toLocaleString()}
+                </div>
+                {selectedUser.address && (
+                  <div className="detail-row">
+                    <strong>Address:</strong> 
+                    <div>
+                      {selectedUser.address.street && <div>{selectedUser.address.street}</div>}
+                      {selectedUser.address.city && <div>{selectedUser.address.city}, {selectedUser.address.state} {selectedUser.address.postalCode}</div>}
+                      {selectedUser.address.country && <div>{selectedUser.address.country}</div>}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="cancel-btn" onClick={() => setShowUserViewModal(false)}>Close</button>
+              <button className="save-btn" onClick={() => {
+                setShowUserViewModal(false);
+                editUser(selectedUser);
+              }}>
+                <FontAwesomeIcon icon={faCog} /> Edit User
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  const renderAdmins = () => (
+    <div className="module-content">
+      <h2><FontAwesomeIcon icon={faCog} /> Admin Management</h2>
+      
+      {error && <div className="error-message">{error}</div>}
+      {adminMessage.message && (
+        <div className={`message ${adminMessage.type}`}>
+          <FontAwesomeIcon icon={adminMessage.type === 'success' ? faCog : faSignOutAlt} />
+          {adminMessage.message}
+        </div>
+      )}
+      
+      <div className="admin-actions">
+        <button className="primary-btn" onClick={() => {
+          resetAdminForm();
+          setShowAdminModal(true);
+        }}>
+          <FontAwesomeIcon icon={faCog} /> Add New Admin
+        </button>
+        <div className="search-box">
+          <input 
+            type="text" 
+            placeholder="Search admins..." 
+            value={adminSearchQuery}
+            onChange={(e) => setAdminSearchQuery(e.target.value)}
+          />
+          <button onClick={searchAdmins}><FontAwesomeIcon icon={faSearch} /></button>
+        </div>
+      </div>
+      
+      <div className="admin-section">
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Created</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {admins.length > 0 ? (
+              admins.map(admin => (
+                <tr key={admin._id}>
+                  <td>{admin.name}</td>
+                  <td>{admin.email}</td>
+                  <td><span className={admin.role === 'super_admin' ? 'badge admin' : 'badge user'}>{admin.role === 'super_admin' ? 'Super Admin' : 'Admin'}</span></td>
+                  <td>{new Date(admin.createdAt).toLocaleDateString()}</td>
+                  <td className="action-buttons">
+                    <button className="view-btn" title="View Details" onClick={() => viewAdmin(admin)}>
+                      <FontAwesomeIcon icon={faEye} />
+                    </button>
+                    <button className="edit-btn" title="Edit Admin" onClick={() => editAdmin(admin)}>
+                      <FontAwesomeIcon icon={faCog} />
+                    </button>
+                    <button className="delete-btn" title="Delete Admin" onClick={() => deleteAdmin(admin._id)}>
+                      <FontAwesomeIcon icon={faSignOutAlt} />
+                    </button>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="5" className="no-data">No admins found</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Admin Modal for Create/Edit */}
+      {showAdminModal && (
+        <div className="modal-overlay" onClick={() => setShowAdminModal(false)}>
+          <div className="profile-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>
+                <FontAwesomeIcon icon={faCog} /> 
+                {editingAdmin ? 'Edit Admin' : 'Create New Admin'}
+              </h2>
+              <button className="close-btn" onClick={() => {
+                setShowAdminModal(false);
+                resetAdminForm();
+              }}>&times;</button>
+            </div>
+            <div className="modal-body">
+              <div className="form-group">
+                <label><FontAwesomeIcon icon={faCog} /> Name</label>
+                <input 
+                  type="text" 
+                  name="name" 
+                  value={adminForm.name} 
+                  onChange={handleAdminFormChange}
+                  placeholder="Enter admin name" 
+                />
+              </div>
+              <div className="form-group">
+                <label><FontAwesomeIcon icon={faCog} /> Email</label>
+                <input 
+                  type="email" 
+                  name="email" 
+                  value={adminForm.email} 
+                  onChange={handleAdminFormChange}
+                  placeholder="Enter email address" 
+                />
+              </div>
+              {!editingAdmin && (
+                <div className="form-group">
+                  <label><FontAwesomeIcon icon={faSignOutAlt} /> Password</label>
+                  <input 
+                    type="password" 
+                    name="password" 
+                    value={adminForm.password} 
+                    onChange={handleAdminFormChange}
+                    placeholder="Enter password" 
+                  />
+                </div>
+              )}
+              <div className="form-group">
+                <label><FontAwesomeIcon icon={faCog} /> Role</label>
+                <select 
+                  name="role" 
+                  value={adminForm.role} 
+                  onChange={handleAdminFormChange}
+                >
+                  <option value="admin">Admin</option>
+                  <option value="super_admin">Super Admin</option>
+                </select>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="cancel-btn" onClick={() => {
+                setShowAdminModal(false);
+                resetAdminForm();
+              }}>Cancel</button>
+              <button className="save-btn" onClick={saveAdmin}>
+                <FontAwesomeIcon icon={faCog} /> {editingAdmin ? 'Update' : 'Create'} Admin
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Admin View Modal */}
+      {showAdminViewModal && selectedAdmin && (
+        <div className="modal-overlay" onClick={() => setShowAdminViewModal(false)}>
+          <div className="profile-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2><FontAwesomeIcon icon={faCog} /> Admin Details</h2>
+              <button className="close-btn" onClick={() => setShowAdminViewModal(false)}>&times;</button>
+            </div>
+            <div className="modal-body">
+              <div className="user-details">
+                <div className="detail-row">
+                  <strong>Name:</strong> {selectedAdmin.name}
+                </div>
+                <div className="detail-row">
+                  <strong>Email:</strong> {selectedAdmin.email}
+                </div>
+                <div className="detail-row">
+                  <strong>Role:</strong> 
+                  <span className={selectedAdmin.role === 'super_admin' ? 'badge admin' : 'badge user'}>
+                    {selectedAdmin.role === 'super_admin' ? 'Super Admin' : 'Admin'}
+                  </span>
+                </div>
+                <div className="detail-row">
+                  <strong>Created:</strong> {new Date(selectedAdmin.createdAt).toLocaleString()}
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="cancel-btn" onClick={() => setShowAdminViewModal(false)}>Close</button>
+              <button className="save-btn" onClick={() => {
+                setShowAdminViewModal(false);
+                editAdmin(selectedAdmin);
+              }}>
+                <FontAwesomeIcon icon={faCog} /> Edit Admin
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 
   const renderProducts = () => (
-    <ProductManagement />
+    <div className="module-content">
+      <h2><FontAwesomeIcon icon={faBoxOpen} /> Product Management</h2>
+      
+      {error && <div className="error-message">{error}</div>}
+      {productMessage.message && (
+        <div className={`message ${productMessage.type}`}>
+          <FontAwesomeIcon icon={productMessage.type === 'success' ? faBoxOpen : faSignOutAlt} />
+          {productMessage.message}
+        </div>
+      )}
+      
+      <div className="admin-actions">
+        <button className="primary-btn" onClick={() => {
+          resetProductForm();
+          setShowProductModal(true);
+        }}>
+          <FontAwesomeIcon icon={faBoxOpen} /> Add New Product
+        </button>
+        <div className="search-box">
+          <input 
+            type="text" 
+            placeholder="Search products..." 
+            value={productSearchQuery}
+            onChange={(e) => setProductSearchQuery(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && searchProducts()}
+          />
+          <button onClick={searchProducts}><FontAwesomeIcon icon={faSearch} /></button>
+        </div>
+      </div>
+      
+      <div className="admin-section">
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>Image</th>
+              <th>Name</th>
+              <th>Category</th>
+              <th>Brand</th>
+              <th>Price</th>
+              <th>Stock</th>
+              <th>Rating</th>
+              <th>Featured</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {products.length > 0 ? (
+              products.map(product => (
+                <tr key={product._id}>
+                  <td>
+                    {product.imageUrl ? (
+                      <img 
+                        src={product.imageUrl} 
+                        alt={product.name} 
+                        style={{width: '40px', height: '40px', objectFit: 'cover', borderRadius: '4px'}}
+                        onError={(e) => {e.target.style.display = 'none'}}
+                      />
+                    ) : (
+                      <div style={{width: '40px', height: '40px', backgroundColor: '#f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '4px'}}>
+                        <FontAwesomeIcon icon={faBoxOpen} style={{color: '#ccc'}} />
+                      </div>
+                    )}
+                  </td>
+                  <td>{product.name}</td>
+                  <td><span className="badge category">{product.category}</span></td>
+                  <td>{product.brand}</td>
+                  <td>${product.price.toFixed(2)}</td>
+                  <td>
+                    <span className={product.stock < 10 ? 'badge low-stock' : 'badge in-stock'}>
+                      {product.stock}
+                    </span>
+                  </td>
+                  <td>
+                    <div style={{display: 'flex', alignItems: 'center', gap: '2px'}}>
+                      <FontAwesomeIcon icon={faStar} style={{color: '#ffd700'}} />
+                      {product.rating ? product.rating.toFixed(1) : 'N/A'}
+                    </div>
+                  </td>
+                  <td>
+                    {product.featured ? (
+                      <span className="badge featured">Featured</span>
+                    ) : (
+                      <span className="badge regular">Regular</span>
+                    )}
+                  </td>
+                  <td className="action-buttons">
+                    <button className="view-btn" title="View Details" onClick={() => viewProduct(product)}>
+                      <FontAwesomeIcon icon={faEye} />
+                    </button>
+                    <button className="edit-btn" title="Edit Product" onClick={() => editProduct(product)}>
+                      <FontAwesomeIcon icon={faCog} />
+                    </button>
+                    <button className="delete-btn" title="Delete Product" onClick={() => deleteProduct(product._id)}>
+                      <FontAwesomeIcon icon={faSignOutAlt} />
+                    </button>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="9" className="no-data">No products found</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Product Modal for Create/Edit */}
+      {showProductModal && (
+        <div className="modal-overlay" onClick={() => setShowProductModal(false)}>
+          <div className="profile-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>
+                <FontAwesomeIcon icon={faBoxOpen} /> 
+                {editingProduct ? 'Edit Product' : 'Create New Product'}
+              </h2>
+              <button className="close-btn" onClick={() => {
+                setShowProductModal(false);
+                resetProductForm();
+              }}>&times;</button>
+            </div>
+            <div className="modal-body">
+              <div className="form-row">
+                <div className="form-group">
+                  <label><FontAwesomeIcon icon={faBoxOpen} /> Product Name</label>
+                  <input 
+                    type="text" 
+                    name="name" 
+                    value={productForm.name} 
+                    onChange={handleProductFormChange}
+                    placeholder="Enter product name" 
+                  />
+                </div>
+                <div className="form-group">
+                  <label><FontAwesomeIcon icon={faBoxOpen} /> Category</label>
+                  <input 
+                    type="text" 
+                    name="category" 
+                    value={productForm.category} 
+                    onChange={handleProductFormChange}
+                    placeholder="Enter product category" 
+                  />
+                </div>
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label><FontAwesomeIcon icon={faBoxOpen} /> Brand</label>
+                  <input 
+                    type="text" 
+                    name="brand" 
+                    value={productForm.brand} 
+                    onChange={handleProductFormChange}
+                    placeholder="Enter brand name" 
+                  />
+                </div>
+                <div className="form-group">
+                  <label><FontAwesomeIcon icon={faMoneyBillWave} /> Price ($)</label>
+                  <input 
+                    type="number" 
+                    name="price" 
+                    value={productForm.price} 
+                    onChange={handleProductFormChange}
+                    placeholder="0.00"
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
+              </div>
+              <div className="form-group">
+                <label><FontAwesomeIcon icon={faInfoCircle} /> Description</label>
+                <textarea 
+                  name="description" 
+                  value={productForm.description} 
+                  onChange={handleProductFormChange}
+                  placeholder="Enter product description"
+                  rows="3"
+                />
+              </div>
+              <div className="form-group">
+                <label><FontAwesomeIcon icon={faInfoCircle} /> Image URL</label>
+                <input 
+                  type="url" 
+                  name="imageUrl" 
+                  value={productForm.imageUrl} 
+                  onChange={handleProductFormChange}
+                  placeholder="Enter image URL (optional)" 
+                />
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label><FontAwesomeIcon icon={faWarehouse} /> Stock Quantity</label>
+                  <input 
+                    type="number" 
+                    name="stock" 
+                    value={productForm.stock} 
+                    onChange={handleProductFormChange}
+                    placeholder="0"
+                    min="0"
+                  />
+                </div>
+                <div className="form-group">
+                  <label><FontAwesomeIcon icon={faStar} /> Rating (Optional)</label>
+                  <input 
+                    type="number" 
+                    name="rating" 
+                    value={productForm.rating} 
+                    onChange={handleProductFormChange}
+                    placeholder="0.0"
+                    min="0"
+                    max="5"
+                    step="0.1"
+                  />
+                </div>
+              </div>
+              <div className="form-group">
+                <label>
+                  <input 
+                    type="checkbox" 
+                    name="featured" 
+                    checked={productForm.featured} 
+                    onChange={handleProductFormChange}
+                  />
+                  <span style={{ marginLeft: '8px' }}><FontAwesomeIcon icon={faStar} /> Featured Product</span>
+                </label>
+              </div>
+              {productMessage.message && (
+                <div className={`message ${productMessage.type}`}>
+                  {productMessage.message}
+                </div>
+              )}
+            </div>
+            <div className="modal-footer">
+              <button className="cancel-btn" onClick={() => {
+                setShowProductModal(false);
+                resetProductForm();
+              }}>Cancel</button>
+              <button className="save-btn" onClick={saveProduct}>
+                <FontAwesomeIcon icon={faCog} /> {editingProduct ? 'Update' : 'Create'} Product
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Product View Modal */}
+      {showProductViewModal && selectedProduct && (
+        <div className="modal-overlay" onClick={() => setShowProductViewModal(false)}>
+          <div className="profile-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2><FontAwesomeIcon icon={faBoxOpen} /> Product Details</h2>
+              <button className="close-btn" onClick={() => setShowProductViewModal(false)}>&times;</button>
+            </div>
+            <div className="modal-body">
+              <div className="product-details">
+                {selectedProduct.imageUrl && (
+                  <div className="detail-row">
+                    <strong>Image:</strong>
+                    <img 
+                      src={selectedProduct.imageUrl} 
+                      alt={selectedProduct.name} 
+                      style={{maxWidth: '200px', maxHeight: '200px', objectFit: 'cover', borderRadius: '8px', marginTop: '8px'}}
+                    />
+                  </div>
+                )}
+                <div className="detail-row">
+                  <strong>Name:</strong> {selectedProduct.name}
+                </div>
+                <div className="detail-row">
+                  <strong>Description:</strong> {selectedProduct.description}
+                </div>
+                <div className="detail-row">
+                  <strong>Category:</strong> 
+                  <span className="badge category">{selectedProduct.category}</span>
+                </div>
+                <div className="detail-row">
+                  <strong>Brand:</strong> {selectedProduct.brand}
+                </div>
+                <div className="detail-row">
+                  <strong>Price:</strong> <span style={{color: '#2e8b57', fontWeight: 'bold'}}>${selectedProduct.price.toFixed(2)}</span>
+                </div>
+                <div className="detail-row">
+                  <strong>Stock:</strong> 
+                  <span className={selectedProduct.stock < 10 ? 'badge low-stock' : 'badge in-stock'}>
+                    {selectedProduct.stock} units
+                  </span>
+                </div>
+                <div className="detail-row">
+                  <strong>Rating:</strong>
+                  <div style={{display: 'flex', alignItems: 'center', gap: '5px'}}>
+                    <FontAwesomeIcon icon={faStar} style={{color: '#ffd700'}} />
+                    {selectedProduct.rating ? selectedProduct.rating.toFixed(1) : 'Not rated yet'}
+                  </div>
+                </div>
+                <div className="detail-row">
+                  <strong>Status:</strong>
+                  {selectedProduct.featured ? (
+                    <span className="badge featured">Featured Product</span>
+                  ) : (
+                    <span className="badge regular">Regular Product</span>
+                  )}
+                </div>
+                <div className="detail-row">
+                  <strong>Created:</strong> {new Date(selectedProduct.createdAt).toLocaleString()}
+                </div>
+                {selectedProduct.updatedAt && (
+                  <div className="detail-row">
+                    <strong>Last Updated:</strong> {new Date(selectedProduct.updatedAt).toLocaleString()}
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="cancel-btn" onClick={() => setShowProductViewModal(false)}>Close</button>
+              <button className="save-btn" onClick={() => {
+                setShowProductViewModal(false);
+                editProduct(selectedProduct);
+              }}>
+                <FontAwesomeIcon icon={faCog} /> Edit Product
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 
   const renderOrders = () => {
@@ -1111,6 +2396,9 @@ const AdminDashboard = () => {
             </li>
             <li className={activeModule === 'users' ? 'active' : ''} onClick={() => setActiveModule('users')}>
               <FontAwesomeIcon icon={faUsers} /> User Management
+            </li>
+            <li className={activeModule === 'admins' ? 'active' : ''} onClick={() => setActiveModule('admins')}>
+              <FontAwesomeIcon icon={faCog} /> Admin Management
             </li>
             <li className={activeModule === 'products' ? 'active' : ''} onClick={() => setActiveModule('products')}>
               <FontAwesomeIcon icon={faBoxOpen} /> Product Management

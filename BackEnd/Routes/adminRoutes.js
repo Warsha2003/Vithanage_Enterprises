@@ -7,7 +7,15 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { authMiddleware, adminAuthMiddleware } = require('../Controllers/authMiddleware');
 const { adminGetAllOrders, adminUpdateOrderStatus, adminUpdateProcessing } = require('../Controllers/orderController');
-const { getDashboardStats } = require('../Controllers/adminController');
+const { 
+  getDashboardStats,
+  getAllAdmins,
+  getAdminById,
+  createAdmin,
+  updateAdmin,
+  deleteAdmin,
+  searchAdmins
+} = require('../Controllers/adminController');
 
 // JWT Secret
 const JWT_SECRET = 'vithanage_enterprises_secret';
@@ -126,6 +134,13 @@ router.put('/profile', authMiddleware, adminAuthMiddleware, async (req, res) => 
 
 // Get dashboard stats
 router.get('/dashboard-stats', authMiddleware, adminAuthMiddleware, getDashboardStats);
+
+// Admin CRUD management (admin only)
+router.get('/admin-management', authMiddleware, adminAuthMiddleware, searchAdmins);
+router.get('/admin-management/:id', authMiddleware, adminAuthMiddleware, getAdminById);
+router.post('/admin-management', authMiddleware, adminAuthMiddleware, createAdmin);
+router.put('/admin-management/:id', authMiddleware, adminAuthMiddleware, updateAdmin);
+router.delete('/admin-management/:id', authMiddleware, adminAuthMiddleware, deleteAdmin);
 
 // Orders management (admin)
 router.get('/orders', authMiddleware, adminAuthMiddleware, adminGetAllOrders);
