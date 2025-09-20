@@ -8,26 +8,16 @@ const {
   deleteProduct, 
   createSampleProducts 
 } = require('../Controllers/productController');
-const { authMiddleware } = require('../Controllers/authMiddleware');
+const { adminAuthMiddleware } = require('../Controllers/authMiddleware');
 
 // Public routes
-// Get all products
 router.get('/', getAllProducts);
-
-// Create sample products - Must be defined before /:id to avoid conflict
 router.get('/setup/create-samples', createSampleProducts);
-
-// Get product by ID
 router.get('/:id', getProductById);
 
-// Protected routes (admin only)
-// Add a new product
-router.post('/', authMiddleware, addProduct);
-
-// Update a product
-router.put('/:id', authMiddleware, updateProduct);
-
-// Delete a product
-router.delete('/:id', authMiddleware, deleteProduct);
+// Admin routes (only admins can add/edit/delete)
+router.post('/', adminAuthMiddleware, addProduct);
+router.put('/:id', adminAuthMiddleware, updateProduct);
+router.delete('/:id', adminAuthMiddleware, deleteProduct);
 
 module.exports = router;

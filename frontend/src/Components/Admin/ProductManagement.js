@@ -70,9 +70,8 @@ const ProductManagement = () => {
       
       const response = await fetch(url, {
         method,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+        headers: {'Content-Type': 'application/json',
+                   'x-auth-token': token    
         },
         body: JSON.stringify({
           name: formData.name,
