@@ -6,7 +6,10 @@ const JWT_SECRET = 'vithanage_enterprises_secret'; // In production, use environ
 // Authentication middleware for regular users
 const authMiddleware = (req, res, next) => {
   // Get token from header
-  const token = req.header('x-auth-token');
+
+  const authHeader = req.header('Authorization');
+  const token = authHeader && authHeader.split(' ')[1]; // removes "Bearer "
+
   console.log('Auth middleware - Token received:', token ? 'Yes' : 'No');
 
   // Check if no token

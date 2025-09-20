@@ -188,7 +188,7 @@ const ProductManagement = () => {
   
   return (
     <div className="product-management">
-      <h2>Product Management</h2>
+      <h2>Inventory Management</h2>
       
       {error && <div className="error-message">{error}</div>}
       
