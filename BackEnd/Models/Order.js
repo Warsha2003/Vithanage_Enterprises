@@ -16,8 +16,15 @@ const orderSchema = new mongoose.Schema({
   items: [orderItemSchema],
   totals: {
     subtotal: { type: Number, required: true },
+    discount: { type: Number, default: 0 },
     shipping: { type: Number, required: true },
     total: { type: Number, required: true }
+  },
+  promotion: {
+    code: String,
+    promotionId: { type: mongoose.Schema.Types.ObjectId, ref: 'Promotion' },
+    discountAmount: { type: Number, default: 0 },
+    discountType: String
   },
   status: { type: String, enum: ['pending', 'approved', 'rejected', 'cancelled', 'Delivered'], default: 'pending' },
   processing: {

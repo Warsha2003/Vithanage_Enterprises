@@ -4,6 +4,7 @@ import './Home.css';
 
 function Home() {
   const [user, setUser] = useState(null);
+  const [promotions, setPromotions] = useState([]);
   const navigate = useNavigate();
   
   useEffect(() => {
@@ -20,7 +21,22 @@ function Home() {
       localStorage.removeItem('user');
       setUser(null);
     }
+
+    // Fetch active promotions for banner display
+    fetchPromotions();
   }, []);
+
+  const fetchPromotions = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/promotions/active');
+      if (response.ok) {
+        const data = await response.json();
+        setPromotions(data.data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching promotions:', error);
+    }
+  };
   
   const handleShopNowClick = () => {
     // Go directly to products page without checking login
@@ -98,6 +114,22 @@ function Home() {
           </button>
         </div>
       </div>
+
+      {/* Promotional Banner */}
+      {promotions.length > 0 && (
+        <section className="promotions-section">
+          {promotions.slice(0, 2).map(promotion => (
+            <div key={promotion._id} className="promotion-banner">
+              <h3>🎉 {promotion.name}</h3>
+              <p>{promotion.description}</p>
+              <div className="promo-code">
+                Use Code: <strong>{promotion.code}</strong> - Save {promotion.discountValue}
+                {promotion.type === 'percentage' ? '%' : '$'}!
+              </div>
+            </div>
+          ))}
+        </section>
+      )}
 
       {/* Categories Section */}
       <section className="categories-section">

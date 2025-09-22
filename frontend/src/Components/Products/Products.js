@@ -20,6 +20,7 @@ const Products = () => {
   const [userName, setUserName] = useState('Guest');
   const [loading, setLoading] = useState(false);
   const [cartCount, setCartCount] = useState(0);
+  const [promotions, setPromotions] = useState([]);
   const { openCart, addItem } = useCart();
   const navigate = useNavigate();
 
@@ -35,6 +36,9 @@ const Products = () => {
     
     // Fetch cart count
     fetchCartCount();
+    
+    // Fetch active promotions
+    fetchPromotions();
     
     // Fetch products from API
     const fetchProducts = async () => {
@@ -177,6 +181,55 @@ const Products = () => {
       console.error('Error fetching cart count:', error);
       // Keep using the count from localStorage
     }
+  };
+
+  // Fetch active promotions
+  const fetchPromotions = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/promotions/active');
+      if (response.ok) {
+        const data = await response.json();
+        setPromotions(data.data || []);
+      } else {
+        console.error('Failed to fetch promotions');
+        setPromotions([]);
+      }
+    } catch (error) {
+      console.error('Error fetching promotions:', error);
+      setPromotions([]);
+    }
+  };
+
+  // Check if a product has an active promotion
+  const getProductPromotion = (product) => {
+    return promotions.find(promo => {
+      // If promotion applies to all products AND no specific products are selected
+      if (promo.isApplicableToAll && (!promo.applicableProducts || promo.applicableProducts.length === 0)) {
+        return true;
+      }
+      // If promotion has specific products selected, check if this product is included
+      if (promo.applicableProducts && promo.applicableProducts.length > 0) {
+        return promo.applicableProducts.some(p => p._id === product._id);
+      }
+      return false;
+    });
+  };
+
+  // Calculate discounted price
+  const getDiscountedPrice = (product) => {
+    const promotion = getProductPromotion(product);
+    if (!promotion) return product.price;
+
+    if (promotion.type === 'percentage') {
+      const discount = (product.price * promotion.discountValue) / 100;
+      const maxDiscount = promotion.maxDiscountAmount;
+      const finalDiscount = maxDiscount ? Math.min(discount, maxDiscount) : discount;
+      return Math.max(0, product.price - finalDiscount);
+    } else if (promotion.type === 'fixed_amount') {
+      return Math.max(0, product.price - promotion.discountValue);
+    }
+    
+    return product.price;
   };
   
   // Apply filters when any filter changes
@@ -480,9 +533,15 @@ const Products = () => {
                 <div 
                   className="product-image"
                   onClick={() => navigate(`/products/${product._id}`)}
-                  style={{ cursor: 'pointer' }}
+                  style={{ cursor: 'pointer', position: 'relative' }}
                 >
                   <img src={product.imageUrl || 'https://via.placeholder.com/150?text=Product'} alt={product.name} />
+                  {getProductPromotion(product) && (
+                    <div className="promotion-badge">
+                      <FontAwesomeIcon icon={faTag} />
+                      SALE
+                    </div>
+                  )}
                 </div>
                 <div className="product-info">
                   <h4 
@@ -498,7 +557,20 @@ const Products = () => {
                       {product.totalReviews > 0 && ` • ${product.totalReviews} reviews`}
                     </span>
                   </div>
-                  <div className="product-price">${product.price}</div>
+                  <div className="product-price">
+                    {getProductPromotion(product) ? (
+                      <div className="price-with-promotion">
+                        <span className="discounted-price">${getDiscountedPrice(product).toFixed(2)}</span>
+                        <span className="original-price">${product.price}</span>
+                        <span className="discount-percent">
+                          -{getProductPromotion(product).discountValue}
+                          {getProductPromotion(product).type === 'percentage' ? '%' : '$'}
+                        </span>
+                      </div>
+                    ) : (
+                      <span>${product.price}</span>
+                    )}
+                  </div>
                   <div className="product-actions">
                     <button 
                       className="view-details-btn"

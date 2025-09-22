@@ -221,6 +221,12 @@ const MyOrders = () => {
                     </div>
                   )}
                   <div className="total-row"><span>Subtotal</span><span>${order.totals?.subtotal?.toFixed(2)}</span></div>
+                  {order.promotion && (
+                    <div className="total-row promotion-used">
+                      <span>🎉 Promotion "{order.promotion.code}" Applied</span>
+                      <span>-${order.totals?.discount?.toFixed(2) || '0.00'}</span>
+                    </div>
+                  )}
                   <div className="total-row"><span>Shipping</span><span>${order.totals?.shipping?.toFixed(2)}</span></div>
                   <div className="total-row total"><span>Total</span><span>${order.totals?.total?.toFixed(2)}</span></div>
                 </div>

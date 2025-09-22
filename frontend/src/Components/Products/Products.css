@@ -625,3 +625,85 @@
 .product-card:nth-child(4) { animation: fadeIn 0.6s ease-out 0.4s both; }
 .product-card:nth-child(5) { animation: fadeIn 0.6s ease-out 0.5s both; }
 .product-card:nth-child(6) { animation: fadeIn 0.6s ease-out 0.6s both; }
+
+/* Promotion Styles */
+.promotion-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: linear-gradient(45deg, #ff6b6b, #ff4757);
+  color: white;
+  padding: 5px 10px;
+  border-radius: 15px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  animation: pulse 2s infinite;
+  z-index: 2;
+}
+
+.promotion-badge svg {
+  font-size: 0.7rem;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.price-with-promotion {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.discounted-price {
+  font-size: 1.4rem;
+  font-weight: bold;
+  color: #ff4757;
+}
+
+.original-price {
+  font-size: 1rem;
+  text-decoration: line-through;
+  color: #666;
+}
+
+.discount-percent {
+  display: inline-block;
+  background: linear-gradient(45deg, #2ed573, #1dd1a1);
+  color: white;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.8rem;
+  font-weight: bold;
+  width: fit-content;
+}
+
+/* Promotional Banner for Homepage */
+.promotion-banner {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 1rem;
+  margin: 1rem 0;
+  border-radius: 10px;
+  text-align: center;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.promotion-banner h3 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.promotion-banner p {
+  margin: 5px 0 0 0;
+  opacity: 0.9;
+}

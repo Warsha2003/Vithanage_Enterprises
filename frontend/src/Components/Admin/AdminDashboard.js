@@ -5,6 +5,8 @@ import './stat-detail.css';
 import './dashboard-header.css';
 import ProductManagement from './ProductManagement';
 import RefundManagement from './RefundManagement';
+import InventoryManagement from './InventoryManagement';
+import FinancialManagement from './FinancialManagement';
 // Add Font Awesome for icons
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
@@ -2179,158 +2181,10 @@ const AdminDashboard = () => {
   };
 
   const renderInventory = () => (
-    <div className="module-content">
-      <h2><FontAwesomeIcon icon={faWarehouse} /> Inventory Management</h2>
-      
-      <div className="admin-actions">
-        <button className="primary-btn"><FontAwesomeIcon icon={faWarehouse} /> Update Inventory</button>
-        <div className="search-box">
-          <input type="text" placeholder="Search inventory..." />
-          <button>Search</button>
-        </div>
-      </div>
-      
-      <div className="admin-section">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Product</th>
-              <th>SKU</th>
-              <th>Current Stock</th>
-              <th>Status</th>
-              <th>Last Updated</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Smart TV 55"</td>
-              <td>TV-55S-001</td>
-              <td>12</td>
-              <td><span className="badge in-stock">In Stock</span></td>
-              <td>25 Aug 2025</td>
-              <td className="action-buttons">
-                <button className="view-btn" title="View Details"><FontAwesomeIcon icon={faWarehouse} /></button>
-                <button className="edit-btn" title="Update Stock"><FontAwesomeIcon icon={faCog} /></button>
-                <button className="history-btn" title="View History"><FontAwesomeIcon icon={faClipboardList} /></button>
-              </td>
-            </tr>
-            <tr>
-              <td>Microwave Oven</td>
-              <td>MW-001</td>
-              <td>2</td>
-              <td><span className="badge low-stock">Low Stock</span></td>
-              <td>27 Aug 2025</td>
-              <td className="action-buttons">
-                <button className="view-btn" title="View Details"><FontAwesomeIcon icon={faWarehouse} /></button>
-                <button className="edit-btn" title="Update Stock"><FontAwesomeIcon icon={faCog} /></button>
-                <button className="history-btn" title="View History"><FontAwesomeIcon icon={faClipboardList} /></button>
-              </td>
-            </tr>
-            <tr>
-              <td>Refrigerator</td>
-              <td>REF-LG-001</td>
-              <td>5</td>
-              <td><span className="badge in-stock">In Stock</span></td>
-              <td>26 Aug 2025</td>
-              <td className="action-buttons">
-                <button className="view-btn" title="View Details"><FontAwesomeIcon icon={faWarehouse} /></button>
-                <button className="edit-btn" title="Update Stock"><FontAwesomeIcon icon={faCog} /></button>
-                <button className="history-btn" title="View History"><FontAwesomeIcon icon={faClipboardList} /></button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
+    <InventoryManagement />
   );
 
-  const renderFinancial = () => (
-    <div className="module-content">
-      <h2><FontAwesomeIcon icon={faMoneyBillWave} /> Financial & Promotions</h2>
-      
-      <div className="admin-tabs">
-        <button className="tab-btn active">Financial Overview</button>
-        <button className="tab-btn">Promotions</button>
-        <button className="tab-btn">Discount Codes</button>
-      </div>
-      
-      <div className="admin-section">
-        <h3>Financial Summary</h3>
-        
-        <div className="stats-grid">
-          <div className="stat-card">
-            <div className="stat-icon"><FontAwesomeIcon icon={faMoneyBillWave} /></div>
-            <div className="stat-info">
-              <h3>Total Revenue</h3>
-              <p>$12,750.75</p>
-            </div>
-          </div>
-          
-          <div className="stat-card">
-            <div className="stat-icon"><FontAwesomeIcon icon={faChartLine} /></div>
-            <div className="stat-info">
-              <h3>Monthly Sales</h3>
-              <p>$4,580.25</p>
-            </div>
-          </div>
-          
-          <div className="stat-card">
-            <div className="stat-icon"><FontAwesomeIcon icon={faPercent} /></div>
-            <div className="stat-info">
-              <h3>Active Promotions</h3>
-              <p>3</p>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <div className="admin-section">
-        <h3>Active Promotions</h3>
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Promotion</th>
-              <th>Code</th>
-              <th>Discount</th>
-              <th>Start Date</th>
-              <th>End Date</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Summer Sale</td>
-              <td>SUMMER25</td>
-              <td>25%</td>
-              <td>01 Aug 2025</td>
-              <td>31 Aug 2025</td>
-              <td><span className="badge active">Active</span></td>
-              <td className="action-buttons">
-                <button className="view-btn" title="View Details"><FontAwesomeIcon icon={faMoneyBillWave} /></button>
-                <button className="edit-btn" title="Edit Promotion"><FontAwesomeIcon icon={faCog} /></button>
-                <button className="delete-btn" title="End Promotion"><FontAwesomeIcon icon={faSignOutAlt} /></button>
-              </td>
-            </tr>
-            <tr>
-              <td>New Customer</td>
-              <td>WELCOME10</td>
-              <td>10%</td>
-              <td>01 Jan 2025</td>
-              <td>31 Dec 2025</td>
-              <td><span className="badge active">Active</span></td>
-              <td className="action-buttons">
-                <button className="view-btn" title="View Details"><FontAwesomeIcon icon={faMoneyBillWave} /></button>
-                <button className="edit-btn" title="Edit Promotion"><FontAwesomeIcon icon={faCog} /></button>
-                <button className="delete-btn" title="End Promotion"><FontAwesomeIcon icon={faSignOutAlt} /></button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
+  const renderFinancial = () => <FinancialManagement />;
 
   // Review management functions
   const fetchAllReviews = async () => {

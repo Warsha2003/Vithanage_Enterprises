@@ -344,4 +344,28 @@
   }
 }
 
+/* Promotion Styles in Orders */
+.total-row.promotion-used {
+  background: linear-gradient(45deg, #28a745, #20c997);
+  color: white;
+  padding: 10px 15px;
+  border-radius: 8px;
+  margin: 5px 0;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(40, 167, 69, 0.25);
+}
+
+.total-row.promotion-used span {
+  color: white;
+}
+
+.total-row.promotion-used span:first-child {
+  font-size: 0.9rem;
+}
+
+.total-row.promotion-used span:last-child {
+  font-size: 1.1rem;
+  font-weight: bold;
+}
+
 

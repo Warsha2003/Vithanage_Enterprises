@@ -6,7 +6,7 @@ const Product = require('../Models/Product');
 exports.createOrder = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { customer, shippingAddress, payment, items: clientItems, totals } = req.body;
+    const { customer, shippingAddress, payment, items: clientItems, totals, promotion } = req.body;
 
     const user = await User.findById(userId).populate({ path: 'cart.product', select: 'name price' });
     if (!user) return res.status(404).json({ message: 'User not found' });
@@ -34,14 +34,49 @@ exports.createOrder = async (req, res) => {
     // Recalculate totals server-side
     const subtotal = orderItems.reduce((s, it) => s + it.price * it.quantity, 0);
     const shipping = 0;
-    const total = subtotal + shipping;
+    let discount = 0;
+    
+    // Handle promotion if provided
+    let promotionData = null;
+    if (promotion && promotion.code) {
+      try {
+        const Promotion = require('../Models/Promotion');
+        const result = await Promotion.validateCode(promotion.code, userId, subtotal);
+        if (result.valid) {
+          discount = result.discountAmount;
+          promotionData = {
+            code: promotion.code,
+            promotionId: result.promotion._id,
+            discountAmount: discount,
+            discountType: result.promotion.type
+          };
+          
+          // Update promotion usage
+          const promotionDoc = result.promotion;
+          promotionDoc.usageCount += 1;
+          promotionDoc.usedBy.push({
+            user: userId,
+            usedAt: new Date(),
+            orderValue: subtotal,
+            discountApplied: discount
+          });
+          await promotionDoc.save();
+        }
+      } catch (promoError) {
+        console.log('Promotion validation error:', promoError.message);
+        // Continue without promotion if there's an error
+      }
+    }
+    
+    const total = subtotal + shipping - discount;
 
     const last4 = (payment && payment.cardNumber) ? String(payment.cardNumber).slice(-4) : undefined;
 
     const order = await Order.create({
       user: userId,
       items: orderItems,
-      totals: { subtotal, shipping, total },
+      totals: { subtotal, discount, shipping, total },
+      promotion: promotionData,
       shippingAddress: shippingAddress || {},
       customer: customer || {},
       payment: { method: 'card', last4, status: 'paid' },
