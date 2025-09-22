@@ -10,15 +10,13 @@ const JWT_SECRET = 'vithanage_enterprises_secret'; // In production, use environ
 // Get all users (admin only)
 const getAllUsers = async (req, res) => {
   try {
-    // Ensure the requesting user is an admin
-    if (!req.user.isAdmin) {
-      return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
-    }
-
+    // This function is called from admin routes which use adminAuthMiddleware
+    // So we should have req.admin instead of req.user
     const users = await User.find().select('-password');
+    console.log(`Found ${users.length} users in database`);
     res.json(users);
   } catch (error) {
-    console.error(error.message);
+    console.error('Error fetching users:', error.message);
     res.status(500).json({ message: 'Server Error' });
   }
 };
@@ -26,64 +24,60 @@ const getAllUsers = async (req, res) => {
 // Update admin profile
 const updateAdminProfile = async (req, res) => {
   try {
-    // Ensure the requesting user is an admin
-    if (!req.user.isAdmin) {
-      return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
-    }
-
     const { name, email, currentPassword, newPassword } = req.body;
 
-    // Find the admin user
-    const user = await User.findById(req.user.id);
+    // Find the admin in Admin collection
+    const adminId = req.admin.id;
+    const admin = await Admin.findById(adminId);
 
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+    if (!admin) {
+      return res.status(404).json({ message: 'Admin not found' });
     }
 
     // Check if email is unique (if changing email)
-    if (email !== user.email) {
-      const existingUser = await User.findOne({ email });
-      if (existingUser) {
+    if (email !== admin.email) {
+      const existingAdmin = await Admin.findOne({ email });
+      if (existingAdmin) {
         return res.status(400).json({ message: 'Email already in use' });
       }
     }
 
     // Update basic info
-    user.name = name || user.name;
-    user.email = email || user.email;
+    admin.name = name || admin.name;
+    admin.email = email || admin.email;
 
     // Update password if provided
     if (newPassword) {
       // Verify current password
-      const isMatch = await bcrypt.compare(currentPassword, user.password);
+      const isMatch = await admin.comparePassword(currentPassword);
       if (!isMatch) {
         return res.status(400).json({ message: 'Current password is incorrect' });
       }
 
-      // Hash new password
-      const salt = await bcrypt.genSalt(10);
-      user.password = await bcrypt.hash(newPassword, salt);
+      // Password will be hashed by pre-save hook
+      admin.password = newPassword;
     }
 
-    await user.save();
+    await admin.save();
 
-    // Create new JWT token with updated user info
+    // Create new JWT token with updated admin info
     const payload = {
-      user: {
-        id: user.id,
-        isAdmin: user.isAdmin
+      admin: {
+        id: admin.id,
+        role: admin.role
       }
     };
 
-    jwt.sign(payload, JWT_SECRET, { expiresIn: '1h' }, (err, token) => {
+    jwt.sign(payload, JWT_SECRET, { expiresIn: '24h' }, (err, token) => {
       if (err) throw err;
       res.json({
         token,
         user: {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          isAdmin: user.isAdmin
+          id: admin.id,
+          name: admin.name,
+          email: admin.email,
+          isAdmin: true,
+          role: admin.role
         },
         message: 'Profile updated successfully'
       });

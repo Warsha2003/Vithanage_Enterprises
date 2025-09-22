@@ -22,7 +22,11 @@ export const CartProvider = ({ children }) => {
     try {
       if (!token) return;
       const res = await fetch('http://localhost:5000/api/cart', {
-        headers: { 'x-auth-token': token, 'Content-Type': 'application/json' }
+        headers: { 
+          'x-auth-token': token, 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json' 
+        }
       });
       if (res.ok) {
         const data = await res.json();
@@ -53,7 +57,11 @@ export const CartProvider = ({ children }) => {
     try {
       const res = await fetch('http://localhost:5000/api/cart/add', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-auth-token': token },
+        headers: { 
+          'Content-Type': 'application/json', 
+          'x-auth-token': token,
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({ productId, quantity: qty })
       });
       if (res.ok) {
@@ -77,7 +85,11 @@ export const CartProvider = ({ children }) => {
     try {
       const res = await fetch('http://localhost:5000/api/cart/update', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'x-auth-token': token },
+        headers: { 
+          'Content-Type': 'application/json', 
+          'x-auth-token': token,
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({ productId, quantity })
       });
       if (res.ok) {
@@ -101,7 +113,10 @@ export const CartProvider = ({ children }) => {
     try {
       const res = await fetch(`http://localhost:5000/api/cart/remove/${productId}`, {
         method: 'DELETE',
-        headers: { 'x-auth-token': token }
+        headers: { 
+          'x-auth-token': token,
+          'Authorization': `Bearer ${token}`
+        }
       });
       if (res.ok) {
         const data = await res.json();
@@ -124,7 +139,10 @@ export const CartProvider = ({ children }) => {
     try {
       const res = await fetch('http://localhost:5000/api/cart/clear', {
         method: 'DELETE',
-        headers: { 'x-auth-token': token }
+        headers: { 
+          'x-auth-token': token,
+          'Authorization': `Bearer ${token}`
+        }
       });
       if (res.ok) {
         setItems([]);

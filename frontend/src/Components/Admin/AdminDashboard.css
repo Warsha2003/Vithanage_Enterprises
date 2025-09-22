@@ -699,23 +699,51 @@
 }
 
 /* Data Tables */
+.table-responsive {
+  overflow-x: auto;
+  margin-top: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
 .data-table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 20px;
+  min-width: 800px;
+  font-size: 0.9rem;
 }
 
 .data-table th, 
 .data-table td {
-  padding: 15px;
+  padding: 10px 8px;
   text-align: left;
   border-bottom: 1px solid #eee;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 150px;
 }
 
 .data-table th {
   background-color: #f7f7f7;
   font-weight: 600;
-  color: #555;
+  color: #555 !important;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.data-table td {
+  color: #333 !important;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.data-table td .badge {
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-weight: 600;
 }
 
 .data-table tr:hover {
@@ -724,24 +752,26 @@
 
 .action-buttons {
   display: flex;
-  gap: 8px;
+  gap: 4px;
+  flex-wrap: wrap;
+  min-width: 120px;
 }
 
 .action-buttons button {
-  min-width: 36px;
-  height: 36px;
-  padding: 0 10px;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 6px;
   border: none;
-  border-radius: 6px;
+  border-radius: 4px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.9rem;
-  font-weight: 600;
-  letter-spacing: 0.2px;
-  transition: transform 0.12s ease, box-shadow 0.2s ease, background-color 0.2s ease, opacity 0.2s ease;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.1px;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
 .view-btn {
@@ -1154,6 +1184,124 @@
 
 .product-details .detail-row:last-child {
   border-bottom: none;
+}
+
+/* Responsive Design for Laptop Screens */
+@media screen and (max-width: 1400px) {
+  .main-content {
+    padding: 15px 10px;
+  }
+  
+  .data-table {
+    font-size: 0.85rem;
+  }
+  
+  .data-table th,
+  .data-table td {
+    padding: 8px 6px;
+    max-width: 120px;
+  }
+  
+  .action-buttons button {
+    min-width: 24px;
+    height: 24px;
+    font-size: 0.7rem;
+    padding: 0 4px;
+  }
+  
+  .stats-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+  
+  .stat-card {
+    padding: 12px;
+  }
+}
+
+@media screen and (max-width: 1200px) {
+  .admin-dashboard {
+    font-size: 0.9rem;
+  }
+  
+  .data-table {
+    font-size: 0.8rem;
+    min-width: 600px;
+  }
+  
+  .data-table th,
+  .data-table td {
+    padding: 6px 4px;
+    max-width: 80px;
+    font-size: 0.75rem;
+  }
+  
+  .data-table th:first-child,
+  .data-table td:first-child {
+    max-width: 60px;
+  }
+  
+  .data-table th:nth-child(2),
+  .data-table td:nth-child(2) {
+    max-width: 90px;
+  }
+  
+  .data-table th:last-child,
+  .data-table td:last-child {
+    max-width: 120px;
+  }
+  
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .action-buttons {
+    gap: 2px;
+    min-width: 80px;
+    flex-direction: column;
+  }
+  
+  .action-buttons button {
+    min-width: 20px;
+    height: 20px;
+    font-size: 0.6rem;
+    margin: 1px 0;
+  }
+  
+  .badge {
+    font-size: 0.6rem;
+    padding: 2px 4px;
+  }
+}
+
+@media screen and (max-width: 992px) {
+  .table-responsive {
+    border-radius: 0;
+    margin: 10px 0;
+  }
+  
+  .data-table {
+    min-width: 100%;
+    font-size: 0.75rem;
+  }
+  
+  .data-table th,
+  .data-table td {
+    padding: 4px 2px;
+    max-width: 60px;
+    font-size: 0.7rem;
+  }
+  
+  .action-buttons {
+    min-width: 60px;
+  }
+  
+  .action-buttons button {
+    min-width: 18px;
+    height: 18px;
+    font-size: 0.5rem;
+    padding: 0 2px;
+  }
 }
 
 /* Form row styling for better layout */

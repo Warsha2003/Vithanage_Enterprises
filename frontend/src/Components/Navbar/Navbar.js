@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faShoppingCart, faUser, faSignOutAlt, faSignInAlt, faSearch } from '@fortawesome/free-solid-svg-icons';
+import { useCart } from '../Cart/CartContext';
 import './Navbar.css';
 
 function Navbar() {
   const [user, setUser] = useState(null);
   const [cartCount, setCartCount] = useState(0);
   const navigate = useNavigate();
+  const { openCart, totals } = useCart();
 
   useEffect(() => {
     // Check if user is logged in
@@ -22,41 +24,36 @@ function Navbar() {
         handleLogout();
       }
     }
+  }, []);
 
-    // Get cart count from localStorage - use the same key as Products.js (userCart)
-    const updateCartCountFromStorage = () => {
-      const savedCart = localStorage.getItem('userCart') || localStorage.getItem('cart') || '[]';
-      try {
-        const parsedCart = JSON.parse(savedCart);
-        if (Array.isArray(parsedCart)) {
-          setCartCount(parsedCart.length);
-        } else if (parsedCart.items && Array.isArray(parsedCart.items)) {
-          setCartCount(parsedCart.items.length);
+  // Update cart count from Cart context
+  useEffect(() => {
+    setCartCount(totals.count || 0);
+  }, [totals.count]);
+
+  // Listen for auth changes
+  useEffect(() => {
+    const handleAuthChange = () => {
+      const storedUser = localStorage.getItem('user') || sessionStorage.getItem('user');
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      
+      if (storedUser && token) {
+        try {
+          setUser(JSON.parse(storedUser));
+        } catch (error) {
+          console.error("Failed to parse user data", error);
+          handleLogout();
         }
-      } catch (error) {
-        console.error("Failed to parse cart data", error);
+      } else {
+        setUser(null);
         setCartCount(0);
       }
     };
 
-    // Initial cart count
-    updateCartCountFromStorage();
-
-    // Listen for cart updates
-    const handleStorageChange = () => {
-      updateCartCountFromStorage();
-    };
-
-    const handleCartUpdated = (event) => {
-      updateCartCountFromStorage();
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    document.addEventListener('cartUpdated', handleCartUpdated);
+    window.addEventListener('auth-change', handleAuthChange);
     
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      document.removeEventListener('cartUpdated', handleCartUpdated);
+      window.removeEventListener('auth-change', handleAuthChange);
     };
   }, []);
 
@@ -146,13 +143,17 @@ function Navbar() {
           alignItems: 'center'
         }}>
           {/* Cart icon with count */}
-          <Link to="/cart" className="nav-icon cart-icon-wrapper" style={{ 
-            position: 'relative', 
-            marginRight: '20px',
-            display: 'flex',
-            alignItems: 'center',
-            cursor: 'pointer'
-          }}>
+          <div 
+            className="nav-icon cart-icon-wrapper" 
+            onClick={() => { if (user) openCart(); else navigate('/login'); }}
+            style={{ 
+              position: 'relative', 
+              marginRight: '20px',
+              display: 'flex',
+              alignItems: 'center',
+              cursor: 'pointer'
+            }}
+          >
             <FontAwesomeIcon icon={faShoppingCart} style={{ 
               color: 'white', 
               fontSize: '22px' 
@@ -178,7 +179,7 @@ function Navbar() {
                 {cartCount}
               </span>
             )}
-          </Link>
+          </div>
           
           {/* User menu or login */}
           {user ? (
@@ -317,6 +318,19 @@ function Navbar() {
           }}>
             My Orders
           </Link>
+          {user && (
+            <Link to="/my-reviews" className="nav-link" style={{ 
+              color: 'white',
+              padding: '0 15px',
+              height: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              borderBottom: '3px solid transparent',
+              transition: 'all 0.2s'
+            }}>
+              My Reviews
+            </Link>
+          )}
           {user?.isAdmin && (
             <Link to="/admin" className="nav-link" style={{ 
               color: 'white',

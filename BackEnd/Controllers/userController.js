@@ -5,7 +5,9 @@ const bcrypt = require('bcryptjs');
 const getAllUsers = async (req, res) => {
   try {
     // Check if user is admin (assuming admin check is done in middleware)
+    console.log('Getting all users...');
     const users = await User.find().select('-password').sort({ createdAt: -1 });
+    console.log(`Found ${users.length} users in userController`);
     res.json(users);
   } catch (error) {
     console.error('Get all users error:', error.message);

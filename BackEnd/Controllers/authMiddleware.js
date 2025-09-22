@@ -5,10 +5,14 @@ const JWT_SECRET = 'vithanage_enterprises_secret'; // In production, use environ
 
 // Authentication middleware for regular users
 const authMiddleware = (req, res, next) => {
-  // Get token from header
-
+  // Get token from header - check both x-auth-token and Authorization Bearer
   const authHeader = req.header('Authorization');
-  const token = authHeader && authHeader.split(' ')[1]; // removes "Bearer "
+  const xAuthToken = req.header('x-auth-token');
+  
+  let token = xAuthToken; // First check x-auth-token (for compatibility)
+  if (!token && authHeader) {
+    token = authHeader.split(' ')[1]; // Then check Bearer token
+  }
 
   console.log('Auth middleware - Token received:', token ? 'Yes' : 'No');
 
@@ -49,29 +53,43 @@ const authMiddleware = (req, res, next) => {
 
 // Admin authentication middleware
 const adminAuthMiddleware = (req, res, next) => {
-  // Get token from header
-  const token = req.header('x-auth-token');
+  // Get token from header - check both x-auth-token and Authorization Bearer
+  const authHeader = req.header('Authorization');
+  const xAuthToken = req.header('x-auth-token');
+  
+  let token = xAuthToken; // First check x-auth-token (for compatibility)
+  if (!token && authHeader) {
+    token = authHeader.split(' ')[1]; // Then check Bearer token
+  }
+
+  console.log('Admin auth middleware - Token received:', token ? 'Yes' : 'No');
 
   // Check if no token
   if (!token) {
+    console.log('Admin auth middleware - No token provided');
     return res.status(401).json({ message: 'No token, authorization denied' });
   }
 
   // Verify token
   try {
+    console.log('Admin auth middleware - Verifying token...');
     const decoded = jwt.verify(token, JWT_SECRET);
+    console.log('Admin auth middleware - Token verified, payload:', JSON.stringify(decoded));
     
     // Check if it's an admin token
     if (decoded.admin) {
+      console.log('Admin auth middleware - Admin token valid for ID:', decoded.admin.id);
       req.admin = decoded.admin;
       return next();
     }
     
     // If it's a user token, deny access
     if (decoded.user) {
+      console.log('Admin auth middleware - User token provided, access denied');
       return res.status(403).json({ message: 'Access denied. Admin only.' });
     }
     
+    console.log('Admin auth middleware - Invalid token structure');
     return res.status(401).json({ message: 'Invalid token structure' });
   } catch (error) {
     console.error('Admin token verification error:', error.message);

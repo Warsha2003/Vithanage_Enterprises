@@ -12,18 +12,18 @@ const {
 
 // All routes require admin authentication
 // GET /api/users - Get all users with optional search
-router.get('/', authMiddleware, adminAuthMiddleware, searchUsers);
+router.get('/', adminAuthMiddleware, searchUsers);
 
 // GET /api/users/:id - Get single user by ID
-router.get('/:id', authMiddleware, adminAuthMiddleware, getUserById);
+router.get('/:id', adminAuthMiddleware, getUserById);
 
 // POST /api/users - Create new user
-router.post('/', authMiddleware, adminAuthMiddleware, createUser);
+router.post('/', adminAuthMiddleware, createUser);
 
 // PUT /api/users/:id - Update user
-router.put('/:id', authMiddleware, adminAuthMiddleware, updateUser);
+router.put('/:id', adminAuthMiddleware, updateUser);
 
 // DELETE /api/users/:id - Delete user
-router.delete('/:id', authMiddleware, adminAuthMiddleware, deleteUser);
+router.delete('/:id', adminAuthMiddleware, deleteUser);
 
 module.exports = router;

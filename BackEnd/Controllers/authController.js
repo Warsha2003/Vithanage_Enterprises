@@ -8,6 +8,7 @@ const JWT_SECRET = 'vithanage_enterprises_secret'; // In production, use environ
 // Register user
 const register = async (req, res) => {
   try {
+    console.log('Registration attempt received:', req.body);
     const { name, email, password, phone, address } = req.body;
 
     // Check if user already exists (in both User and Admin collections)
@@ -28,6 +29,7 @@ const register = async (req, res) => {
     });
 
     await user.save();
+    console.log('User saved successfully:', user.email);
 
     // Create JWT token
     const payload = {
@@ -39,6 +41,7 @@ const register = async (req, res) => {
 
     jwt.sign(payload, JWT_SECRET, { expiresIn: '24h' }, (err, token) => {
       if (err) throw err;
+      console.log('Registration successful, sending response');
       res.status(201).json({ 
         token,
         user: {

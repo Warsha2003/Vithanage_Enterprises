@@ -55,11 +55,12 @@ const Login = () => {
       
       if (guestCart.items && guestCart.items.length > 0) {
         // Call API to transfer cart items to the user's cart
-        const response = await fetch('/api/cart/transfer', {
+        const response = await fetch('http://localhost:5000/api/cart/transfer', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'x-auth-token': token
+            'x-auth-token': token,
+            'Authorization': `Bearer ${token}`
           },
           body: JSON.stringify({ items: guestCart.items })
         });

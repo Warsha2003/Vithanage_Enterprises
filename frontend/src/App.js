@@ -7,11 +7,13 @@ import Login from './Components/User/Login';
 import Footer from './Components/Footer/Footer';
 import AdminDashboard from './Components/Admin/AdminDashboard';
 import Products from './Components/Products/Products';
+import ProductDetail from './Components/Products/ProductDetail';
 import Cart from './Components/Cart/Cart';
 import { CartProvider } from './Components/Cart/CartContext';
 import CartDrawer from './Components/Cart/CartDrawer';
 import PlaceOrder from './Components/Cart/PlaceOrder';
 import MyOrders from './Components/Cart/MyOrders';
+import MyReviewsPage from './Components/User/MyReviewsPage';
 
 // Direct approach to protected routes without state management
 // eslint-disable-next-line no-unused-vars
@@ -102,10 +104,12 @@ function App() {
             />
             {/* Make products page accessible without login */}
             <Route path="/products" element={<Products />} />
+            <Route path="/products/:id" element={<ProductDetail />} />
             {/* Make cart accessible without login, checking will happen inside */}
             <Route path="/cart" element={<Cart />} />
             <Route path="/place-order" element={<PlaceOrder />} />
             <Route path="/my-orders" element={<MyOrders />} />
+            <Route path="/my-reviews" element={<MyReviewsPage />} />
             {/* Catch-all redirect to home */}
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>

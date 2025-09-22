@@ -66,6 +66,22 @@ const AdminDashboard = () => {
     isAdmin: false
   });
 
+  // Review management state
+  const [reviews, setReviews] = useState([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [reviewSearchQuery, setReviewSearchQuery] = useState('');
+  const [reviewRatingFilter, setReviewRatingFilter] = useState('all');
+  const [reviewApprovalFilter, setReviewApprovalFilter] = useState('all');
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [selectedReview, setSelectedReview] = useState(null);
+  const [adminResponse, setAdminResponse] = useState('');
+  const [reviewStats, setReviewStats] = useState({
+    totalReviews: 0,
+    averageRating: 0,
+    pendingReviews: 0,
+    flaggedReviews: 0
+  });
+
   // Admin management state
   const [admins, setAdmins] = useState([]);
   const [showAdminModal, setShowAdminModal] = useState(false);
@@ -139,20 +155,27 @@ const AdminDashboard = () => {
   const fetchUsers = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/users', {
+      console.log('Fetching users with token:', token ? 'Token present' : 'No token');
+      
+      const response = await fetch('http://localhost:5000/api/admin/users', {
         headers: {
-          'x-auth-token': token
+          'x-auth-token': token,
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
       });
       
       const data = await response.json();
+      console.log('Users API response:', response.status, data);
       
       if (!response.ok) {
         throw new Error(data.message || 'Failed to fetch users');
       }
       
+      console.log(`Found ${data.length} users`);
       setUsers(data);
     } catch (error) {
+      console.error('Error fetching users:', error);
       setError(error.message);
     }
   };
@@ -329,20 +352,27 @@ const AdminDashboard = () => {
   const fetchAdmins = async () => {
     try {
       const token = localStorage.getItem('token');
+      console.log('Fetching admins with token:', token ? 'Token present' : 'No token');
+      
       const response = await fetch('http://localhost:5000/api/admin/admin-management', {
         headers: {
-          'x-auth-token': token
+          'x-auth-token': token,
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
       });
       
       const data = await response.json();
+      console.log('Admins API response:', response.status, data);
       
       if (!response.ok) {
         throw new Error(data.message || 'Failed to fetch admins');
       }
       
+      console.log(`Found ${data.length} admins`);
       setAdmins(data);
     } catch (error) {
+      console.error('Error fetching admins:', error);
       setError(error.message);
     }
   };
@@ -350,20 +380,27 @@ const AdminDashboard = () => {
   const fetchProducts = async () => {
     try {
       const token = localStorage.getItem('token');
+      console.log('Fetching products with token:', token ? 'Token present' : 'No token');
+      
       const response = await fetch('http://localhost:5000/api/products', {
         headers: {
-          'x-auth-token': token
+          'x-auth-token': token,
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
       });
       
       const data = await response.json();
+      console.log('Products API response:', response.status, data);
       
       if (!response.ok) {
         throw new Error(data.message || 'Failed to fetch products');
       }
       
+      console.log(`Found ${data.length} products`);
       setProducts(data);
     } catch (error) {
+      console.error('Error fetching products:', error);
       setError(error.message);
     }
   };
@@ -892,6 +929,13 @@ const AdminDashboard = () => {
     }
   }, [activeModule]);
 
+  // Load reviews when Reviews module is active
+  useEffect(() => {
+    if (activeModule === 'reviews') {
+      fetchAllReviews();
+    }
+  }, [activeModule]);
+
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
@@ -1107,7 +1151,7 @@ const AdminDashboard = () => {
           <div className="stat-icon"><FontAwesomeIcon icon={faMoneyBillWave} /></div>
           <div className="stat-info">
             <h3>Total Revenue</h3>
-            <p>${stats.totalRevenue.toFixed(2)}</p>
+            <p>${(stats.totalRevenue || 0).toFixed(2)}</p>
           </div>
         </div>
       </div>
@@ -1920,7 +1964,8 @@ const AdminDashboard = () => {
           {ordersLoading ? (
             <div>Loading orders...</div>
           ) : (
-            <table className="data-table">
+            <div className="table-responsive">
+              <table className="data-table">
               <thead>
                 <tr>
                   <th>Order #</th>
@@ -1992,6 +2037,7 @@ const AdminDashboard = () => {
                 )}
               </tbody>
             </table>
+            </div>
           )}
         </div>
 
@@ -2231,77 +2277,418 @@ const AdminDashboard = () => {
     </div>
   );
 
+  // Review management functions
+  const fetchAllReviews = async () => {
+    try {
+      setReviewsLoading(true);
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:5000/api/admin/reviews', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to fetch reviews');
+      }
+      
+      console.log('Reviews API response:', data);
+      
+      // Handle the correct response structure from adminReviewController
+      if (data.success && data.data) {
+        setReviews(data.data.reviews || []);
+        setReviewStats({
+          totalReviews: data.data.stats?.totalReviews || 0,
+          averageRating: data.data.stats?.averageRating || 0,
+          pendingReviews: data.data.stats?.pendingReviews || 0,
+          flaggedReviews: data.data.stats?.reportedReviews || 0
+        });
+      } else {
+        setReviews([]);
+        setReviewStats({
+          totalReviews: 0,
+          averageRating: 0,
+          pendingReviews: 0,
+          flaggedReviews: 0
+        });
+      }
+      
+    } catch (error) {
+      console.error('Error fetching reviews:', error);
+      setReviews([]);
+      setReviewStats({
+        totalReviews: 0,
+        averageRating: 0,
+        pendingReviews: 0,
+        flaggedReviews: 0
+      });
+    } finally {
+      setReviewsLoading(false);
+    }
+  };
+
+  const fetchReviewStats = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:5000/api/admin/reviews/analytics', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      const data = await response.json();
+      if (response.ok && data.success) {
+        setReviewStats(data.data || {});
+      }
+    } catch (error) {
+      console.error('Error fetching review stats:', error);
+    }
+  };
+
+  const updateReviewApproval = async (reviewId, approved) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/admin/reviews/${reviewId}/approval`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ approved })
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to update review approval');
+      }
+
+      fetchAllReviews(); // Refresh reviews
+    } catch (error) {
+      console.error('Error updating review approval:', error);
+      alert(error.message || 'Failed to update review');
+    }
+  };
+
+  const addAdminResponse = async (reviewId, response) => {
+    try {
+      const token = localStorage.getItem('token');
+      const responseData = await fetch(`http://localhost:5000/api/admin/reviews/${reviewId}/response`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ response })
+      });
+
+      const data = await responseData.json();
+      if (!responseData.ok) {
+        throw new Error(data.message || 'Failed to add admin response');
+      }
+
+      setAdminResponse('');
+      setShowReviewModal(false);
+      fetchAllReviews(); // Refresh reviews
+    } catch (error) {
+      console.error('Error adding admin response:', error);
+      alert(error.message || 'Failed to add response');
+    }
+  };
+
+  const deleteReview = async (reviewId) => {
+    if (!window.confirm('Are you sure you want to delete this review?')) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/admin/reviews/${reviewId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to delete review');
+      }
+
+      fetchAllReviews(); // Refresh reviews
+    } catch (error) {
+      console.error('Error deleting review:', error);
+      alert(error.message || 'Failed to delete review');
+    }
+  };
+
+  // Filter reviews based on search and filters
+  const filteredReviews = (reviews || []).filter(review => {
+    const matchesSearch = !reviewSearchQuery || 
+      review.product?.name?.toLowerCase().includes(reviewSearchQuery.toLowerCase()) ||
+      review.user?.name?.toLowerCase().includes(reviewSearchQuery.toLowerCase());
+    
+    const matchesRating = reviewRatingFilter === 'all' || 
+      review.rating.toString() === reviewRatingFilter;
+    
+    const matchesApproval = reviewApprovalFilter === 'all' ||
+      (reviewApprovalFilter === 'approved' && review.isApproved) ||
+      (reviewApprovalFilter === 'pending' && !review.isApproved);
+
+    return matchesSearch && matchesRating && matchesApproval;
+  });
+
+  const renderStars = (rating) => {
+    return Array.from({ length: 5 }, (_, i) => (
+      <span key={i} style={{ color: i < rating ? '#ffd700' : '#ddd' }}>★</span>
+    ));
+  };
+
   const renderReviews = () => (
     <div className="module-content">
-      <h2><FontAwesomeIcon icon={faStar} /> Product Reviews & Ratings</h2>
+      <h2><FontAwesomeIcon icon={faStar} /> Review Management</h2>
       
+      {/* Review Stats */}
+      <div className="stats-grid" style={{ marginBottom: '2rem' }}>
+        <div className="stat-card">
+          <div className="stat-icon"><FontAwesomeIcon icon={faStar} /></div>
+          <div className="stat-info">
+            <h3>Total Reviews</h3>
+            <p>{reviewStats.totalReviews}</p>
+          </div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-icon"><FontAwesomeIcon icon={faStar} /></div>
+          <div className="stat-info">
+            <h3>Average Rating</h3>
+            <p>{(reviewStats.averageRating || 0).toFixed(1)}</p>
+          </div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-icon"><FontAwesomeIcon icon={faCog} /></div>
+          <div className="stat-info">
+            <h3>Pending Approval</h3>
+            <p>{reviewStats.pendingReviews}</p>
+          </div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-icon"><FontAwesomeIcon icon={faExchangeAlt} /></div>
+          <div className="stat-info">
+            <h3>Flagged Reviews</h3>
+            <p>{reviewStats.flaggedReviews}</p>
+          </div>
+        </div>
+      </div>
+
       <div className="admin-actions">
         <div className="filter-group">
-          <select>
-            <option>All Reviews</option>
-            <option>5 Star</option>
-            <option>4 Star</option>
-            <option>3 Star</option>
-            <option>2 Star</option>
-            <option>1 Star</option>
+          <select 
+            value={reviewRatingFilter} 
+            onChange={(e) => setReviewRatingFilter(e.target.value)}
+          >
+            <option value="all">All Ratings</option>
+            <option value="5">5 Stars</option>
+            <option value="4">4 Stars</option>
+            <option value="3">3 Stars</option>
+            <option value="2">2 Stars</option>
+            <option value="1">1 Star</option>
+          </select>
+          <select 
+            value={reviewApprovalFilter} 
+            onChange={(e) => setReviewApprovalFilter(e.target.value)}
+          >
+            <option value="all">All Reviews</option>
+            <option value="approved">Approved</option>
+            <option value="pending">Pending Approval</option>
           </select>
         </div>
         <div className="search-box">
-          <input type="text" placeholder="Search product or user..." />
-          <button>Search</button>
+          <input 
+            type="text" 
+            placeholder="Search product or customer..." 
+            value={reviewSearchQuery}
+            onChange={(e) => setReviewSearchQuery(e.target.value)}
+          />
+          <button onClick={fetchAllReviews}>
+            <FontAwesomeIcon icon={faSearch} />
+          </button>
         </div>
       </div>
       
       <div className="admin-section">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Product</th>
-              <th>Customer</th>
-              <th>Rating</th>
-              <th>Review</th>
-              <th>Date</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Smart TV 55"</td>
-              <td>John Smith</td>
-              <td>
-                <div className="star-rating">
-                  <span className="stars">★★★★☆</span>
-                  <span className="rating-text">4/5</span>
-                </div>
-              </td>
-              <td className="review-text">Great TV, excellent picture quality but the smart features are a bit slow.</td>
-              <td>25 Aug 2025</td>
-              <td className="action-buttons">
-                <button className="view-btn" title="View Full Review"><FontAwesomeIcon icon={faStar} /></button>
-                <button className="reply-btn" title="Reply to Review"><FontAwesomeIcon icon={faCog} /></button>
-                <button className="delete-btn" title="Delete Review"><FontAwesomeIcon icon={faSignOutAlt} /></button>
-              </td>
-            </tr>
-            <tr>
-              <td>Microwave Oven</td>
-              <td>Sarah Johnson</td>
-              <td>
-                <div className="star-rating">
-                  <span className="stars">★★★★★</span>
-                  <span className="rating-text">5/5</span>
-                </div>
-              </td>
-              <td className="review-text">Absolutely love this microwave! It's perfect for my needs.</td>
-              <td>27 Aug 2025</td>
-              <td className="action-buttons">
-                <button className="view-btn" title="View Full Review"><FontAwesomeIcon icon={faStar} /></button>
-                <button className="reply-btn" title="Reply to Review"><FontAwesomeIcon icon={faCog} /></button>
-                <button className="delete-btn" title="Delete Review"><FontAwesomeIcon icon={faSignOutAlt} /></button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        {reviewsLoading ? (
+          <div>Loading reviews...</div>
+        ) : (
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>Customer</th>
+                <th>Rating</th>
+                <th>Review</th>
+                <th>Status</th>
+                <th>Date</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredReviews.length === 0 ? (
+                <tr>
+                  <td colSpan="7" className="no-data">No reviews found</td>
+                </tr>
+              ) : (
+                filteredReviews.map(review => (
+                  <tr key={review._id}>
+                    <td>{review.product?.name || 'Unknown Product'}</td>
+                    <td>{review.user?.name || 'Anonymous'}</td>
+                    <td>
+                      <div className="star-rating">
+                        <div className="stars">
+                          {renderStars(review.rating)}
+                        </div>
+                        <span className="rating-text">{review.rating}/5</span>
+                      </div>
+                    </td>
+                    <td className="review-text" style={{ maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {review.comment.length > 100 ? `${review.comment.substring(0, 100)}...` : review.comment}
+                    </td>
+                    <td>
+                      <span className={`badge ${review.approved ? 'approved' : 'pending'}`}>
+                        {review.approved ? 'Approved' : 'Pending'}
+                      </span>
+                    </td>
+                    <td>{new Date(review.createdAt).toLocaleDateString()}</td>
+                    <td className="action-buttons">
+                      <button 
+                        className="view-btn" 
+                        title="View Full Review" 
+                        onClick={() => {
+                          setSelectedReview(review);
+                          setShowReviewModal(true);
+                        }}
+                      >
+                        <FontAwesomeIcon icon={faEye} />
+                      </button>
+                      {review.approved ? (
+                        <button 
+                          className="reject-btn" 
+                          title="Unapprove Review"
+                          onClick={() => updateReviewApproval(review._id, false)}
+                          style={{ background: '#f39c12', color: 'white', border: 'none', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer', marginRight: '6px' }}
+                        >
+                          Unapprove
+                        </button>
+                      ) : (
+                        <button 
+                          className="approve-btn" 
+                          title="Approve Review"
+                          onClick={() => updateReviewApproval(review._id, true)}
+                          style={{ background: '#2e7d32', color: 'white', border: 'none', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer', marginRight: '6px' }}
+                        >
+                          Approve
+                        </button>
+                      )}
+                      <button 
+                        className="delete-btn" 
+                        title="Delete Review" 
+                        onClick={() => deleteReview(review._id)}
+                      >
+                        <FontAwesomeIcon icon={faSignOutAlt} />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        )}
       </div>
+
+      {/* Review Details Modal */}
+      {showReviewModal && selectedReview && (
+        <div className="modal-overlay" onClick={() => setShowReviewModal(false)}>
+          <div className="profile-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2><FontAwesomeIcon icon={faStar} /> Review Details</h2>
+              <button className="close-btn" onClick={() => setShowReviewModal(false)}>&times;</button>
+            </div>
+            <div className="modal-body">
+              <div className="review-details">
+                <div className="detail-row">
+                  <strong>Product:</strong> {selectedReview.product?.name || 'Unknown Product'}
+                </div>
+                <div className="detail-row">
+                  <strong>Customer:</strong> {selectedReview.user?.name || 'Anonymous'} ({selectedReview.user?.email || 'No email'})
+                </div>
+                <div className="detail-row">
+                  <strong>Rating:</strong>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '5px' }}>
+                    {renderStars(selectedReview.rating)}
+                    <span>{selectedReview.rating}/5</span>
+                  </div>
+                </div>
+                <div className="detail-row">
+                  <strong>Review:</strong>
+                  <p style={{ marginTop: '5px', lineHeight: '1.5' }}>{selectedReview.comment}</p>
+                </div>
+                <div className="detail-row">
+                  <strong>Status:</strong>
+                  <span className={`badge ${selectedReview.approved ? 'approved' : 'pending'}`}>
+                    {selectedReview.approved ? 'Approved' : 'Pending Approval'}
+                  </span>
+                </div>
+                <div className="detail-row">
+                  <strong>Submitted:</strong> {new Date(selectedReview.createdAt).toLocaleString()}
+                </div>
+                {selectedReview.likes && selectedReview.likes.length > 0 && (
+                  <div className="detail-row">
+                    <strong>Likes:</strong> {selectedReview.likes.length}
+                  </div>
+                )}
+                {selectedReview.adminResponse && (
+                  <div className="detail-row">
+                    <strong>Admin Response:</strong>
+                    <p style={{ marginTop: '5px', lineHeight: '1.5', fontStyle: 'italic' }}>
+                      {selectedReview.adminResponse}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Admin Response Section */}
+              <div style={{ marginTop: '20px', borderTop: '1px solid #eee', paddingTop: '20px' }}>
+                <h3>Admin Response</h3>
+                <textarea
+                  value={adminResponse}
+                  onChange={(e) => setAdminResponse(e.target.value)}
+                  placeholder={selectedReview.adminResponse ? "Update admin response..." : "Add admin response..."}
+                  rows={4}
+                  style={{
+                    width: '100%',
+                    padding: '10px',
+                    border: '1px solid #ddd',
+                    borderRadius: '4px',
+                    fontFamily: 'inherit'
+                  }}
+                />
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="cancel-btn" onClick={() => setShowReviewModal(false)}>Close</button>
+              <button 
+                className="save-btn" 
+                onClick={() => addAdminResponse(selectedReview._id, adminResponse)}
+                disabled={!adminResponse.trim()}
+              >
+                <FontAwesomeIcon icon={faCog} /> 
+                {selectedReview.adminResponse ? 'Update Response' : 'Add Response'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 

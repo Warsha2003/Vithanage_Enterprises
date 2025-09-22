@@ -5,7 +5,13 @@ const mongoose = require('mongoose');
 // Get cart items for the current user
 exports.getCartItems = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).populate({
+    // Handle both regular users and admins
+    const userId = req.user?.id || req.admin?.id;
+    if (!userId) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    const user = await User.findById(userId).populate({
       path: 'cart.product',
       select: 'name price imageUrl category brand'
     });
@@ -26,6 +32,12 @@ exports.addToCart = async (req, res) => {
   try {
     const { productId, quantity = 1 } = req.body;
 
+    // Handle both regular users and admins
+    const userId = req.user?.id || req.admin?.id;
+    if (!userId) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
     // Validate productId
     if (!mongoose.Types.ObjectId.isValid(productId)) {
       return res.status(400).json({ message: 'Invalid product ID' });
@@ -37,7 +49,7 @@ exports.addToCart = async (req, res) => {
       return res.status(404).json({ message: 'Product not found' });
     }
 
-    const user = await User.findById(req.user.id);
+    const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
@@ -58,7 +70,7 @@ exports.addToCart = async (req, res) => {
     await user.save();
 
     // Return updated cart with populated product details
-    const updatedUser = await User.findById(req.user.id).populate({
+    const updatedUser = await User.findById(userId).populate({
       path: 'cart.product',
       select: 'name price imageUrl category brand'
     });
@@ -75,6 +87,12 @@ exports.updateCartItem = async (req, res) => {
   try {
     const { productId, quantity } = req.body;
 
+    // Handle both regular users and admins
+    const userId = req.user?.id || req.admin?.id;
+    if (!userId) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
     // Validate inputs
     if (!mongoose.Types.ObjectId.isValid(productId)) {
       return res.status(400).json({ message: 'Invalid product ID' });
@@ -84,7 +102,7 @@ exports.updateCartItem = async (req, res) => {
       return res.status(400).json({ message: 'Quantity must be at least 1' });
     }
 
-    const user = await User.findById(req.user.id);
+    const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
@@ -103,7 +121,7 @@ exports.updateCartItem = async (req, res) => {
     await user.save();
 
     // Return updated cart with populated product details
-    const updatedUser = await User.findById(req.user.id).populate({
+    const updatedUser = await User.findById(userId).populate({
       path: 'cart.product',
       select: 'name price imageUrl category brand'
     });
@@ -120,12 +138,18 @@ exports.removeFromCart = async (req, res) => {
   try {
     const { productId } = req.params;
 
+    // Handle both regular users and admins
+    const userId = req.user?.id || req.admin?.id;
+    if (!userId) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
     // Validate productId
     if (!mongoose.Types.ObjectId.isValid(productId)) {
       return res.status(400).json({ message: 'Invalid product ID' });
     }
 
-    const user = await User.findById(req.user.id);
+    const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
@@ -138,7 +162,7 @@ exports.removeFromCart = async (req, res) => {
     await user.save();
 
     // Return updated cart with populated product details
-    const updatedUser = await User.findById(req.user.id).populate({
+    const updatedUser = await User.findById(userId).populate({
       path: 'cart.product',
       select: 'name price imageUrl category brand'
     });
@@ -153,7 +177,13 @@ exports.removeFromCart = async (req, res) => {
 // Clear cart
 exports.clearCart = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
+    // Handle both regular users and admins
+    const userId = req.user?.id || req.admin?.id;
+    if (!userId) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
@@ -171,7 +201,13 @@ exports.clearCart = async (req, res) => {
 // Get cart count
 exports.getCartCount = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
+    // Handle both regular users and admins
+    const userId = req.user?.id || req.admin?.id;
+    if (!userId) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
@@ -193,7 +229,13 @@ exports.transferGuestCart = async (req, res) => {
       return res.status(400).json({ message: 'Invalid items format' });
     }
 
-    const user = await User.findById(req.user.id);
+    // Handle both regular users and admins
+    const userId = req.user?.id || req.admin?.id;
+    if (!userId) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
@@ -227,7 +269,7 @@ exports.transferGuestCart = async (req, res) => {
     await user.save();
 
     // Return updated cart with populated product details
-    const updatedUser = await User.findById(req.user.id).populate({
+    const updatedUser = await User.findById(userId).populate({
       path: 'cart.product',
       select: 'name price imageUrl category brand'
     });

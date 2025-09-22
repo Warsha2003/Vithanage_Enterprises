@@ -10,6 +10,8 @@ const productRoutes = require('./Routes/productRoutes');
 const cartRoutes = require('./Routes/cartRoutes');
 const orderRoutes = require('./Routes/orderRoutes');
 const userRoutes = require('./Routes/userRoutes');
+const reviewRoutes = require('./Routes/reviewRoutes');
+const adminReviewRoutes = require('./Routes/adminReviewRoutes');
 const { createInitialAdmin } = require('./Controllers/adminAuthController');
 
 const app = express();
@@ -22,6 +24,34 @@ app.use(express.urlencoded({ extended: true }));
 // Routes
 app.get('/', (req, res) => {
   res.send('Vithanage Enterprises API is working');
+});
+
+// Sample data creation endpoint (for testing)
+app.post('/api/create-sample-data', async (req, res) => {
+  try {
+    const { sampleProducts, sampleUsers } = require('./data/sampleProducts');
+    const Product = require('./Models/Product');
+    const User = require('./Models/User');
+    
+    // Clear existing data (optional - remove in production)
+    await Product.deleteMany({});
+    await User.deleteMany({ isAdmin: { $ne: true } }); // Don't delete admins
+    
+    // Create sample products
+    const createdProducts = await Product.insertMany(sampleProducts);
+    
+    // Create sample users
+    const createdUsers = await User.insertMany(sampleUsers);
+    
+    res.json({
+      message: 'Sample data created successfully',
+      products: createdProducts.length,
+      users: createdUsers.length
+    });
+  } catch (error) {
+    console.error('Error creating sample data:', error);
+    res.status(500).json({ message: 'Error creating sample data', error: error.message });
+  }
 });
 
 // Auth routes
@@ -38,8 +68,12 @@ app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
 // User management routes
 app.use('/api/users', userRoutes);
+// Review routes
+app.use('/api/reviews', reviewRoutes);
+// Admin review routes
+app.use('/api/admin/reviews', adminReviewRoutes);
 
-mongoose.connect("mongodb+srv://admin:V2ft5D1dbTssVJzR@cluster0.fq7u6hk.mongodb.net/")
+mongoose.connect("mongodb+srv://admin:V2ft5D1dbTssVJzR@cluster0.fq7u6hk.mongodb.net/test")
 .then(()=> {
     console.log("Connected to MongoDB");
     

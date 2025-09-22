@@ -55,18 +55,20 @@ router.post('/create-admin', async (req, res) => {
 });
 
 // Get all users (admin only)
-router.get('/users', authMiddleware, adminAuthMiddleware, async (req, res) => {
+router.get('/users', adminAuthMiddleware, async (req, res) => {
   try {
+    console.log('Admin route: Getting all users...');
     const users = await User.find().select('-password');
+    console.log(`Admin fetching users: Found ${users.length} users`);
     res.json(users);
   } catch (error) {
-    console.error(error.message);
+    console.error('Admin get users error:', error.message);
     res.status(500).json({ message: 'Server error' });
   }
 });
 
 // Update admin profile
-router.put('/profile', authMiddleware, adminAuthMiddleware, async (req, res) => {
+router.put('/profile', adminAuthMiddleware, async (req, res) => {
   try {
     const { name, email, currentPassword, newPassword } = req.body;
 
@@ -133,18 +135,18 @@ router.put('/profile', authMiddleware, adminAuthMiddleware, async (req, res) => 
 });
 
 // Get dashboard stats
-router.get('/dashboard-stats', authMiddleware, adminAuthMiddleware, getDashboardStats);
+router.get('/dashboard-stats', adminAuthMiddleware, getDashboardStats);
 
 // Admin CRUD management (admin only)
-router.get('/admin-management', authMiddleware, adminAuthMiddleware, searchAdmins);
-router.get('/admin-management/:id', authMiddleware, adminAuthMiddleware, getAdminById);
-router.post('/admin-management', authMiddleware, adminAuthMiddleware, createAdmin);
-router.put('/admin-management/:id', authMiddleware, adminAuthMiddleware, updateAdmin);
-router.delete('/admin-management/:id', authMiddleware, adminAuthMiddleware, deleteAdmin);
+router.get('/admin-management', adminAuthMiddleware, searchAdmins);
+router.get('/admin-management/:id', adminAuthMiddleware, getAdminById);
+router.post('/admin-management', adminAuthMiddleware, createAdmin);
+router.put('/admin-management/:id', adminAuthMiddleware, updateAdmin);
+router.delete('/admin-management/:id', adminAuthMiddleware, deleteAdmin);
 
 // Orders management (admin)
-router.get('/orders', authMiddleware, adminAuthMiddleware, adminGetAllOrders);
-router.put('/orders/:id/status', authMiddleware, adminAuthMiddleware, adminUpdateOrderStatus);
-router.put('/orders/:id/processing', authMiddleware, adminAuthMiddleware, adminUpdateProcessing);
+router.get('/orders', adminAuthMiddleware, adminGetAllOrders);
+router.put('/orders/:id/status', adminAuthMiddleware, adminUpdateOrderStatus);
+router.put('/orders/:id/processing', adminAuthMiddleware, adminUpdateProcessing);
 
 module.exports = router;

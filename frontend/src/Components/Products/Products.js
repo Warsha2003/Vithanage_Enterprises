@@ -414,36 +414,57 @@ const Products = () => {
       <div className="products-display">
         <div className="products-header">
           <h2>{selectedCategory} Products</h2>
-          <div className="cart-container">
+          <div className="cart-container products-display">
             <div className="cart-icon-wrapper" onClick={handleCartClick} style={{
               position: 'relative',
               cursor: 'pointer',
-              padding: '5px',
+              padding: '12px',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center'
+              justifyContent: 'center',
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              borderRadius: '50%',
+              width: '50px',
+              height: '50px',
+              boxShadow: '0 8px 25px rgba(102, 126, 234, 0.3)',
+              transition: 'all 0.3s ease',
+              transform: 'scale(1)',
+              border: '2px solid rgba(255, 255, 255, 0.2)'
+            }}
+            onMouseEnter={(e) => {
+              const wrapper = e.currentTarget;
+              wrapper.style.transform = 'scale(1.1) translateY(-2px)';
+              wrapper.style.boxShadow = '0 12px 35px rgba(102, 126, 234, 0.4)';
+            }}
+            onMouseLeave={(e) => {
+              const wrapper = e.currentTarget;
+              wrapper.style.transform = 'scale(1) translateY(0)';
+              wrapper.style.boxShadow = '0 8px 25px rgba(102, 126, 234, 0.3)';
             }}>
               <FontAwesomeIcon icon={faShoppingCart} style={{
-                fontSize: '22px',
-                color: '#232f3e'
+                fontSize: '20px',
+                color: 'white',
+                filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))'
               }} />
               {cartCount > 0 && (
                 <span className="cart-count" style={{
                   position: 'absolute',
-                  top: '-8px',
-                  right: '-8px',
-                  backgroundColor: '#ff9900',
-                  color: '#232f3e',
-                  fontSize: '10px',
-                  minWidth: '18px',
-                  height: '18px',
-                  borderRadius: '10px',
+                  top: '-5px',
+                  right: '-5px',
+                  background: 'linear-gradient(135deg, #ff9900 0%, #ff6b35 100%)',
+                  color: 'white',
+                  fontSize: '11px',
+                  fontWeight: '700',
+                  minWidth: '22px',
+                  height: '22px',
+                  borderRadius: '11px',
                   display: 'flex',
                   justifyContent: 'center',
                   alignItems: 'center',
-                  fontWeight: 'bold',
-                  padding: '0 4px',
-                  boxShadow: '0 0 0 1px rgba(0, 0, 0, 0.1)'
+                  padding: '0 6px',
+                  boxShadow: '0 4px 12px rgba(255, 153, 0, 0.4)',
+                  border: '2px solid white',
+                  animation: 'pulse 2s infinite'
                 }}>
                   {cartCount}
                 </span>
@@ -456,27 +477,47 @@ const Products = () => {
           {filteredProducts.length > 0 ? (
             filteredProducts.map(product => (
               <div key={product._id} className="product-card">
-                <div className="product-image">
+                <div 
+                  className="product-image"
+                  onClick={() => navigate(`/products/${product._id}`)}
+                  style={{ cursor: 'pointer' }}
+                >
                   <img src={product.imageUrl || 'https://via.placeholder.com/150?text=Product'} alt={product.name} />
                 </div>
                 <div className="product-info">
-                  <h4>{product.name}</h4>
+                  <h4 
+                    onClick={() => navigate(`/products/${product._id}`)}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    {product.name}
+                  </h4>
                   <div className="product-rating">
-                    {renderStars(product.rating)}
-                    <span className="rating-number">({product.rating})</span>
+                    {renderStars(product.averageRating || product.rating || 0)}
+                    <span className="rating-number">
+                      ({(product.averageRating || product.rating || 0).toFixed(1)}) 
+                      {product.totalReviews > 0 && ` • ${product.totalReviews} reviews`}
+                    </span>
                   </div>
                   <div className="product-price">${product.price}</div>
-                  <button 
-                    className="add-to-cart-btn"
-                    onClick={() => handleAddToCart(product)}
-                    disabled={loading}
-                  >
-                    {loading ? (
-                      <FontAwesomeIcon icon={faSpinner} spin />
-                    ) : (
-                      'Add to Cart'
-                    )}
-                  </button>
+                  <div className="product-actions">
+                    <button 
+                      className="view-details-btn"
+                      onClick={() => navigate(`/products/${product._id}`)}
+                    >
+                      View Details
+                    </button>
+                    <button 
+                      className="add-to-cart-btn"
+                      onClick={() => handleAddToCart(product)}
+                      disabled={loading}
+                    >
+                      {loading ? (
+                        <FontAwesomeIcon icon={faSpinner} spin />
+                      ) : (
+                        'Add to Cart'
+                      )}
+                    </button>
+                  </div>
                 </div>
               </div>
             ))

@@ -1,110 +1,300 @@
+/* PlaceOrder.css - Beautiful Modern E-commerce Checkout Design */
+
 .place-order-page {
-  background: #f7f7f7;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   min-height: 100vh;
-  padding: 20px 0;
+  padding: 40px 20px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .po-container {
-  width: 95%;
-  max-width: 1100px;
+  max-width: 1200px;
   margin: 0 auto;
-  background: #fff;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.po-container h2 {
+  text-align: center;
+  color: white;
+  font-size: 2.5rem;
+  font-weight: 300;
+  margin-bottom: 40px;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
 }
 
 .po-grid {
   display: grid;
-  grid-template-columns: 1fr 360px;
-  gap: 20px;
+  grid-template-columns: 1fr 400px;
+  gap: 40px;
+  align-items: start;
+}
+
+/* Form Styling */
+.po-form {
+  background: white;
+  border-radius: 20px;
+  padding: 40px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.2);
 }
 
 .po-form fieldset {
-  border: 1px solid #eee;
-  padding: 14px;
-  margin-bottom: 16px;
+  border: none;
+  padding: 0;
+  margin-bottom: 35px;
+  position: relative;
+}
+
+.po-form fieldset::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #667eea, #764ba2);
+  border-radius: 2px;
 }
 
 .po-form legend {
-  padding: 0 6px;
-  color: #232f3e;
-  font-weight: 700;
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 25px;
+  padding: 15px 0;
+  display: block;
+  position: relative;
+}
+
+.po-form legend::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 60px;
+  height: 2px;
+  background: #ff9900;
+  border-radius: 1px;
 }
 
 .po-row {
   display: flex;
   flex-direction: column;
-  margin-bottom: 10px;
+  margin-bottom: 20px;
+  position: relative;
 }
 
 .po-row-3 {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  gap: 10px;
+  gap: 15px;
+  margin-bottom: 20px;
 }
 
 .po-form label {
-  font-size: 12px;
+  font-size: 0.9rem;
+  font-weight: 500;
   color: #555;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
+  transition: color 0.3s ease;
 }
 
 .po-form input {
-  height: 36px;
-  padding: 6px 10px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
+  height: 50px;
+  padding: 0 20px;
+  border: 2px solid #e1e5e9;
+  border-radius: 12px;
+  font-size: 1rem;
+  background: #fafbfc;
+  transition: all 0.3s ease;
+  outline: none;
 }
 
+.po-form input:focus {
+  border-color: #667eea;
+  background: white;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  transform: translateY(-1px);
+}
+
+/* Submit Button */
 .po-submit {
-  background: #ff9900;
-  color: #232f3e;
+  background: linear-gradient(135deg, #ff9900 0%, #ff6b35 100%);
+  color: white;
   border: none;
-  height: 44px;
-  border-radius: 6px;
+  height: 60px;
+  border-radius: 15px;
   font-weight: 700;
+  font-size: 1.1rem;
   width: 100%;
   cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 20px;
+  box-shadow: 0 8px 25px rgba(255, 153, 0, 0.3);
+  position: relative;
+  overflow: hidden;
 }
 
+.po-submit::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transition: left 0.5s;
+}
+
+.po-submit:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 35px rgba(255, 153, 0, 0.4);
+}
+
+.po-submit:hover::before {
+  left: 100%;
+}
+
+.po-submit:active {
+  transform: translateY(0);
+}
+
+/* Order Summary */
 .po-summary {
-  border: 1px solid #eee;
-  border-radius: 8px;
-  padding: 14px;
+  background: white;
+  border-radius: 20px;
+  padding: 35px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.2);
+  position: sticky;
+  top: 40px;
   height: fit-content;
 }
 
 .po-summary h3 {
   margin-top: 0;
+  margin-bottom: 25px;
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: #2c3e50;
+  text-align: center;
+  position: relative;
+  padding-bottom: 15px;
+}
+
+.po-summary h3::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 2px;
+  background: #667eea;
+  border-radius: 1px;
 }
 
 .po-summary-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  margin-bottom: 10px;
+  gap: 15px;
+  margin-bottom: 25px;
+  max-height: 300px;
+  overflow-y: auto;
+  padding-right: 5px;
 }
 
 .po-summary-item {
   display: flex;
   justify-content: space-between;
-  color: #333;
+  align-items: center;
+  padding: 15px;
+  background: #f8f9fc;
+  border-radius: 10px;
+  border-left: 4px solid #667eea;
+  transition: all 0.3s ease;
+}
+
+.po-summary-item:hover {
+  background: #e8eaff;
+  transform: translateX(5px);
+}
+
+.po-summary-item span:first-child {
+  color: #2c3e50;
+  font-weight: 500;
+  flex: 1;
+}
+
+.po-summary-item span:last-child {
+  color: #667eea;
+  font-weight: 700;
+  font-size: 1.1rem;
 }
 
 .po-summary-line {
   display: flex;
   justify-content: space-between;
-  margin: 6px 0;
+  align-items: center;
+  padding: 12px 0;
+  margin: 8px 0;
+  border-bottom: 1px solid #eee;
+  font-size: 1rem;
 }
 
 .po-summary-line.total {
   font-weight: 700;
+  font-size: 1.3rem;
+  color: #2c3e50;
+  padding: 20px;
+  margin-top: 20px;
+  border-top: 2px solid #667eea;
+  background: linear-gradient(135deg, #f8f9fc 0%, #e8eaff 100%);
+  border-radius: 10px;
 }
 
-@media (max-width: 900px) {
+.po-summary-line.total span:last-child {
+  color: #ff9900;
+  font-size: 1.5rem;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
   .po-grid {
     grid-template-columns: 1fr;
+    gap: 30px;
+  }
+  
+  .po-summary {
+    position: static;
+    order: -1;
+  }
+}
+
+@media (max-width: 768px) {
+  .place-order-page {
+    padding: 20px 10px;
+  }
+  
+  .po-container h2 {
+    font-size: 2rem;
+    margin-bottom: 30px;
+  }
+  
+  .po-form {
+    padding: 25px;
+    border-radius: 15px;
+  }
+  
+  .po-summary {
+    padding: 25px;
+    border-radius: 15px;
+  }
+  
+  .po-row-3 {
+    grid-template-columns: 1fr;
+    gap: 10px;
   }
 }
 
