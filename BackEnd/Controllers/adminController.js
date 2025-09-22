@@ -1,6 +1,7 @@
 const User = require('../Models/User');
 const Admin = require('../Models/Admin');
 const Product = require('../Models/Product');
+const Order = require('../Models/Order');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
@@ -103,24 +104,56 @@ const getDashboardStats = async (req, res) => {
     // Total users (regular + admin)
     const totalUsers = userCount + adminCount;
     
-    console.log('Dashboard stats:', {
-      totalUsers,
-      regularUsers: userCount,
-      adminUsers: adminCount,
-      totalProducts: productCount
-    });
+    // Calculate order statistics
+    const totalOrders = await Order.countDocuments();
+    const pendingOrders = await Order.countDocuments({ status: 'pending' });
+    const approvedOrders = await Order.countDocuments({ status: 'approved' });
+    const rejectedOrders = await Order.countDocuments({ status: 'rejected' });
+    const cancelledOrders = await Order.countDocuments({ status: 'cancelled' });
     
-    // You can add more stats here (e.g., orders, revenue)
+    // Calculate total revenue (from approved and delivered orders only)
+    const revenueAggregation = await Order.aggregate([
+      {
+        $match: {
+          status: { $in: ['approved', 'Delivered'] }
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          totalRevenue: { $sum: '$totals.total' }
+        }
+      }
+    ]);
+    
+    const totalRevenue = revenueAggregation.length > 0 ? revenueAggregation[0].totalRevenue : 0;
+    
+    // Calculate low stock items (products with stock < 10)
+    const lowStockItems = await Product.countDocuments({ stock: { $lt: 10 } });
+    
+    console.log('Dashboard stats calculated:', {
+      totalUsers,
+      userCount,
+      adminCount,
+      totalProducts: productCount,
+      totalOrders,
+      totalRevenue: totalRevenue.toFixed(2),
+      pendingOrders,
+      lowStockItems
+    });
     
     res.json({
       totalUsers: totalUsers,
       regularUsers: userCount,
       adminUsers: adminCount,
       totalProducts: productCount,
-      totalOrders: 56, // Placeholder - replace with real data when you have Orders model
-      totalRevenue: 12750.75, // Placeholder - replace with real data when you have Orders model
-      pendingOrders: 8, // Placeholder
-      lowStockItems: 5 // Placeholder
+      totalOrders: totalOrders,
+      totalRevenue: parseFloat(totalRevenue.toFixed(2)),
+      pendingOrders: pendingOrders,
+      approvedOrders: approvedOrders,
+      rejectedOrders: rejectedOrders,
+      cancelledOrders: cancelledOrders,
+      lowStockItems: lowStockItems
     });
   } catch (error) {
     console.error('Error fetching dashboard stats:', error.message);

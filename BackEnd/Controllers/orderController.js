@@ -148,4 +148,91 @@ exports.getOrderById = async (req, res) => {
   }
 };
 
+// Cancel order (user can cancel pending or approved orders)
+exports.cancelOrder = async (req, res) => {
+  try {
+    const orderId = req.params.id;
+    const userId = req.user?.id;
+
+    console.log('Canceling order request:', { 
+      orderId, 
+      userId, 
+      userObject: req.user,
+      params: req.params 
+    });
+
+    // Validate inputs
+    if (!orderId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Order ID is required'
+      });
+    }
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'User authentication required'
+      });
+    }
+
+    // Find order and verify ownership
+    const order = await Order.findOne({ _id: orderId, user: userId });
+    console.log('Order found:', order ? { 
+      id: order._id, 
+      status: order.status, 
+      user: order.user 
+    } : 'No order found');
+
+    if (!order) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Order not found or does not belong to you' 
+      });
+    }
+
+    // Check if order can be cancelled
+    const cancellableStatuses = ['pending', 'approved'];
+    if (!cancellableStatuses.includes(order.status)) {
+      return res.status(400).json({
+        success: false,
+        message: `Cannot cancel order with status: ${order.status}. Only pending or approved orders can be cancelled.`
+      });
+    }
+
+    // Update order status to cancelled
+    order.status = 'cancelled';
+    order.cancelledAt = new Date();
+    order.cancelledBy = 'user';
+    
+    const savedOrder = await order.save();
+    console.log('Order cancelled successfully:', { 
+      orderId: savedOrder._id, 
+      newStatus: savedOrder.status,
+      cancelledAt: savedOrder.cancelledAt
+    });
+
+    res.json({
+      success: true,
+      message: 'Order cancelled successfully',
+      data: savedOrder
+    });
+
+  } catch (error) {
+    console.error('Detailed error cancelling order:', {
+      error: error.message,
+      stack: error.stack,
+      orderId: req.params.id,
+      userId: req.user?.id
+    });
+    
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message,
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
+  }
+};
+
 

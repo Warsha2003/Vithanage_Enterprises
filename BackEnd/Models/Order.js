@@ -19,7 +19,7 @@ const orderSchema = new mongoose.Schema({
     shipping: { type: Number, required: true },
     total: { type: Number, required: true }
   },
-  status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
+  status: { type: String, enum: ['pending', 'approved', 'rejected', 'cancelled', 'Delivered'], default: 'pending' },
   processing: {
     step: { 
       type: String, 
@@ -46,7 +46,12 @@ const orderSchema = new mongoose.Schema({
     method: { type: String, default: 'card' },
     last4: String,
     status: { type: String, default: 'paid' }
-  }
+  },
+  // Cancellation tracking
+  cancelledAt: { type: Date },
+  cancelledBy: { type: String, enum: ['user', 'admin'] },
+  // Delivery tracking
+  deliveredAt: { type: Date }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Order', orderSchema);

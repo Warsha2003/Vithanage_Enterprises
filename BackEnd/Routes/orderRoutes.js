@@ -14,6 +14,9 @@ router.get('/mine', orderController.getMyOrders);
 // Get a single order
 router.get('/:id', orderController.getOrderById);
 
+// Cancel order
+router.patch('/:id/cancel', orderController.cancelOrder);
+
 module.exports = router;
 
 

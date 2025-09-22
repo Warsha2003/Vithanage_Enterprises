@@ -4,6 +4,7 @@ import './AdminDashboard.css';
 import './stat-detail.css';
 import './dashboard-header.css';
 import ProductManagement from './ProductManagement';
+import RefundManagement from './RefundManagement';
 // Add Font Awesome for icons
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
@@ -34,6 +35,9 @@ const AdminDashboard = () => {
     totalOrders: 0,
     totalRevenue: 0,
     pendingOrders: 0,
+    approvedOrders: 0,
+    rejectedOrders: 0,
+    cancelledOrders: 0,
     lowStockItems: 0
   });
   const [orderQuery, setOrderQuery] = useState('');
@@ -840,6 +844,9 @@ const AdminDashboard = () => {
         totalOrders: data.totalOrders,
         totalRevenue: data.totalRevenue,
         pendingOrders: data.pendingOrders,
+        approvedOrders: data.approvedOrders || 0,
+        rejectedOrders: data.rejectedOrders || 0,
+        cancelledOrders: data.cancelledOrders || 0,
         lowStockItems: data.lowStockItems
       });
       
@@ -859,6 +866,9 @@ const AdminDashboard = () => {
         totalOrders: 0,
         totalRevenue: 0,
         pendingOrders: 0,
+        approvedOrders: 0,
+        rejectedOrders: 0,
+        cancelledOrders: 0,
         lowStockItems: 0
       });
     }
@@ -1144,6 +1154,12 @@ const AdminDashboard = () => {
           <div className="stat-info">
             <h3>Total Orders</h3>
             <p>{stats.totalOrders}</p>
+            <div className="stat-detail">
+              <span>Pending: {stats.pendingOrders}</span>
+              <span>Approved: {stats.approvedOrders}</span>
+              <span>Rejected: {stats.rejectedOrders}</span>
+              <span>Cancelled: {stats.cancelledOrders}</span>
+            </div>
           </div>
         </div>
         
@@ -1152,6 +1168,9 @@ const AdminDashboard = () => {
           <div className="stat-info">
             <h3>Total Revenue</h3>
             <p>${(stats.totalRevenue || 0).toFixed(2)}</p>
+            <div className="stat-detail">
+              <span>From approved & delivered orders</span>
+            </div>
           </div>
         </div>
       </div>
@@ -1953,6 +1972,7 @@ const AdminDashboard = () => {
               <option value="pending">Pending</option>
               <option value="approved">Approved</option>
               <option value="rejected">Rejected</option>
+              <option value="cancelled">Cancelled</option>
             </select>
             <button className="primary-btn" onClick={() => generateOrdersReport()}>
               <FontAwesomeIcon icon={faFilePdf} /> Download Report
@@ -2002,20 +2022,55 @@ const AdminDashboard = () => {
                         >
                           <FontAwesomeIcon icon={faEye} />
                         </button>
-                        <button 
-                          title="Approve" 
-                          onClick={() => updateOrderStatus(o._id, 'approved')}
-                          style={{ 
-                            background: '#2e7d32', color: 'white', border: 'none', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer', marginRight: '6px'
-                          }}
-                        >Approve</button>
-                        <button 
-                          title="Reject" 
-                          onClick={() => updateOrderStatus(o._id, 'rejected')}
-                          style={{ 
-                            background: '#c62828', color: 'white', border: 'none', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer'
-                          }}
-                        >Reject</button>
+                        {/* Show approve/reject buttons only for pending orders */}
+                        {o.status === 'pending' && (
+                          <>
+                            <button 
+                              title="Approve" 
+                              onClick={() => updateOrderStatus(o._id, 'approved')}
+                              style={{ 
+                                background: '#2e7d32', color: 'white', border: 'none', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer', marginRight: '6px'
+                              }}
+                            >Approve</button>
+                            <button 
+                              title="Reject" 
+                              onClick={() => updateOrderStatus(o._id, 'rejected')}
+                              style={{ 
+                                background: '#c62828', color: 'white', border: 'none', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer'
+                              }}
+                            >Reject</button>
+                          </>
+                        )}
+                        
+                        {/* Show message for cancelled orders */}
+                        {o.status === 'cancelled' && (
+                          <span style={{ 
+                            color: '#ff6b6b', 
+                            fontSize: '0.9rem', 
+                            fontStyle: 'italic',
+                            padding: '6px 10px'
+                          }}>
+                            Cancelled by {o.cancelledBy || 'user'}
+                            {o.cancelledAt && (
+                              <>
+                                <br />
+                                <small>{new Date(o.cancelledAt).toLocaleString()}</small>
+                              </>
+                            )}
+                          </span>
+                        )}
+                        
+                        {/* Show message for already processed orders */}
+                        {(o.status === 'approved' || o.status === 'rejected') && (
+                          <span style={{ 
+                            color: o.status === 'approved' ? '#2e7d32' : '#c62828', 
+                            fontSize: '0.9rem', 
+                            fontWeight: '600',
+                            padding: '6px 10px'
+                          }}>
+                            Already {o.status}
+                          </span>
+                        )}
                         {o.status === 'approved' && (
                           <select
                             value={o.processing?.step || 'none'}
@@ -2693,69 +2748,7 @@ const AdminDashboard = () => {
   );
 
   const renderRefunds = () => (
-    <div className="module-content">
-      <h2><FontAwesomeIcon icon={faExchangeAlt} /> Refund Management</h2>
-      
-      <div className="admin-actions">
-        <div className="filter-group">
-          <select>
-            <option>All Refunds</option>
-            <option>Pending</option>
-            <option>Approved</option>
-            <option>Rejected</option>
-            <option>Completed</option>
-          </select>
-        </div>
-        <div className="search-box">
-          <input type="text" placeholder="Search refund #..." />
-          <button>Search</button>
-        </div>
-      </div>
-      
-      <div className="admin-section">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Refund #</th>
-              <th>Order #</th>
-              <th>Customer</th>
-              <th>Amount</th>
-              <th>Reason</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>#REF102</td>
-              <td>#ORD7820</td>
-              <td>Robert Wilson</td>
-              <td>$129.99</td>
-              <td>Item damaged during shipping</td>
-              <td><span className="badge pending">Pending</span></td>
-              <td className="action-buttons">
-                <button className="view-btn" title="View Details"><FontAwesomeIcon icon={faExchangeAlt} /></button>
-                <button className="approve-btn" title="Approve Refund"><FontAwesomeIcon icon={faCog} /></button>
-                <button className="reject-btn" title="Reject Refund"><FontAwesomeIcon icon={faSignOutAlt} /></button>
-              </td>
-            </tr>
-            <tr>
-              <td>#REF101</td>
-              <td>#ORD7815</td>
-              <td>Emily Davis</td>
-              <td>$75.50</td>
-              <td>Wrong item received</td>
-              <td><span className="badge approved">Approved</span></td>
-              <td className="action-buttons">
-                <button className="view-btn" title="View Details"><FontAwesomeIcon icon={faExchangeAlt} /></button>
-                <button className="complete-btn" title="Mark as Completed"><FontAwesomeIcon icon={faCog} /></button>
-                <button className="print-btn" title="Print Details"><FontAwesomeIcon icon={faClipboardList} /></button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
+    <RefundManagement />
   );
 
   return (

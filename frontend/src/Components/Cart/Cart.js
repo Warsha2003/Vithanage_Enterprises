@@ -123,7 +123,7 @@ const Cart = () => {
   const fetchCart = async (token) => {
     try {
       // Then fetch fresh cart data from server
-      const response = await fetch('/api/cart', {
+      const response = await fetch('http://localhost:5000/api/cart', {
         headers: {
           'x-auth-token': token,
           'Content-Type': 'application/json'
@@ -192,7 +192,7 @@ const Cart = () => {
       }
       
       // Update on server
-      const response = await fetch('/api/cart/update', {
+      const response = await fetch('http://localhost:5000/api/cart/update', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -246,7 +246,7 @@ const Cart = () => {
       }
       
       // Remove on server
-      const response = await fetch(`/api/cart/remove/${productId}`, {
+      const response = await fetch(`http://localhost:5000/api/cart/remove/${productId}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',

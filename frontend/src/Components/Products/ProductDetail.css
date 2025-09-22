@@ -185,63 +185,37 @@
     cursor: not-allowed;
 }
 
-/* Product Tabs */
-.product-tabs {
+/* Product Description Section */
+.description-section {
     margin-top: 3rem;
-}
-
-.tab-headers {
-    display: flex;
-    border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+    padding: 2rem;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 15px;
+    border: 1px solid #ddd;
     margin-bottom: 2rem;
-}
-
-.tab-headers button {
-    background: none;
-    border: none;
-    padding: 1rem 2rem;
-    font-size: 1.1rem;
-    font-weight: 500;
-    color: var(--text-light);
-    cursor: pointer;
-    transition: all 0.3s ease;
-    border-bottom: 3px solid transparent;
-}
-
-.tab-headers button.active {
-    color: var(--primary-color);
-    border-bottom-color: var(--primary-color);
-}
-
-.tab-headers button:hover {
-    color: var(--text-color);
-}
-
-.tab-content {
-    min-height: 300px;
-}
-
-.description-content {
     color: var(--text-color);
     line-height: 1.8;
 }
 
-.description-content h3 {
+.description-section h3 {
     color: var(--primary-color);
     margin-bottom: 1rem;
     font-size: 1.5rem;
+    border-bottom: 2px solid var(--primary-color);
+    padding-bottom: 0.5rem;
 }
 
-.description-content p {
+.description-section p {
     font-size: 1.1rem;
     margin-bottom: 2rem;
+    color: #333 !important;
 }
 
 .product-specifications {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+    background: linear-gradient(135deg, rgba(248, 249, 250, 0.9), rgba(255, 255, 255, 0.8));
     border-radius: 15px;
     padding: 2rem;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid #e0e0e0;
 }
 
 .product-specifications h4 {
@@ -258,18 +232,49 @@
 
 .product-specifications li {
     padding: 0.5rem 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    color: #333 !important;
 }
 
 .product-specifications li:last-child {
     border-bottom: none;
 }
 
-.reviews-content {
-    margin-top: 1rem;
+/* Write Review Section */
+.write-review-section {
+    margin-bottom: 2rem;
+    padding: 2rem;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 15px;
+    border: 1px solid #ddd;
+}
+
+.write-review-section h3 {
+    color: var(--primary-color);
+    margin-bottom: 1.5rem;
+    font-size: 1.5rem;
+    border-bottom: 2px solid var(--primary-color);
+    padding-bottom: 0.5rem;
+}
+
+/* All Reviews Section */
+.all-reviews-section {
+    padding: 2rem;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 15px;
+    border: 1px solid #ddd;
+    margin-bottom: 2rem;
+}
+
+.all-reviews-section h3 {
+    color: var(--primary-color);
+    margin-bottom: 1.5rem;
+    font-size: 1.5rem;
+    border-bottom: 2px solid var(--primary-color);
+    padding-bottom: 0.5rem;
 }
 
 /* Responsive Design */

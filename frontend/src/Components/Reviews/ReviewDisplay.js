@@ -15,10 +15,13 @@ const ReviewDisplay = ({ productId, userToken }) => {
 
     const fetchReviews = async () => {
         try {
+            console.log(`Fetching reviews for product: ${productId}`);
             const response = await fetch(
                 `http://localhost:5000/api/reviews/product/${productId}?page=${currentPage}&limit=5`
             );
             const data = await response.json();
+            
+            console.log('Reviews API response:', data);
             
             if (data.success && data.data) {
                 setReviews(data.data.reviews || []);
@@ -143,11 +146,11 @@ const ReviewDisplay = ({ productId, userToken }) => {
 
                             <div className="review-actions">
                                 <button 
-                                    className={`like-btn ${review.likes?.includes(userToken) ? 'liked' : ''}`}
+                                    className={`like-btn ${Array.isArray(review.likes) && review.likes.includes(userToken) ? 'liked' : ''}`}
                                     onClick={() => handleLikeToggle(review._id)}
                                     disabled={!userToken}
                                 >
-                                    👍 {review.likes?.length || 0}
+                                    👍 {Array.isArray(review.likes) ? review.likes.length : 0}
                                 </button>
                             </div>
                         </div>

@@ -40,7 +40,7 @@ const Products = () => {
     const fetchProducts = async () => {
       try {
         console.log('Fetching products from backend database...');
-        const response = await fetch('/api/products');
+        const response = await fetch('http://localhost:5000/api/products');
         
         if (response.ok) {
           const data = await response.json();
@@ -154,7 +154,7 @@ const Products = () => {
       
       // If user is logged in, fetch from server for accurate count
       if (token && storedUser) {
-        const response = await fetch('/api/cart', {
+        const response = await fetch('http://localhost:5000/api/cart', {
           headers: {
             'x-auth-token': token,
             'Content-Type': 'application/json'

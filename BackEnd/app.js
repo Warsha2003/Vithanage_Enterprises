@@ -12,6 +12,8 @@ const orderRoutes = require('./Routes/orderRoutes');
 const userRoutes = require('./Routes/userRoutes');
 const reviewRoutes = require('./Routes/reviewRoutes');
 const adminReviewRoutes = require('./Routes/adminReviewRoutes');
+const refundRoutes = require('./Routes/refundRoutes');
+const adminRefundRoutes = require('./Routes/adminRefundRoutes');
 const { createInitialAdmin } = require('./Controllers/adminAuthController');
 
 const app = express();
@@ -72,6 +74,10 @@ app.use('/api/users', userRoutes);
 app.use('/api/reviews', reviewRoutes);
 // Admin review routes
 app.use('/api/admin/reviews', adminReviewRoutes);
+// Refund routes
+app.use('/api/refunds', refundRoutes);
+// Admin refund routes
+app.use('/api/admin/refunds', adminRefundRoutes);
 
 mongoose.connect("mongodb+srv://admin:V2ft5D1dbTssVJzR@cluster0.fq7u6hk.mongodb.net/test")
 .then(()=> {

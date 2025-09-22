@@ -910,6 +910,16 @@
   color: white;
 }
 
+.badge.rejected {
+  background-color: #ea4335;
+  color: white;
+}
+
+.badge.cancelled {
+  background-color: #ff6b6b;
+  color: white;
+}
+
 /* Product Related */
 .product-thumbnail {
   width: 50px;

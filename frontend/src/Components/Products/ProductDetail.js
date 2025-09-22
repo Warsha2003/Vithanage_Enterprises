@@ -25,7 +25,6 @@ const ProductDetail = () => {
   const [loading, setLoading] = useState(true);
   const [addingToCart, setAddingToCart] = useState(false);
   const [userToken, setUserToken] = useState(null);
-  const [activeTab, setActiveTab] = useState('description');
 
   useEffect(() => {
     // Get user token
@@ -185,60 +184,44 @@ const ProductDetail = () => {
         </div>
       </div>
 
-      {/* Product Details Tabs */}
-      <div className="product-tabs">
-        <div className="tab-headers">
-          <button 
-            className={activeTab === 'description' ? 'active' : ''}
-            onClick={() => setActiveTab('description')}
-          >
-            Description
-          </button>
-          <button 
-            className={activeTab === 'reviews' ? 'active' : ''}
-            onClick={() => setActiveTab('reviews')}
-          >
-            Reviews ({product.totalReviews || 0})
-          </button>
+      {/* Product Description */}
+      <div className="description-section">
+        <h3>Product Description</h3>
+        <p>{product.description}</p>
+        
+        <div className="product-specifications">
+          <h4>Product Details</h4>
+          <ul>
+            <li><strong>Category:</strong> {product.category}</li>
+            <li><strong>Brand:</strong> {product.brand}</li>
+            <li><strong>SKU:</strong> {product._id}</li>
+            {product.featured && (
+              <li>
+                <strong>Featured Product</strong>
+                <FontAwesomeIcon icon={faCheck} style={{ color: '#4CAF50', marginLeft: '8px' }} />
+              </li>
+            )}
+          </ul>
         </div>
+      </div>
 
-        <div className="tab-content">
-          {activeTab === 'description' && (
-            <div className="description-content">
-              <h3>Product Description</h3>
-              <p>{product.description}</p>
-              
-              <div className="product-specifications">
-                <h4>Product Details</h4>
-                <ul>
-                  <li><strong>Category:</strong> {product.category}</li>
-                  <li><strong>Brand:</strong> {product.brand}</li>
-                  <li><strong>SKU:</strong> {product._id}</li>
-                  {product.featured && (
-                    <li>
-                      <strong>Featured Product</strong>
-                      <FontAwesomeIcon icon={faCheck} style={{ color: '#4CAF50', marginLeft: '8px' }} />
-                    </li>
-                  )}
-                </ul>
-              </div>
-            </div>
-          )}
+      {/* Write Review Section */}
+      <div className="write-review-section">
+        <h3>Write a Review</h3>
+        <ReviewForm 
+          productId={product._id}
+          userToken={userToken}
+          onReviewSubmitted={handleReviewSubmitted}
+        />
+      </div>
 
-          {activeTab === 'reviews' && (
-            <div className="reviews-content">
-              <ReviewForm 
-                productId={product._id}
-                userToken={userToken}
-                onReviewSubmitted={handleReviewSubmitted}
-              />
-              <ReviewDisplay 
-                productId={product._id}
-                userToken={userToken}
-              />
-            </div>
-          )}
-        </div>
+      {/* All Reviews Display */}
+      <div className="all-reviews-section">
+        <h3>Customer Reviews ({product.totalReviews || 0})</h3>
+        <ReviewDisplay 
+          productId={product._id}
+          userToken={userToken}
+        />
       </div>
     </div>
   );

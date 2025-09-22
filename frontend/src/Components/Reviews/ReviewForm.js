@@ -15,36 +15,13 @@ const ReviewForm = ({ productId, userToken, onReviewSubmitted }) => {
 
     useEffect(() => {
         if (userToken && productId) {
-            checkReviewEligibility();
+            // Allow any logged-in user to write reviews
+            setCanReview(true);
+            setLoading(false);
         } else {
             setLoading(false);
         }
     }, [productId, userToken]);
-
-    const checkReviewEligibility = async () => {
-        try {
-            const response = await fetch(
-                `http://localhost:5000/api/reviews/can-review/${productId}`,
-                {
-                    headers: {
-                        'Authorization': `Bearer ${userToken}`
-                    }
-                }
-            );
-            
-            const data = await response.json();
-            setCanReview(data.canReview);
-            
-            if (!data.canReview && data.message) {
-                setError(data.message);
-            }
-        } catch (error) {
-            console.error('Error checking review eligibility:', error);
-            setError('Unable to check review eligibility');
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const handleRatingClick = (rating) => {
         setFormData(prev => ({ ...prev, rating }));
@@ -143,7 +120,7 @@ const ReviewForm = ({ productId, userToken, onReviewSubmitted }) => {
     if (!canReview) {
         return (
             <div className="review-form-message">
-                <p>{error || 'You can only review products you have purchased'}</p>
+                <p>{error || 'Unable to load review form'}</p>
             </div>
         );
     }

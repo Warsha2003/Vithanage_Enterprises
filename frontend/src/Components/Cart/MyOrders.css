@@ -149,15 +149,69 @@
   transform: translateX(5px);
 }
 
-.order-line span:first-child {
+.order-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.order-line:last-child {
+  border-bottom: none;
+}
+
+.item-info {
+  display: flex;
+  justify-content: space-between;
+  flex: 1;
+}
+
+.item-info span:first-child {
   color: #2c3e50;
   font-weight: 500;
 }
 
-.order-line span:last-child {
+.item-info span:last-child {
   color: #667eea;
   font-weight: 600;
   font-size: 1.1rem;
+}
+
+.refund-btn {
+  background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-left: 15px;
+  box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
+}
+
+.refund-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
+  background: linear-gradient(135deg, #ee5a52, #ff6b6b);
+}
+
+.cancel-order-btn {
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+}
+
+.cancel-order-btn:hover:not(:disabled) {
+  background-color: #c82333 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
+}
+
+.cancel-order-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
 .order-totals {
