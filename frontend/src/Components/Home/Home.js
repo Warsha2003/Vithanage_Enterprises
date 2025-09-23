@@ -3,192 +3,328 @@ import { useNavigate } from 'react-router-dom';
 import './Home.css';
 
 function Home() {
-  const [user, setUser] = useState(null);
+  const [featuredProducts, setFeaturedProducts] = useState([]);
+  const [trendingProducts, setTrendingProducts] = useState([]);
+  const [newArrivals, setNewArrivals] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [promotions, setPromotions] = useState([]);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   
   useEffect(() => {
-    // Check if user is logged in
-    const storedUser = localStorage.getItem('user');
-    const token = localStorage.getItem('token');
-    
-    // Only consider user as logged in if both user data and token exist
-    if (storedUser && token) {
-      setUser(JSON.parse(storedUser));
-    } else {
-      // Clear any incomplete auth data
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      setUser(null);
-    }
-
-    // Fetch active promotions for banner display
-    fetchPromotions();
+    fetchHomeData();
   }, []);
 
-  const fetchPromotions = async () => {
+  const fetchHomeData = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/promotions/active');
-      if (response.ok) {
-        const data = await response.json();
-        setPromotions(data.data || []);
+      setLoading(true);
+      
+      // Fetch products
+      const productsResponse = await fetch('http://localhost:5000/api/products');
+      const allProducts = await productsResponse.json();
+      
+      // Get categories
+      const uniqueCategories = [...new Set(allProducts.map(product => product.category))];
+      setCategories(uniqueCategories.slice(0, 6));
+      
+      // Get featured products (first 8 products)
+      setFeaturedProducts(allProducts.slice(0, 8));
+      
+      // Get trending products (products with rating >= 4.0)
+      const trending = allProducts.filter(product => (product.rating || 4) >= 4.0).slice(0, 6);
+      setTrendingProducts(trending);
+      
+      // Get new arrivals (last 6 products added)
+      setNewArrivals(allProducts.slice(-6).reverse());
+      
+      // Fetch promotions
+      try {
+        const promoResponse = await fetch('http://localhost:5000/api/promotions/active');
+        if (promoResponse.ok) {
+          const promoData = await promoResponse.json();
+          setPromotions(promoData.data || []);
+        }
+      } catch (error) {
+        console.log('No promotions available');
       }
+      
+      setLoading(false);
     } catch (error) {
-      console.error('Error fetching promotions:', error);
+      console.error('Error fetching home data:', error);
+      setLoading(false);
     }
   };
   
-  const handleShopNowClick = () => {
-    // Go directly to products page without checking login
-    navigate('/products');
+  const handleCategoryClick = (categoryName) => {
+    navigate(`/products?category=${encodeURIComponent(categoryName)}`);
   };
 
-  // Featured products data (in a real app, this would come from an API)
-  const featuredProducts = [
-    {
-      id: 1,
-      name: "Samsung 55\" 4K Smart TV",
-      price: 699.99,
-      image: "https://images.unsplash.com/photo-1593784991095-a205069470b6?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80",
-      category: "TV"
-    },
-    {
-      id: 2,
-      name: "LG French Door Refrigerator",
-      price: 1299.99,
-      image: "https://images.unsplash.com/photo-1584568694244-14fbdf83bd30?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80",
-      category: "Fridge"
-    },
-    {
-      id: 3,
-      name: "iPhone 14 Pro",
-      price: 999.99,
-      image: "https://images.unsplash.com/photo-1592286927505-1def25115df9?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80",
-      category: "Phone"
-    },
-    {
-      id: 4,
-      name: "Samsung Front Load Washing Machine",
-      price: 799.99,
-      image: "https://images.unsplash.com/photo-1626806787461-102c1a7f1c62?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80",
-      category: "Washing Machine"
-    },
-    {
-    id: 5,
-      name: "Samsung top Load Washing Machine",
-      price: 799.99,
-      image: "https://images.unsplash.com/photo-1626806787461-102c1a7f1c62?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80",
-      category: "Washing Machine"
-    }
-  ];
+  const handleProductClick = (productId) => {
+    navigate(`/product/${productId}`);
+  };
 
-  // Categories 
-  const categories = [
-    { id: 1, name: "TVs", image: "https://images.unsplash.com/photo-1593784991095-a205069470b6?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80" },
-    { id: 2, name: "Refrigerators", image: "https://images.unsplash.com/photo-1584568694244-14fbdf83bd30?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80" },
-    { id: 3, name: "Phones", image: "https://images.unsplash.com/photo-1592286927505-1def25115df9?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80" },
-    { id: 4, name: "Washing Machines", image: "https://images.unsplash.com/photo-1626806787461-102c1a7f1c62?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80" }
-  ];
+  if (loading) {
+    return (
+      <div className="loading-container">
+        <div className="loading-spinner"></div>
+        <p>Loading amazing deals...</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="home" style={{ backgroundColor: '#f7f7f7', width: '100%', maxWidth: '1200px', margin: '0 auto', padding: '0 20px' }}>
-      {/* Hero Section */}
-      <div className="hero-section">
-        <div className="hero-content">
-          <h1>Welcome to Vithanage Enterprises</h1>
-          <p>Your one-stop shop for premium electrical appliances</p>
-          {!user && (
-            <div style={{ 
-              backgroundColor: '#f8d7da', 
-              color: '#721c24', 
-              padding: '10px 15px', 
-              borderRadius: '5px',
-              marginBottom: '15px',
-              border: '1px solid #f5c6cb'
-            }}>
-              <strong>Please Note:</strong> You need to login or register to view and purchase products.
+    <div className="home-container">
+      {/* Main Hero Banner */}
+      <section className="hero-section">
+        <div className="hero-banner">
+          <div className="hero-content">
+            <div className="hero-badge">🔥 MEGA SALE</div>
+            <h1>Up to 70% OFF</h1>
+            <p>On Premium Electronics & Fashion Items</p>
+            <div className="hero-buttons">
+              <button className="btn-primary" onClick={() => navigate('/products')}>
+                Shop Now
+              </button>
+              <button className="btn-secondary" onClick={() => navigate('/products')}>
+                View All Deals
+              </button>
             </div>
-          )}
-          <button className="shop-now-btn" onClick={handleShopNowClick}>
-            {user ? 'Shop Now' : 'Login to Shop'}
-          </button>
+          </div>
+          <div className="hero-image">
+            <img src="https://via.placeholder.com/600x400/FF6B6B/FFFFFF?text=MEGA+SALE+70%25+OFF" alt="Mega Sale" />
+          </div>
         </div>
-      </div>
+      </section>
 
-      {/* Promotional Banner */}
+      {/* Promotional Banners - Real Database Promotions */}
       {promotions.length > 0 && (
-        <section className="promotions-section">
-          {promotions.slice(0, 2).map(promotion => (
-            <div key={promotion._id} className="promotion-banner">
-              <h3>🎉 {promotion.name}</h3>
-              <p>{promotion.description}</p>
-              <div className="promo-code">
-                Use Code: <strong>{promotion.code}</strong> - Save {promotion.discountValue}
-                {promotion.type === 'percentage' ? '%' : '$'}!
+        <section className="promo-banners">
+          {promotions.slice(0, 3).map((promotion, index) => {
+            // Determine promotion type for styling and icons
+            const getPromotionStyle = (type) => {
+              switch (type) {
+                case 'percentage':
+                  return { class: 'flash-deal', icon: '⚡' };
+                case 'fixed_amount':
+                  return { class: 'flash-deal', icon: '💰' };
+                case 'free_shipping':
+                  return { class: 'free-shipping', icon: '🚚' };
+                default:
+                  return { class: 'new-arrivals', icon: '✨' };
+              }
+            };
+
+            const style = getPromotionStyle(promotion.type);
+            
+            // Format discount display
+            const getDiscountText = () => {
+              if (promotion.type === 'percentage') {
+                return `${promotion.discountValue}% OFF`;
+              } else if (promotion.type === 'fixed_amount') {
+                return `$${promotion.discountValue} OFF`;
+              } else if (promotion.type === 'free_shipping') {
+                return 'FREE SHIPPING';
+              } else {
+                return 'SPECIAL OFFER';
+              }
+            };
+
+            return (
+              <div key={promotion._id} className={`promo-banner ${style.class}`}>
+                <div className="promo-icon">{style.icon}</div>
+                <div className="promo-content">
+                  <h3>{promotion.name}</h3>
+                  <p>{promotion.description}</p>
+                  <span className="promo-discount">{getDiscountText()}</span>
+                  <div className="promo-code">Code: {promotion.code}</div>
+                  {promotion.minimumOrderValue > 0 && (
+                    <small className="promo-min-order">
+                      Min order: ${promotion.minimumOrderValue}
+                    </small>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </section>
       )}
 
-      {/* Categories Section */}
+      {/* Fallback Promotional Banners - If no database promotions */}
+      {promotions.length === 0 && (
+        <section className="promo-banners">
+          <div className="promo-banner flash-deal">
+            <div className="promo-icon">⚡</div>
+            <div className="promo-content">
+              <h3>Flash Deal</h3>
+              <p>Limited Time Only!</p>
+              <span className="promo-discount">50% OFF</span>
+            </div>
+          </div>
+          <div className="promo-banner free-shipping">
+            <div className="promo-icon">🚚</div>
+            <div className="promo-content">
+              <h3>Free Shipping</h3>
+              <p>On orders over $50</p>
+              <span className="promo-code">FREE50</span>
+            </div>
+          </div>
+          <div className="promo-banner new-arrivals">
+            <div className="promo-icon">✨</div>
+            <div className="promo-content">
+              <h3>New Arrivals</h3>
+              <p>Latest Collection</p>
+              <span className="promo-text">Explore Now</span>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Categories Showcase */}
       <section className="categories-section">
-        <h2>Browse Categories</h2>
-        <div className="categories-container">
-          {categories.map(category => (
-            <div className="category-card" key={category.id}>
-              <img src={category.image} alt={category.name} />
-              <h3>{category.name}</h3>
+        <div className="section-header">
+          <h2>Shop by Categories</h2>
+          <p>Explore our wide range of products</p>
+        </div>
+        <div className="categories-grid">
+          {categories.map((category, index) => (
+            <div 
+              key={index}
+              className="category-card"
+              onClick={() => handleCategoryClick(category)}
+            >
+              <div className="category-image">
+                <img 
+                  src={`https://via.placeholder.com/200x150/4ECDC4/FFFFFF?text=${category}`}
+                  alt={category}
+                />
+                <div className="category-overlay">
+                  <span>Shop Now</span>
+                </div>
+              </div>
+              <h3>{category}</h3>
             </div>
           ))}
         </div>
       </section>
 
-      {/* Featured Products Section */}
-      <section className="featured-products">
-        <h2>Featured Products</h2>
-        <div className="products-container">
-          {featuredProducts.map(product => (
-            <div className="product-card" key={product.id}>
-              <img src={product.image} alt={product.name} />
+      {/* Featured Products */}
+      <section className="featured-section">
+        <div className="section-header">
+          <h2>🔥 Featured Products</h2>
+          <p>Hand-picked items just for you</p>
+        </div>
+        <div className="products-grid">
+          {featuredProducts.map((product) => (
+            <div 
+              key={product._id}
+              className="product-card featured"
+              onClick={() => handleProductClick(product._id)}
+            >
+              <div className="product-image">
+                <img 
+                  src={product.imageUrl || product.image || 'https://via.placeholder.com/250x200/FF9F43/FFFFFF?text=No+Image'} 
+                  alt={product.name}
+                />
+                <div className="product-badge featured">Featured</div>
+                <div className="product-overlay">
+                  <button className="quick-view">Quick View</button>
+                </div>
+              </div>
               <div className="product-info">
                 <h3>{product.name}</h3>
                 <p className="product-category">{product.category}</p>
-                <p className="product-price">${product.price.toFixed(2)}</p>
-                <button 
-                  className="add-to-cart-btn"
-                  onClick={user ? () => alert('Added to cart!') : () => navigate('/login')}
-                >
-                  {user ? 'Add to Cart' : 'Login to Buy'}
-                </button>
+                <div className="product-rating">
+                  {'★'.repeat(Math.floor(product.rating || 4))}
+                  <span className="rating-text">({product.rating || 4.0})</span>
+                </div>
+                <div className="product-price">
+                  <span className="current-price">${product.price}</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="view-more">
+          <button className="btn-outline" onClick={() => navigate('/products')}>
+            View All Products
+          </button>
+        </div>
+      </section>
+
+      {/* Trending Products */}
+      <section className="trending-section">
+        <div className="section-header">
+          <h2>🚀 Trending Now</h2>
+          <p>Most popular items this week</p>
+        </div>
+        <div className="products-grid trending">
+          {trendingProducts.map((product) => (
+            <div 
+              key={product._id}
+              className="product-card trending"
+              onClick={() => handleProductClick(product._id)}
+            >
+              <div className="product-image">
+                <img 
+                  src={product.imageUrl || product.image || 'https://via.placeholder.com/250x200/2ECC71/FFFFFF?text=No+Image'} 
+                  alt={product.name}
+                />
+                <div className="product-badge trending">Trending</div>
+              </div>
+              <div className="product-info">
+                <h3>{product.name}</h3>
+                <div className="product-rating">
+                  {'★'.repeat(Math.floor(product.rating || 4))}
+                  <span className="rating-text">({product.rating || 4.0})</span>
+                </div>
+                <div className="product-price">
+                  <span className="current-price">${product.price}</span>
+                </div>
               </div>
             </div>
           ))}
         </div>
       </section>
 
-      {/* Special Offers Section */}
-      <section className="special-offers">
-        <h2>Special Offers</h2>
-        <div className="offers-container">
-          <div className="offer-card">
-            <div className="offer-content">
-              <h3>Summer Sale</h3>
-              <p>Get up to 30% off on selected items</p>
-              <button className="view-offers-btn" onClick={user ? () => navigate('/products') : () => navigate('/login')}>
-                {user ? 'View Offers' : 'Login to View'}
-              </button>
+      {/* New Arrivals */}
+      <section className="new-arrivals-section">
+        <div className="section-header">
+          <h2>✨ New Arrivals</h2>
+          <p>Fresh products just added to our collection</p>
+        </div>
+        <div className="products-grid new-arrivals">
+          {newArrivals.map((product) => (
+            <div 
+              key={product._id}
+              className="product-card new"
+              onClick={() => handleProductClick(product._id)}
+            >
+              <div className="product-image">
+                <img 
+                  src={product.imageUrl || product.image || 'https://via.placeholder.com/250x200/9B59B6/FFFFFF?text=No+Image'} 
+                  alt={product.name}
+                />
+                <div className="product-badge new">New</div>
+              </div>
+              <div className="product-info">
+                <h3>{product.name}</h3>
+                <div className="product-price">
+                  <span className="current-price">${product.price}</span>
+                </div>
+              </div>
             </div>
-          </div>
-          <div className="offer-card">
-            <div className="offer-content">
-              <h3>New Arrivals</h3>
-              <p>Check out our latest products</p>
-              <button className="view-offers-btn" onClick={user ? () => navigate('/products') : () => navigate('/login')}>
-                {user ? 'View Products' : 'Login to View'}
-              </button>
-            </div>
-          </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Call to Action Section */}
+      <section className="cta-section">
+        <div className="cta-content">
+          <h2>Ready to Explore More?</h2>
+          <p>Discover thousands of amazing products with incredible deals</p>
+          <button className="cta-button" onClick={() => navigate('/products')}>
+            Browse All Products
+          </button>
         </div>
       </section>
     </div>
