@@ -87,6 +87,7 @@ const AdminDashboard = () => {
     pendingReviews: 0,
     flaggedReviews: 0
   });
+  const [reviewMessage, setReviewMessage] = useState({ type: '', message: '' });
 
   // Admin management state
   const [admins, setAdmins] = useState([]);
@@ -2259,6 +2260,7 @@ const AdminDashboard = () => {
 
   const updateReviewApproval = async (reviewId, approved) => {
     try {
+      setReviewMessage({ type: '', message: '' });
       const token = localStorage.getItem('token');
       const response = await fetch(`http://localhost:5000/api/admin/reviews/${reviewId}/approval`, {
         method: 'PUT',
@@ -2266,7 +2268,7 @@ const AdminDashboard = () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ approved })
+        body: JSON.stringify({ isApproved: approved })
       });
 
       const data = await response.json();
@@ -2274,23 +2276,36 @@ const AdminDashboard = () => {
         throw new Error(data.message || 'Failed to update review approval');
       }
 
+      setReviewMessage({ 
+        type: 'success', 
+        message: `Review ${approved ? 'approved' : 'disapproved'} successfully!` 
+      });
       fetchAllReviews(); // Refresh reviews
+      
+      // Clear message after 3 seconds
+      setTimeout(() => setReviewMessage({ type: '', message: '' }), 3000);
     } catch (error) {
       console.error('Error updating review approval:', error);
-      alert(error.message || 'Failed to update review');
+      setReviewMessage({ type: 'error', message: error.message || 'Failed to update review' });
     }
   };
 
   const addAdminResponse = async (reviewId, response) => {
+    if (!response.trim()) {
+      setReviewMessage({ type: 'error', message: 'Please enter a response comment' });
+      return;
+    }
+
     try {
+      setReviewMessage({ type: '', message: '' });
       const token = localStorage.getItem('token');
-      const responseData = await fetch(`http://localhost:5000/api/admin/reviews/${reviewId}/response`, {
+      const responseData = await fetch(`http://localhost:5000/api/admin/reviews/${reviewId}/respond`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ response })
+        body: JSON.stringify({ comment: response })
       });
 
       const data = await responseData.json();
@@ -2298,21 +2313,26 @@ const AdminDashboard = () => {
         throw new Error(data.message || 'Failed to add admin response');
       }
 
+      setReviewMessage({ type: 'success', message: 'Admin response added successfully!' });
       setAdminResponse('');
       setShowReviewModal(false);
       fetchAllReviews(); // Refresh reviews
+      
+      // Clear message after 3 seconds
+      setTimeout(() => setReviewMessage({ type: '', message: '' }), 3000);
     } catch (error) {
       console.error('Error adding admin response:', error);
-      alert(error.message || 'Failed to add response');
+      setReviewMessage({ type: 'error', message: error.message || 'Failed to add response' });
     }
   };
 
   const deleteReview = async (reviewId) => {
-    if (!window.confirm('Are you sure you want to delete this review?')) {
+    if (!window.confirm('Are you sure you want to delete this review? This action cannot be undone.')) {
       return;
     }
 
     try {
+      setReviewMessage({ type: '', message: '' });
       const token = localStorage.getItem('token');
       const response = await fetch(`http://localhost:5000/api/admin/reviews/${reviewId}`, {
         method: 'DELETE',
@@ -2326,10 +2346,15 @@ const AdminDashboard = () => {
         throw new Error(data.message || 'Failed to delete review');
       }
 
+      setReviewMessage({ type: 'success', message: 'Review deleted successfully!' });
+      setShowReviewModal(false);
       fetchAllReviews(); // Refresh reviews
+      
+      // Clear message after 3 seconds
+      setTimeout(() => setReviewMessage({ type: '', message: '' }), 3000);
     } catch (error) {
       console.error('Error deleting review:', error);
-      alert(error.message || 'Failed to delete review');
+      setReviewMessage({ type: 'error', message: error.message || 'Failed to delete review' });
     }
   };
 
@@ -2358,6 +2383,14 @@ const AdminDashboard = () => {
   const renderReviews = () => (
     <div className="module-content">
       <h2><FontAwesomeIcon icon={faStar} /> Review Management</h2>
+      
+      {/* Review Management Message */}
+      {reviewMessage.message && (
+        <div className={`message ${reviewMessage.type}`} style={{ marginBottom: '1rem' }}>
+          <FontAwesomeIcon icon={reviewMessage.type === 'success' ? faCog : faSignOutAlt} />
+          {reviewMessage.message}
+        </div>
+      )}
       
       {/* Review Stats */}
       <div className="stats-grid" style={{ marginBottom: '2rem' }}>
@@ -2464,8 +2497,8 @@ const AdminDashboard = () => {
                       {review.comment.length > 100 ? `${review.comment.substring(0, 100)}...` : review.comment}
                     </td>
                     <td>
-                      <span className={`badge ${review.approved ? 'approved' : 'pending'}`}>
-                        {review.approved ? 'Approved' : 'Pending'}
+                      <span className={`badge ${review.isApproved ? 'approved' : 'pending'}`}>
+                        {review.isApproved ? 'Approved' : 'Pending'}
                       </span>
                     </td>
                     <td>{new Date(review.createdAt).toLocaleDateString()}</td>
@@ -2480,7 +2513,7 @@ const AdminDashboard = () => {
                       >
                         <FontAwesomeIcon icon={faEye} />
                       </button>
-                      {review.approved ? (
+                      {review.isApproved ? (
                         <button 
                           className="reject-btn" 
                           title="Unapprove Review"
@@ -2560,8 +2593,13 @@ const AdminDashboard = () => {
                   <div className="detail-row">
                     <strong>Admin Response:</strong>
                     <p style={{ marginTop: '5px', lineHeight: '1.5', fontStyle: 'italic' }}>
-                      {selectedReview.adminResponse}
+                      {selectedReview.adminResponse.comment || selectedReview.adminResponse}
                     </p>
+                    {selectedReview.adminResponse.respondedAt && (
+                      <small style={{ color: '#666', fontSize: '0.8em' }}>
+                        Responded on: {new Date(selectedReview.adminResponse.respondedAt).toLocaleDateString()}
+                      </small>
+                    )}
                   </div>
                 )}
               </div>
@@ -2572,7 +2610,7 @@ const AdminDashboard = () => {
                 <textarea
                   value={adminResponse}
                   onChange={(e) => setAdminResponse(e.target.value)}
-                  placeholder={selectedReview.adminResponse ? "Update admin response..." : "Add admin response..."}
+                  placeholder={(selectedReview.adminResponse?.comment || selectedReview.adminResponse) ? "Update admin response..." : "Add admin response..."}
                   rows={4}
                   style={{
                     width: '100%',
@@ -2592,7 +2630,7 @@ const AdminDashboard = () => {
                 disabled={!adminResponse.trim()}
               >
                 <FontAwesomeIcon icon={faCog} /> 
-                {selectedReview.adminResponse ? 'Update Response' : 'Add Response'}
+                {(selectedReview.adminResponse?.comment || selectedReview.adminResponse) ? 'Update Response' : 'Add Response'}
               </button>
             </div>
           </div>

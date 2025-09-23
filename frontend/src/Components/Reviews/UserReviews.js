@@ -9,6 +9,9 @@ const UserReviews = ({ userToken }) => {
         rating: 0,
         comment: ''
     });
+    const [message, setMessage] = useState({ type: '', text: '' });
+    const [updating, setUpdating] = useState(false);
+    const [deleting, setDeleting] = useState(null);
 
     useEffect(() => {
         if (userToken) {
@@ -55,6 +58,19 @@ const UserReviews = ({ userToken }) => {
     };
 
     const handleUpdateReview = async (reviewId) => {
+        if (!editFormData.comment.trim()) {
+            setMessage({ type: 'error', text: 'Please provide a comment for your review' });
+            return;
+        }
+
+        if (editFormData.rating === 0) {
+            setMessage({ type: 'error', text: 'Please select a rating for your review' });
+            return;
+        }
+
+        setUpdating(true);
+        setMessage({ type: '', text: '' });
+
         try {
             const response = await fetch(`http://localhost:5000/api/reviews/${reviewId}`, {
                 method: 'PUT',
@@ -67,22 +83,31 @@ const UserReviews = ({ userToken }) => {
 
             const data = await response.json();
             if (data.success) {
+                setMessage({ type: 'success', text: 'Review updated successfully!' });
                 fetchUserReviews(); // Refresh the list
                 setEditingReview(null);
                 setEditFormData({ rating: 0, comment: '' });
+                
+                // Clear success message after 3 seconds
+                setTimeout(() => setMessage({ type: '', text: '' }), 3000);
             } else {
-                alert(data.message || 'Failed to update review');
+                setMessage({ type: 'error', text: data.message || 'Failed to update review' });
             }
         } catch (error) {
             console.error('Error updating review:', error);
-            alert('Failed to update review');
+            setMessage({ type: 'error', text: 'Failed to update review. Please try again.' });
+        } finally {
+            setUpdating(false);
         }
     };
 
     const handleDeleteReview = async (reviewId) => {
-        if (!window.confirm('Are you sure you want to delete this review?')) {
+        if (!window.confirm('Are you sure you want to delete this review? This action cannot be undone.')) {
             return;
         }
+
+        setDeleting(reviewId);
+        setMessage({ type: '', text: '' });
 
         try {
             const response = await fetch(`http://localhost:5000/api/reviews/${reviewId}`, {
@@ -94,13 +119,19 @@ const UserReviews = ({ userToken }) => {
 
             const data = await response.json();
             if (data.success) {
+                setMessage({ type: 'success', text: 'Review deleted successfully!' });
                 fetchUserReviews(); // Refresh the list
+                
+                // Clear success message after 3 seconds
+                setTimeout(() => setMessage({ type: '', text: '' }), 3000);
             } else {
-                alert(data.message || 'Failed to delete review');
+                setMessage({ type: 'error', text: data.message || 'Failed to delete review' });
             }
         } catch (error) {
             console.error('Error deleting review:', error);
-            alert('Failed to delete review');
+            setMessage({ type: 'error', text: 'Failed to delete review. Please try again.' });
+        } finally {
+            setDeleting(null);
         }
     };
 
@@ -146,6 +177,12 @@ const UserReviews = ({ userToken }) => {
     return (
         <div className="user-reviews">
             <h2>My Reviews</h2>
+
+            {message.text && (
+                <div className={`message ${message.type}`}>
+                    {message.text}
+                </div>
+            )}
 
             {!reviews || reviews.length === 0 ? (
                 <div className="no-reviews">
@@ -195,13 +232,18 @@ const UserReviews = ({ userToken }) => {
                             {review.adminResponse && (
                                 <div className="admin-response">
                                     <div className="admin-badge">Admin Response</div>
-                                    <p>{review.adminResponse}</p>
+                                    <p>{review.adminResponse.comment || review.adminResponse}</p>
+                                    {review.adminResponse.respondedAt && (
+                                        <div className="response-date">
+                                            Responded on: {formatDate(review.adminResponse.respondedAt)}
+                                        </div>
+                                    )}
                                 </div>
                             )}
 
                             <div className="review-status">
-                                <span className={`status-badge ${review.approved ? 'approved' : 'pending'}`}>
-                                    {review.approved ? 'Approved' : 'Pending Approval'}
+                                <span className={`status-badge ${review.isApproved ? 'approved' : 'pending'}`}>
+                                    {review.isApproved ? 'Approved' : 'Pending Approval'}
                                 </span>
                                 
                                 {review.likes && review.likes.length > 0 && (
@@ -217,8 +259,9 @@ const UserReviews = ({ userToken }) => {
                                         <button 
                                             className="save-btn"
                                             onClick={() => handleUpdateReview(review._id)}
+                                            disabled={updating}
                                         >
-                                            Save Changes
+                                            {updating ? 'Saving...' : 'Save Changes'}
                                         </button>
                                         <button 
                                             className="cancel-btn"
@@ -240,8 +283,9 @@ const UserReviews = ({ userToken }) => {
                                         <button 
                                             className="delete-btn"
                                             onClick={() => handleDeleteReview(review._id)}
+                                            disabled={deleting === review._id}
                                         >
-                                            Delete
+                                            {deleting === review._id ? 'Deleting...' : 'Delete'}
                                         </button>
                                     </>
                                 )}

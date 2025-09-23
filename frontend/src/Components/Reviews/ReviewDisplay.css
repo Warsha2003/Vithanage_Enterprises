@@ -197,6 +197,13 @@
     font-size: 0.9rem;
 }
 
+.admin-response .response-date {
+    margin-top: 0.5rem;
+    color: #666;
+    font-size: 0.8rem;
+    font-style: normal;
+}
+
 .review-actions {
     display: flex;
     gap: 1rem;

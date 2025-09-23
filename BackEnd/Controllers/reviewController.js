@@ -143,7 +143,7 @@ const createReview = async (req, res) => {
     if (orderId) {
       order = await Order.findOne({
         _id: orderId,
-        user: req.user._id,
+        user: getUserId(req.user),
         'items.product': productId,
         $or: [
           { 'processing.step': 'finished' },
@@ -153,7 +153,7 @@ const createReview = async (req, res) => {
     } else {
       // Find any completed order containing this product
       order = await Order.findOne({
-        user: req.user._id,
+        user: getUserId(req.user),
         'items.product': productId,
         $or: [
           { 'processing.step': 'finished' },
@@ -174,7 +174,7 @@ const createReview = async (req, res) => {
     const fakeOrderId = new mongoose.Types.ObjectId();
 
     // Check if user already reviewed this product
-    const currentUserId = req.user._id || req.user.id;
+    const currentUserId = getUserId(req.user);
     const existingReview = await Review.findOne({
       user: currentUserId,
       product: productId
@@ -188,15 +188,13 @@ const createReview = async (req, res) => {
     }
 
     // Ensure user is properly set
-    if (!req.user || (!req.user._id && !req.user.id)) {
+    const userId = getUserId(req.user);
+    if (!req.user || !userId) {
       return res.status(401).json({
         success: false,
         message: 'User authentication required'
       });
     }
-
-    // Handle both _id and id formats
-    const userId = req.user._id || req.user.id;
     console.log('About to create review with userId:', userId);
 
     const review = new Review({
@@ -255,7 +253,8 @@ const updateReview = async (req, res) => {
     }
 
     // Check if review belongs to user
-    if (review.user.toString() !== req.user._id.toString()) {
+    const userId = getUserId(req.user);
+    if (review.user.toString() !== userId.toString()) {
       return res.status(403).json({
         success: false,
         message: 'Not authorized to update this review'
@@ -320,14 +319,15 @@ const deleteReview = async (req, res) => {
     }
 
     // Check if review belongs to user
-    if (review.user.toString() !== req.user._id.toString()) {
+    const userId = getUserId(req.user);
+    if (review.user.toString() !== userId.toString()) {
       return res.status(403).json({
         success: false,
         message: 'Not authorized to delete this review'
       });
     }
 
-    await review.remove();
+    await review.deleteOne();
 
     res.json({
       success: true,
@@ -348,7 +348,7 @@ const deleteReview = async (req, res) => {
 const toggleReviewLike = async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user._id;
+    const userId = getUserId(req.user);
 
     const review = await Review.findById(id);
 
@@ -397,7 +397,7 @@ const reportReview = async (req, res) => {
   try {
     const { id } = req.params;
     const { reason } = req.body;
-    const userId = req.user._id;
+    const userId = getUserId(req.user);
 
     if (!reason) {
       return res.status(400).json({
@@ -455,7 +455,7 @@ const reportReview = async (req, res) => {
 // @access  Private
 const getReviewableProducts = async (req, res) => {
   try {
-    const userId = req.user._id;
+    const userId = getUserId(req.user);
     const { productId } = req.params;
 
     // Check if user has already reviewed this product

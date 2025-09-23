@@ -138,7 +138,12 @@ const MyRefunds = () => {
                             {refund.adminResponse && (
                                 <div className="admin-response">
                                     <div className="admin-badge">Admin Response</div>
-                                    <p>{refund.adminResponse}</p>
+                                    <p>{refund.adminResponse.comment || refund.adminResponse}</p>
+                                    {refund.adminResponse.respondedAt && (
+                                        <div className="response-date">
+                                            Responded on: {new Date(refund.adminResponse.respondedAt).toLocaleDateString()}
+                                        </div>
+                                    )}
                                 </div>
                             )}
 

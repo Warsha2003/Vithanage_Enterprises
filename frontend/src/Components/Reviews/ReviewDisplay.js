@@ -140,7 +140,12 @@ const ReviewDisplay = ({ productId, userToken }) => {
                             {review.adminResponse && (
                                 <div className="admin-response">
                                     <div className="admin-badge">Admin Response</div>
-                                    <p>{review.adminResponse}</p>
+                                    <p>{review.adminResponse.comment || review.adminResponse}</p>
+                                    {review.adminResponse.respondedAt && (
+                                        <div className="response-date">
+                                            Responded on: {new Date(review.adminResponse.respondedAt).toLocaleDateString()}
+                                        </div>
+                                    )}
                                 </div>
                             )}
 

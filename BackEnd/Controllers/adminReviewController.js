@@ -172,7 +172,7 @@ const addAdminResponse = async (req, res) => {
 
     review.adminResponse = {
       comment,
-      respondedBy: req.user._id,
+      respondedBy: req.admin._id || req.admin.id,
       respondedAt: new Date()
     };
 
@@ -241,7 +241,7 @@ const deleteReview = async (req, res) => {
       });
     }
 
-    await review.remove();
+    await review.deleteOne();
 
     res.json({
       success: true,

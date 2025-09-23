@@ -188,6 +188,13 @@
     font-style: italic;
 }
 
+.admin-response .response-date {
+    margin-top: 0.5rem;
+    color: #666;
+    font-size: 0.8rem;
+    font-style: normal;
+}
+
 .refund-card-footer {
     display: flex;
     justify-content: space-between;

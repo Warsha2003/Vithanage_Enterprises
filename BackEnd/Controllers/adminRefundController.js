@@ -93,11 +93,23 @@ const approveRefund = async (req, res) => {
     try {
         const { id } = req.params;
         const { adminResponse, refundMethod, estimatedProcessingDays } = req.body;
-        const adminId = req.user.id;
+        
+        // Check if admin is properly authenticated
+        if (!req.admin || (!req.admin._id && !req.admin.id)) {
+            console.error('Admin authentication failed in approveRefund');
+            return res.status(401).json({
+                success: false,
+                message: 'Admin authentication required'
+            });
+        }
+        
+        const adminId = req.admin._id || req.admin.id;
+        console.log('Approving refund:', { id, adminId, adminResponse });
 
         const refund = await Refund.findById(id);
 
         if (!refund) {
+            console.error('Refund not found:', id);
             return res.status(404).json({
                 success: false,
                 message: 'Refund request not found'
@@ -105,6 +117,7 @@ const approveRefund = async (req, res) => {
         }
 
         if (refund.status !== 'Pending') {
+            console.error('Invalid refund status for approval:', refund.status);
             return res.status(400).json({
                 success: false,
                 message: 'Can only approve pending refund requests'
@@ -119,6 +132,12 @@ const approveRefund = async (req, res) => {
         if (refundMethod) refund.refundMethod = refundMethod;
         if (estimatedProcessingDays) refund.estimatedProcessingDays = estimatedProcessingDays;
 
+        console.log('Saving refund with data:', {
+            status: refund.status,
+            adminId: refund.adminId,
+            adminResponse: refund.adminResponse
+        });
+
         await refund.save();
 
         // Populate for response
@@ -126,6 +145,7 @@ const approveRefund = async (req, res) => {
         await refund.populate('productId', 'name');
         await refund.populate('adminId', 'name');
 
+        console.log('Refund approved successfully');
         res.json({
             success: true,
             message: 'Refund request approved successfully',
@@ -134,6 +154,7 @@ const approveRefund = async (req, res) => {
 
     } catch (error) {
         console.error('Error approving refund:', error);
+        console.error('Error stack:', error.stack);
         res.status(500).json({
             success: false,
             message: 'Internal server error',
@@ -147,7 +168,18 @@ const rejectRefund = async (req, res) => {
     try {
         const { id } = req.params;
         const { adminResponse } = req.body;
-        const adminId = req.user.id;
+        
+        // Check if admin is properly authenticated
+        if (!req.admin || (!req.admin._id && !req.admin.id)) {
+            console.error('Admin authentication failed in rejectRefund');
+            return res.status(401).json({
+                success: false,
+                message: 'Admin authentication required'
+            });
+        }
+        
+        const adminId = req.admin._id || req.admin.id;
+        console.log('Rejecting refund:', { id, adminId, adminResponse });
 
         if (!adminResponse || adminResponse.trim() === '') {
             return res.status(400).json({
@@ -159,6 +191,7 @@ const rejectRefund = async (req, res) => {
         const refund = await Refund.findById(id);
 
         if (!refund) {
+            console.error('Refund not found:', id);
             return res.status(404).json({
                 success: false,
                 message: 'Refund request not found'
@@ -166,6 +199,7 @@ const rejectRefund = async (req, res) => {
         }
 
         if (refund.status !== 'Pending') {
+            console.error('Invalid refund status for rejection:', refund.status);
             return res.status(400).json({
                 success: false,
                 message: 'Can only reject pending refund requests'
@@ -177,6 +211,12 @@ const rejectRefund = async (req, res) => {
         refund.adminId = adminId;
         refund.adminResponse = adminResponse;
 
+        console.log('Saving refund with rejection data:', {
+            status: refund.status,
+            adminId: refund.adminId,
+            adminResponse: refund.adminResponse
+        });
+
         await refund.save();
 
         // Populate for response
@@ -184,6 +224,7 @@ const rejectRefund = async (req, res) => {
         await refund.populate('productId', 'name');
         await refund.populate('adminId', 'name');
 
+        console.log('Refund rejected successfully');
         res.json({
             success: true,
             message: 'Refund request rejected',
@@ -192,6 +233,7 @@ const rejectRefund = async (req, res) => {
 
     } catch (error) {
         console.error('Error rejecting refund:', error);
+        console.error('Error stack:', error.stack);
         res.status(500).json({
             success: false,
             message: 'Internal server error',
@@ -205,7 +247,7 @@ const markRefundProcessing = async (req, res) => {
     try {
         const { id } = req.params;
         const { adminResponse } = req.body;
-        const adminId = req.user.id;
+        const adminId = req.admin._id || req.admin.id;
 
         const refund = await Refund.findById(id);
 
@@ -250,7 +292,7 @@ const completeRefund = async (req, res) => {
     try {
         const { id } = req.params;
         const { adminResponse } = req.body;
-        const adminId = req.user.id;
+        const adminId = req.admin._id || req.admin.id;
 
         const refund = await Refund.findById(id);
 
@@ -350,7 +392,7 @@ const getRefundDashboardStats = async (req, res) => {
 const bulkUpdateRefundStatus = async (req, res) => {
     try {
         const { refundIds, status, adminResponse } = req.body;
-        const adminId = req.user.id;
+        const adminId = req.admin._id || req.admin.id;
 
         if (!refundIds || !Array.isArray(refundIds) || refundIds.length === 0) {
             return res.status(400).json({
