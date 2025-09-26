@@ -6,6 +6,30 @@ const ProductManagement = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   
+  // Predefined categories and brands
+  const CATEGORIES = [
+    'Televisions',
+    'Laptops', 
+    'Kitchen Appliances',
+    'Air Conditioners',
+    'Home Appliances',
+    'Refrigerators',
+    'Mobile Phones',
+    'Audio Systems',
+    'Washing Machines',
+    'Tablets',
+    'Computer Accessories'
+  ];
+
+  const BRANDS = [
+    'ASUS', 'Acer', 'Apple', 'Bosch', 'Bose', 'Breville', 'Brita', 'Conair',
+    'Cuisinart', 'Daikin', 'Dell', 'Dyson', 'Google', 'HP', 'Haier', 'Honeywell',
+    'Huawei', 'Instant Pot', 'JBL', 'KitchenAid', 'LG', 'Lasko', 'Lenovo',
+    'Logitech', 'Microsoft', 'Nokia', 'OnePlus', 'Oppo', 'Panasonic', 'Philips',
+    'Razer', 'Realme', 'Rowenta', 'Samsung', 'Siemens', 'Sonos', 'Sony', 'TCL',
+    'TaoTronics', 'Vivo', 'Whirlpool', 'Xiaomi', 'Zojirushi'
+  ];
+  
   // Form state for adding/editing products
   const [formData, setFormData] = useState({
     name: '',
@@ -250,26 +274,38 @@ const ProductManagement = () => {
             <div className="form-row">
               <div className="form-group">
                 <label htmlFor="category">Category</label>
-                <input
-                  type="text"
+                <select
                   id="category"
                   name="category"
                   value={formData.category}
                   onChange={handleChange}
                   required
-                />
+                >
+                  <option value="">Select Category</option>
+                  {CATEGORIES.map((category) => (
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
+                  ))}
+                </select>
               </div>
               
               <div className="form-group">
                 <label htmlFor="brand">Brand</label>
-                <input
-                  type="text"
+                <select
                   id="brand"
                   name="brand"
                   value={formData.brand}
                   onChange={handleChange}
                   required
-                />
+                >
+                  <option value="">Select Brand</option>
+                  {BRANDS.map((brand) => (
+                    <option key={brand} value={brand}>
+                      {brand}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
             

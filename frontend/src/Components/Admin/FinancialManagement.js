@@ -1,13 +1,18 @@
 import React, { useState, useEffect } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { 
+  faTags, faCheckCircle, faClock, faUsers, faPercentage,
+  faPlus, faSearch, faSyncAlt, faEdit, faPlay, faPause, faTrash
+} from '@fortawesome/free-solid-svg-icons';
 import './FinancialManagement.css';
 
 const FinancialManagement = () => {
   const [promotions, setPromotions] = useState([]);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('promotions');
   const [showModal, setShowModal] = useState(false);
   const [selectedPromotion, setSelectedPromotion] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -342,6 +347,63 @@ const FinancialManagement = () => {
     }
   };
 
+  const refreshData = () => {
+    setLoading(true);
+    fetchPromotions();
+    fetchProducts();
+  };
+
+  const getPromotionStats = () => {
+    const now = new Date();
+    let activeCount = 0;
+    let expiredCount = 0;
+    let scheduledCount = 0;
+    let totalUsage = 0;
+    let totalDiscount = 0;
+    let percentagePromotions = 0;
+
+    promotions.forEach(promotion => {
+      const startDate = new Date(promotion.startDate);
+      const endDate = new Date(promotion.endDate);
+      
+      totalUsage += promotion.usageCount || 0;
+      
+      if (promotion.type === 'percentage') {
+        totalDiscount += promotion.discountValue;
+        percentagePromotions++;
+      }
+
+      if (!promotion.isActive) {
+        // Inactive promotions
+      } else if (now < startDate) {
+        scheduledCount++;
+      } else if (now > endDate) {
+        expiredCount++;
+      } else if (promotion.maxUsageCount && promotion.usageCount >= promotion.maxUsageCount) {
+        // Usage limit reached
+      } else {
+        activeCount++;
+      }
+    });
+
+    return {
+      total: promotions.length,
+      active: activeCount,
+      expired: expiredCount,
+      scheduled: scheduledCount,
+      totalUsage,
+      avgDiscount: percentagePromotions > 0 ? (totalDiscount / percentagePromotions).toFixed(1) : 0
+    };
+  };
+
+  const stats = getPromotionStats();
+
+  const filteredPromotions = promotions.filter(promotion =>
+    promotion.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    promotion.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    promotion.description.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   if (loading && promotions.length === 0) {
     return (
       <div className="financial-management">
@@ -359,7 +421,8 @@ const FinancialManagement = () => {
             className="btn-primary"
             onClick={() => openModal()}
           >
-            Create New Promotion
+            <FontAwesomeIcon icon={faPlus} />
+            Create Promotion
           </button>
         </div>
       </div>
@@ -378,144 +441,174 @@ const FinancialManagement = () => {
         </div>
       )}
 
-      <div className="tab-navigation">
-        <button
-          className={`tab-button ${activeTab === 'promotions' ? 'active' : ''}`}
-          onClick={() => setActiveTab('promotions')}
-        >
-          Promotions ({promotions.length})
-        </button>
-        <button
-          className={`tab-button ${activeTab === 'analytics' ? 'active' : ''}`}
-          onClick={() => setActiveTab('analytics')}
-        >
-          Analytics
-        </button>
+      {/* Financial Statistics Cards */}
+      <div className="stats-grid">
+        <div className="stat-card total">
+          <div className="stat-icon">
+            <FontAwesomeIcon icon={faTags} />
+          </div>
+          <div className="stat-content">
+            <div className="stat-value">{stats.total}</div>
+            <div className="stat-label">Total Promotions</div>
+          </div>
+        </div>
+        
+        <div className="stat-card active">
+          <div className="stat-icon">
+            <FontAwesomeIcon icon={faCheckCircle} />
+          </div>
+          <div className="stat-content">
+            <div className="stat-value">{stats.active}</div>
+            <div className="stat-label">Active Promotions</div>
+          </div>
+        </div>
+        
+        <div className="stat-card expired">
+          <div className="stat-icon">
+            <FontAwesomeIcon icon={faClock} />
+          </div>
+          <div className="stat-content">
+            <div className="stat-value">{stats.expired}</div>
+            <div className="stat-label">Expired Promotions</div>
+          </div>
+        </div>
+        
+        <div className="stat-card usage">
+          <div className="stat-icon">
+            <FontAwesomeIcon icon={faUsers} />
+          </div>
+          <div className="stat-content">
+            <div className="stat-value">{stats.totalUsage}</div>
+            <div className="stat-label">Total Usage</div>
+          </div>
+        </div>
+        
+        <div className="stat-card discount">
+          <div className="stat-icon">
+            <FontAwesomeIcon icon={faPercentage} />
+          </div>
+          <div className="stat-content">
+            <div className="stat-value">{stats.avgDiscount}%</div>
+            <div className="stat-label">Avg Discount</div>
+          </div>
+        </div>
       </div>
 
-      {activeTab === 'promotions' && (
-        <div className="promotions-section">
-          {promotions.length === 0 ? (
-            <div className="empty-state">
-              <p>No promotions created yet</p>
+      {/* Search and Actions */}
+      <div className="search-section">
+        <div className="search-container">
+          <input
+            type="text"
+            placeholder="Search promotions..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="search-input"
+          />
+          <button className="search-btn">
+            <FontAwesomeIcon icon={faSearch} />
+          </button>
+          <button className="refresh-btn" onClick={refreshData}>
+            <FontAwesomeIcon icon={faSyncAlt} />
+          </button>
+        </div>
+      </div>
+
+      {/* Promotions List */}
+      <div className="promotions-section">
+        {filteredPromotions.length === 0 ? (
+          <div className="empty-state">
+            <FontAwesomeIcon icon={faTags} />
+            <p>No promotions found</p>
+            {searchTerm ? (
+              <button className="btn-secondary" onClick={() => setSearchTerm('')}>
+                Clear Search
+              </button>
+            ) : (
               <button className="btn-primary" onClick={() => openModal()}>
                 Create Your First Promotion
               </button>
-            </div>
-          ) : (
-            <div className="promotions-grid">
-              {promotions.map((promotion) => {
-                const status = getPromotionStatus(promotion);
-                return (
-                  <div key={promotion._id} className="promotion-card">
-                    <div className="promotion-header">
-                      <h3>{promotion.name}</h3>
-                      <span className={`status-badge ${status.class}`}>
-                        {status.text}
+            )}
+          </div>
+        ) : (
+          <div className="promotions-grid">
+            {filteredPromotions.map((promotion) => {
+              const status = getPromotionStatus(promotion);
+              return (
+                <div key={promotion._id} className="promotion-card">
+                  <div className="promotion-header">
+                    <h3>{promotion.name}</h3>
+                    <span className={`status-badge ${status.class}`}>
+                      {status.text}
+                    </span>
+                  </div>
+                  
+                  <div className="promotion-details">
+                    <div className="detail-row">
+                      <span className="label">Code:</span>
+                      <span className="code">{promotion.code}</span>
+                    </div>
+                    
+                    <div className="detail-row">
+                      <span className="label">Discount:</span>
+                      <span className="value">{formatDiscount(promotion)}</span>
+                    </div>
+                    
+                    <div className="detail-row">
+                      <span className="label">Usage:</span>
+                      <span className="value">
+                        {promotion.usageCount}
+                        {promotion.maxUsageCount && ` / ${promotion.maxUsageCount}`}
                       </span>
                     </div>
                     
-                    <div className="promotion-details">
-                      <div className="detail-row">
-                        <span className="label">Code:</span>
-                        <span className="code">{promotion.code}</span>
-                      </div>
-                      
-                      <div className="detail-row">
-                        <span className="label">Discount:</span>
-                        <span className="value">{formatDiscount(promotion)}</span>
-                      </div>
-                      
-                      <div className="detail-row">
-                        <span className="label">Usage:</span>
-                        <span className="value">
-                          {promotion.usageCount}
-                          {promotion.maxUsageCount && ` / ${promotion.maxUsageCount}`}
-                        </span>
-                      </div>
-                      
-                      <div className="detail-row">
-                        <span className="label">Valid:</span>
-                        <span className="value">
-                          {formatDate(promotion.startDate)} - {formatDate(promotion.endDate)}
-                        </span>
-                      </div>
-                      
-                      {promotion.minimumOrderValue > 0 && (
-                        <div className="detail-row">
-                          <span className="label">Min Order:</span>
-                          <span className="value">${promotion.minimumOrderValue}</span>
-                        </div>
-                      )}
+                    <div className="detail-row">
+                      <span className="label">Valid:</span>
+                      <span className="value">
+                        {formatDate(promotion.startDate)} - {formatDate(promotion.endDate)}
+                      </span>
                     </div>
-
-                    <div className="promotion-description">
-                      <p>{promotion.description}</p>
-                    </div>
-
-                    <div className="promotion-actions">
-                      <button
-                        className="btn-secondary"
-                        onClick={() => openModal(promotion)}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        className={`btn-toggle ${promotion.isActive ? 'btn-warning' : 'btn-success'}`}
-                        onClick={() => togglePromotionStatus(promotion._id)}
-                      >
-                        {promotion.isActive ? 'Deactivate' : 'Activate'}
-                      </button>
-                      <button
-                        className="btn-danger"
-                        onClick={() => handleDelete(promotion._id)}
-                      >
-                        Delete
-                      </button>
-                    </div>
+                    
+                    {promotion.minimumOrderValue > 0 && (
+                      <div className="detail-row">
+                        <span className="label">Min Order:</span>
+                        <span className="value">${promotion.minimumOrderValue}</span>
+                      </div>
+                    )}
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
 
-      {activeTab === 'analytics' && (
-        <div className="analytics-section">
-          <div className="analytics-grid">
-            <div className="stat-card">
-              <h3>Total Promotions</h3>
-              <div className="stat-value">{promotions.length}</div>
-            </div>
-            <div className="stat-card">
-              <h3>Active Promotions</h3>
-              <div className="stat-value">
-                {promotions.filter(p => {
-                  const status = getPromotionStatus(p);
-                  return status.text === 'Active';
-                }).length}
-              </div>
-            </div>
-            <div className="stat-card">
-              <h3>Total Usage</h3>
-              <div className="stat-value">
-                {promotions.reduce((total, p) => total + p.usageCount, 0)}
-              </div>
-            </div>
-            <div className="stat-card">
-              <h3>Avg Discount</h3>
-              <div className="stat-value">
-                {promotions.length > 0
-                  ? (promotions.reduce((total, p) => 
-                      total + (p.type === 'percentage' ? p.discountValue : 0), 0
-                    ) / promotions.filter(p => p.type === 'percentage').length || 0).toFixed(1)
-                  : 0}%
-              </div>
-            </div>
+                  <div className="promotion-description">
+                    <p>{promotion.description}</p>
+                  </div>
+
+                  <div className="promotion-actions">
+                    <button
+                      className="btn-secondary"
+                      onClick={() => openModal(promotion)}
+                    >
+                      <FontAwesomeIcon icon={faEdit} />
+                      Edit
+                    </button>
+                    <button
+                      className={`btn-toggle ${promotion.isActive ? 'btn-warning' : 'btn-success'}`}
+                      onClick={() => togglePromotionStatus(promotion._id)}
+                    >
+                      <FontAwesomeIcon icon={promotion.isActive ? faPause : faPlay} />
+                      {promotion.isActive ? 'Deactivate' : 'Activate'}
+                    </button>
+                    <button
+                      className="btn-danger"
+                      onClick={() => handleDelete(promotion._id)}
+                    >
+                      <FontAwesomeIcon icon={faTrash} />
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Promotion Modal */}
       {showModal && (

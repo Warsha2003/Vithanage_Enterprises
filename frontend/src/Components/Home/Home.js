@@ -9,6 +9,7 @@ function Home() {
   const [categories, setCategories] = useState([]);
   const [promotions, setPromotions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [currentCategoryPage, setCurrentCategoryPage] = useState(0);
   const navigate = useNavigate();
   
   useEffect(() => {
@@ -60,7 +61,54 @@ function Home() {
   };
 
   const handleProductClick = (productId) => {
-    navigate(`/product/${productId}`);
+    if (productId) {
+      navigate(`/products/${productId}`);
+    } else {
+      console.error('Product ID is missing');
+    }
+  };
+
+  // Category carousel functions
+  const CATEGORIES_PER_PAGE = 6;
+  
+  const staticCategories = [
+    // First 6 categories with your local images
+    { name: 'Televisions', image: '/images/categories/televisions.jpg' },
+    { name: 'Laptops', image: '/images/categories/laptops.jpg' },
+    { name: 'Mobile Phones', image: '/images/categories/smartphones.jpg' },
+    { name: 'Kitchen Appliances', image: '/images/categories/kitchen-appliances.jpg' },
+    { name: 'Refrigerators', image: '/images/categories/Refrigerators.jpg' },
+    { name: 'Air Conditioners', image: '/images/categories/Air-Conditioners.jpg' },
+    
+    // Second page categories with local images where available
+    { name: 'Audio Systems', image: '/images/categories/Audio-Systems.jpg' },
+    { name: 'Washing Machines', image: '/images/categories/Washing-Machines.jpg' },
+    { name: 'Computer Accessories', image: '/images/categories/Computer-Accessories.jpg' },
+    { name: 'Tablets', image: '/images/categories/Tablets.jpg' },
+    { name: 'Home Appliances', image: 'https://via.placeholder.com/250x180/4A90E2/FFFFFF?text=Home+Appliances' },
+    { name: 'Cameras', image: '/images/categories/Cameras.jpg' }
+  ];
+
+  const getCurrentCategories = () => {
+    const startIndex = currentCategoryPage * CATEGORIES_PER_PAGE;
+    const endIndex = startIndex + CATEGORIES_PER_PAGE;
+    return staticCategories.slice(startIndex, endIndex);
+  };
+
+  const getTotalPages = () => {
+    return Math.ceil(staticCategories.length / CATEGORIES_PER_PAGE);
+  };
+
+  const nextCategoryPage = () => {
+    if (currentCategoryPage < getTotalPages() - 1) {
+      setCurrentCategoryPage(prev => prev + 1);
+    }
+  };
+
+  const prevCategoryPage = () => {
+    if (currentCategoryPage > 0) {
+      setCurrentCategoryPage(prev => prev - 1);
+    }
   };
 
   if (loading) {
@@ -179,31 +227,57 @@ function Home() {
         </section>
       )}
 
-      {/* Categories Showcase */}
+      {/* Categories Showcase - Carousel */}
       <section className="categories-section">
         <div className="section-header">
           <h2>Shop by Categories</h2>
           <p>Explore our wide range of products</p>
         </div>
-        <div className="categories-grid">
-          {categories.map((category, index) => (
-            <div 
-              key={index}
-              className="category-card"
-              onClick={() => handleCategoryClick(category)}
-            >
-              <div className="category-image">
-                <img 
-                  src={`https://via.placeholder.com/200x150/4ECDC4/FFFFFF?text=${category}`}
-                  alt={category}
-                />
-                <div className="category-overlay">
-                  <span>Shop Now</span>
+        
+        <div className="category-carousel-wrapper">
+          {/* Carousel Controls */}
+          <button 
+            className={`carousel-arrow carousel-arrow-left ${currentCategoryPage === 0 ? 'disabled' : ''}`}
+            onClick={prevCategoryPage}
+            disabled={currentCategoryPage === 0}
+          >
+            &#8249;
+          </button>
+          
+          <button 
+            className={`carousel-arrow carousel-arrow-right ${currentCategoryPage >= getTotalPages() - 1 ? 'disabled' : ''}`}
+            onClick={nextCategoryPage}
+            disabled={currentCategoryPage >= getTotalPages() - 1}
+          >
+            &#8250;
+          </button>
+          
+          {/* Page Indicator */}
+          <div className="page-indicator">
+            {currentCategoryPage + 1} / {getTotalPages()}
+          </div>
+          
+          {/* Categories Grid */}
+          <div className="category-carousel-grid">
+            {getCurrentCategories().map((category, index) => (
+              <div 
+                key={index} 
+                className="carousel-category-card" 
+                onClick={() => navigate('/products')}
+              >
+                <div className="category-image">
+                  <img 
+                    src={category.image}
+                    alt={category.name}
+                  />
+                  <div className="category-overlay">
+                    <span>Shop Now</span>
+                  </div>
                 </div>
+                <h3>{category.name}</h3>
               </div>
-              <h3>{category}</h3>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </section>
 

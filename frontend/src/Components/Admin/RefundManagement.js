@@ -1,4 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { 
+  faUndo, faClock, faCheckCircle, faTimesCircle, faChartLine,
+  faSearch, faSyncAlt, faEye, faCheck, faTimes
+} from '@fortawesome/free-solid-svg-icons';
 import './RefundManagement.css';
 
 const RefundManagement = () => {
@@ -13,6 +18,7 @@ const RefundManagement = () => {
     const [actionType, setActionType] = useState('');
     const [adminResponse, setAdminResponse] = useState('');
     const [processing, setProcessing] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
 
     const statusOptions = ['All', 'Pending', 'Approved', 'Rejected', 'Processing', 'Completed'];
 
@@ -65,6 +71,24 @@ const RefundManagement = () => {
             console.error('Error fetching stats:', error);
         }
     };
+
+    const refreshData = () => {
+        setLoading(true);
+        fetchRefunds();
+        fetchStats();
+    };
+
+    const filteredRefunds = refunds.filter(refund => {
+        if (!searchTerm) return true;
+        const searchLower = searchTerm.toLowerCase();
+        return (
+            refund.orderId?.orderNumber?.toLowerCase().includes(searchLower) ||
+            refund.userId?.name?.toLowerCase().includes(searchLower) ||
+            refund.userId?.email?.toLowerCase().includes(searchLower) ||
+            refund.productId?.name?.toLowerCase().includes(searchLower) ||
+            refund.reason?.toLowerCase().includes(searchLower)
+        );
+    });
 
     const handleAction = (refund, action) => {
         setSelectedRefund(refund);
@@ -146,12 +170,14 @@ const RefundManagement = () => {
                             className="approve-btn"
                             onClick={() => handleAction(refund, 'approve')}
                         >
+                            <FontAwesomeIcon icon={faCheck} />
                             Approve
                         </button>
                         <button 
                             className="reject-btn"
                             onClick={() => handleAction(refund, 'reject')}
                         >
+                            <FontAwesomeIcon icon={faTimes} />
                             Reject
                         </button>
                     </div>
@@ -194,50 +220,97 @@ const RefundManagement = () => {
 
     return (
         <div className="refund-management">
-            <div className="management-header">
+            <div className="page-header">
                 <h2>Refund Management</h2>
-                <p>Manage customer refund requests</p>
+                <div className="header-actions">
+                    <button className="refresh-btn" onClick={refreshData}>
+                        <FontAwesomeIcon icon={faSyncAlt} />
+                        Refresh
+                    </button>
+                </div>
             </div>
 
             {/* Stats Dashboard */}
             {stats && (
-                <div className="stats-dashboard">
-                    <div className="stat-card">
-                        <div className="stat-number">{stats.total}</div>
-                        <div className="stat-label">Total Refunds</div>
-                    </div>
-                    <div className="stat-card pending">
-                        <div className="stat-number">{stats.pending}</div>
-                        <div className="stat-label">Pending</div>
-                    </div>
-                    <div className="stat-card approved">
-                        <div className="stat-number">{stats.approved}</div>
-                        <div className="stat-label">Approved</div>
-                    </div>
-                    <div className="stat-card rejected">
-                        <div className="stat-number">{stats.rejected}</div>
-                        <div className="stat-label">Rejected</div>
-                    </div>
-                    {stats.avgProcessingTime > 0 && (
-                        <div className="stat-card">
-                            <div className="stat-number">{stats.avgProcessingTime}</div>
-                            <div className="stat-label">Avg Days</div>
+                <div className="stats-grid">
+                    <div className="stat-card total">
+                        <div className="stat-icon">
+                            <FontAwesomeIcon icon={faUndo} />
                         </div>
-                    )}
+                        <div className="stat-content">
+                            <div className="stat-value">{stats.total || 0}</div>
+                            <div className="stat-label">Total Refunds</div>
+                        </div>
+                    </div>
+                    
+                    <div className="stat-card pending">
+                        <div className="stat-icon">
+                            <FontAwesomeIcon icon={faClock} />
+                        </div>
+                        <div className="stat-content">
+                            <div className="stat-value">{stats.pending || 0}</div>
+                            <div className="stat-label">Pending</div>
+                        </div>
+                    </div>
+                    
+                    <div className="stat-card approved">
+                        <div className="stat-icon">
+                            <FontAwesomeIcon icon={faCheckCircle} />
+                        </div>
+                        <div className="stat-content">
+                            <div className="stat-value">{stats.approved || 0}</div>
+                            <div className="stat-label">Approved</div>
+                        </div>
+                    </div>
+                    
+                    <div className="stat-card rejected">
+                        <div className="stat-icon">
+                            <FontAwesomeIcon icon={faTimesCircle} />
+                        </div>
+                        <div className="stat-content">
+                            <div className="stat-value">{stats.rejected || 0}</div>
+                            <div className="stat-label">Rejected</div>
+                        </div>
+                    </div>
+                    
+                    <div className="stat-card processing">
+                        <div className="stat-icon">
+                            <FontAwesomeIcon icon={faChartLine} />
+                        </div>
+                        <div className="stat-content">
+                            <div className="stat-value">{stats.avgProcessingTime > 0 ? stats.avgProcessingTime : (stats.processing || 0)}</div>
+                            <div className="stat-label">{stats.avgProcessingTime > 0 ? 'Avg Days' : 'Processing'}</div>
+                        </div>
+                    </div>
                 </div>
             )}
 
-            {/* Filters */}
-            <div className="filters">
-                <div className="filter-group">
-                    <label htmlFor="statusFilter">Filter by Status:</label>
+            {/* Search and Filters */}
+            <div className="search-section">
+                <div className="search-container">
+                    <input
+                        type="text"
+                        placeholder="Search refunds..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="search-input"
+                    />
+                    <button className="search-btn">
+                        <FontAwesomeIcon icon={faSearch} />
+                    </button>
+                    <button className="refresh-btn" onClick={refreshData}>
+                        <FontAwesomeIcon icon={faSyncAlt} />
+                    </button>
+                </div>
+                
+                <div className="filter-container">
                     <select 
-                        id="statusFilter"
                         value={statusFilter}
                         onChange={(e) => {
                             setStatusFilter(e.target.value);
                             setCurrentPage(1);
                         }}
+                        className="filter-select"
                     >
                         {statusOptions.map(status => (
                             <option key={status} value={status}>{status}</option>
@@ -246,69 +319,82 @@ const RefundManagement = () => {
                 </div>
             </div>
 
-            {/* Refunds List */}
-            <div className="refunds-table">
-                {refunds.length === 0 ? (
-                    <div className="no-refunds">
-                        <p>No refund requests found for the selected filter.</p>
+            {/* Refunds Table */}
+            <div className="table-section">
+                <div className="table-header">
+                    <h3>Refund Requests ({filteredRefunds.length})</h3>
+                </div>
+                
+                {filteredRefunds.length === 0 ? (
+                    <div className="empty-state">
+                        <FontAwesomeIcon icon={faUndo} />
+                        <p>No refund requests found</p>
+                        {searchTerm && (
+                            <button className="btn-secondary" onClick={() => setSearchTerm('')}>
+                                Clear Search
+                            </button>
+                        )}
                     </div>
                 ) : (
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Order</th>
-                                <th>Customer</th>
-                                <th>Product</th>
-                                <th>Amount</th>
-                                <th>Reason</th>
-                                <th>Status</th>
-                                <th>Date</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {refunds.map(refund => (
-                                <tr key={refund._id}>
-                                    <td>
-                                        <div className="order-info">
-                                            <span className="order-number">#{refund.orderId?.orderNumber}</span>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div className="customer-info">
-                                            <span className="customer-name">{refund.userId?.name}</span>
-                                            <span className="customer-email">{refund.userId?.email}</span>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div className="product-info">
-                                            <span className="product-name">{refund.productId?.name}</span>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <span className="amount">${refund.refundAmount}</span>
-                                    </td>
-                                    <td>
-                                        <span className="reason">{refund.reason}</span>
-                                    </td>
-                                    <td>
-                                        <span 
-                                            className="status-badge"
-                                            style={{ backgroundColor: getStatusColor(refund.status) }}
-                                        >
-                                            {refund.status}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <span className="date">{formatDate(refund.createdAt)}</span>
-                                    </td>
-                                    <td>
-                                        {getActionButtons(refund)}
-                                    </td>
+                    <div className="table-container">
+                        <table className="modern-table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Order</th>
+                                    <th>Customer</th>
+                                    <th>Product</th>
+                                    <th>Amount</th>
+                                    <th>Reason</th>
+                                    <th>Status</th>
+                                    <th>Date</th>
+                                    <th>Actions</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                {filteredRefunds.map((refund, index) => (
+                                    <tr key={refund._id}>
+                                        <td className="row-number">{(currentPage - 1) * 10 + index + 1}</td>
+                                        <td>
+                                            <div className="order-info">
+                                                <span className="order-number">#{refund.orderId?.orderNumber}</span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div className="customer-info">
+                                                <span className="customer-name">{refund.userId?.name}</span>
+                                                <span className="customer-email">{refund.userId?.email}</span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div className="product-info">
+                                                <span className="product-name">{refund.productId?.name}</span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span className="amount">${refund.refundAmount}</span>
+                                        </td>
+                                        <td>
+                                            <span className="reason-badge">{refund.reason}</span>
+                                        </td>
+                                        <td>
+                                            <span 
+                                                className={`status-badge status-${refund.status.toLowerCase()}`}
+                                            >
+                                                {refund.status}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span className="date">{formatDate(refund.createdAt)}</span>
+                                        </td>
+                                        <td className="actions-cell">
+                                            {getActionButtons(refund)}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                 )}
             </div>
 

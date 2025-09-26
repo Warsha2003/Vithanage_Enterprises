@@ -12,7 +12,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faUsers, faBoxOpen, faShoppingCart, faMoneyBillWave, 
   faChartLine, faStar, faExchangeAlt, faHome, faBell,
-  faCog, faSignOutAlt, faClipboardList, faWarehouse, faPercent, faInfoCircle, faEye, faSearch, faFilePdf
+  faCog, faSignOutAlt, faClipboardList, faWarehouse, faPercent, faInfoCircle, faEye, faSearch, faFilePdf, faSync
 } from '@fortawesome/free-solid-svg-icons';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -29,6 +29,31 @@ const AdminDashboard = () => {
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
+
+  // Predefined categories and brands for product form
+  const CATEGORIES = [
+    'Televisions',
+    'Laptops', 
+    'Kitchen Appliances',
+    'Air Conditioners',
+    'Home Appliances',
+    'Refrigerators',
+    'Mobile Phones',
+    'Audio Systems',
+    'Washing Machines',
+    'Tablets',
+    'Computer Accessories'
+  ];
+
+  const BRANDS = [
+    'ASUS', 'Acer', 'Apple', 'Bosch', 'Bose', 'Breville', 'Brita', 'Conair',
+    'Cuisinart', 'Daikin', 'Dell', 'Dyson', 'Google', 'HP', 'Haier', 'Honeywell',
+    'Huawei', 'Instant Pot', 'JBL', 'KitchenAid', 'LG', 'Lasko', 'Lenovo',
+    'Logitech', 'Microsoft', 'Nokia', 'OnePlus', 'Oppo', 'Panasonic', 'Philips',
+    'Razer', 'Realme', 'Rowenta', 'Samsung', 'Siemens', 'Sonos', 'Sony', 'TCL',
+    'TaoTronics', 'Vivo', 'Whirlpool', 'Xiaomi', 'Zojirushi'
+  ];
+
   const [stats, setStats] = useState({
     totalUsers: 0,
     regularUsers: 0,
@@ -89,6 +114,49 @@ const AdminDashboard = () => {
   });
   const [reviewMessage, setReviewMessage] = useState({ type: '', message: '' });
 
+  // Settings state
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [activeSettingsTab, setActiveSettingsTab] = useState('general');
+  const [settingsMessage, setSettingsMessage] = useState({ type: '', message: '' });
+  const [systemSettings, setSystemSettings] = useState({
+    // General Settings
+    siteName: 'Vithanage Enterprises',
+    siteDescription: 'Premium Electronics & Home Appliances',
+    contactEmail: 'admin@vithanageenterprises.com',
+    supportPhone: '+94 77 123 4567',
+    businessAddress: 'Colombo, Sri Lanka',
+    
+    // E-commerce Settings
+    currency: 'LKR',
+    taxRate: 0.15,
+    shippingRate: 500,
+    freeShippingThreshold: 5000,
+    lowStockThreshold: 10,
+    
+    // Notification Settings
+    emailNotifications: true,
+    orderNotifications: true,
+    stockAlerts: true,
+    reviewNotifications: true,
+    promotionNotifications: false,
+    
+    // Security Settings
+    sessionTimeout: 30,
+    passwordExpiry: 90,
+    twoFactorAuth: false,
+    loginAttempts: 5,
+    
+    // Backup Settings
+    autoBackup: true,
+    backupFrequency: 'daily',
+    backupRetention: 30,
+    
+    // Performance Settings
+    cacheEnabled: true,
+    compressionEnabled: true,
+    cdnEnabled: false
+  });
+
   // Admin management state
   const [admins, setAdmins] = useState([]);
   const [showAdminModal, setShowAdminModal] = useState(false);
@@ -135,6 +203,10 @@ const AdminDashboard = () => {
         name: user.name || '',
         email: user.email || ''
       }));
+      
+      // Load saved settings from localStorage
+      loadSavedSettings();
+      
       // Fetch data for admin
       fetchUsers();
       fetchAdmins();
@@ -971,6 +1043,91 @@ const AdminDashboard = () => {
     setShowDropdown(!showDropdown);
   };
 
+  const toggleSettingsModal = () => {
+    setShowSettingsModal(!showSettingsModal);
+    setActiveSettingsTab('general');
+    if (settingsMessage.message) {
+      setSettingsMessage({ type: '', message: '' });
+    }
+  };
+
+  const handleSettingsInputChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setSystemSettings(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+  };
+
+  const saveSettings = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      
+      // Here you would normally save to backend
+      // For now, we'll simulate saving to localStorage
+      localStorage.setItem('systemSettings', JSON.stringify(systemSettings));
+      
+      setSettingsMessage({ type: 'success', message: 'Settings saved successfully!' });
+      
+      setTimeout(() => {
+        setSettingsMessage({ type: '', message: '' });
+      }, 3000);
+    } catch (error) {
+      setSettingsMessage({ type: 'error', message: 'Failed to save settings. Please try again.' });
+    }
+  };
+
+  const resetSettings = () => {
+    if (window.confirm('Are you sure you want to reset all settings to default values?')) {
+      const defaultSettings = {
+        siteName: 'Vithanage Enterprises',
+        siteDescription: 'Premium Electronics & Home Appliances',
+        contactEmail: 'admin@vithanageenterprises.com',
+        supportPhone: '+94 77 123 4567',
+        businessAddress: 'Colombo, Sri Lanka',
+        currency: 'LKR',
+        taxRate: 0.15,
+        shippingRate: 500,
+        freeShippingThreshold: 5000,
+        lowStockThreshold: 10,
+        emailNotifications: true,
+        orderNotifications: true,
+        stockAlerts: true,
+        reviewNotifications: true,
+        promotionNotifications: false,
+        sessionTimeout: 30,
+        passwordExpiry: 90,
+        twoFactorAuth: false,
+        loginAttempts: 5,
+        autoBackup: true,
+        backupFrequency: 'daily',
+        backupRetention: 30,
+        cacheEnabled: true,
+        compressionEnabled: true,
+        cdnEnabled: false
+      };
+      setSystemSettings(defaultSettings);
+      localStorage.setItem('systemSettings', JSON.stringify(defaultSettings));
+      setSettingsMessage({ type: 'success', message: 'Settings reset to default values!' });
+    }
+  };
+
+  const loadSavedSettings = () => {
+    try {
+      const savedSettings = localStorage.getItem('systemSettings');
+      if (savedSettings) {
+        const settings = JSON.parse(savedSettings);
+        setSystemSettings(prevSettings => ({
+          ...prevSettings,
+          ...settings
+        }));
+        console.log('Loaded saved settings:', settings);
+      }
+    } catch (error) {
+      console.error('Error loading saved settings:', error);
+    }
+  };
+
   const toggleProfileModal = () => {
     setShowProfileModal(!showProfileModal);
     // Clear any previous messages when opening/closing modal
@@ -1131,33 +1288,33 @@ const AdminDashboard = () => {
         </button>
       </div>
       
-      <div className="stats-grid">
-        <div className="stat-card">
-          <div className="stat-icon"><FontAwesomeIcon icon={faUsers} /></div>
-          <div className="stat-info">
+      <div className="dashboard-stats-grid">
+        <div className="dashboard-stat-card">
+          <div className="dashboard-stat-icon"><FontAwesomeIcon icon={faUsers} /></div>
+          <div className="dashboard-stat-info">
             <h3>Total Users</h3>
             <p>{stats.totalUsers}</p>
-            <div className="stat-detail">
+            <div className="dashboard-stat-detail">
               <span>Regular Users: {stats.regularUsers}</span>
               <span>Admin Users: {stats.adminUsers}</span>
             </div>
           </div>
         </div>
         
-        <div className="stat-card">
-          <div className="stat-icon"><FontAwesomeIcon icon={faBoxOpen} /></div>
-          <div className="stat-info">
+        <div className="dashboard-stat-card">
+          <div className="dashboard-stat-icon"><FontAwesomeIcon icon={faBoxOpen} /></div>
+          <div className="dashboard-stat-info">
             <h3>Total Products</h3>
             <p>{stats.totalProducts}</p>
           </div>
         </div>
         
-        <div className="stat-card">
-          <div className="stat-icon"><FontAwesomeIcon icon={faShoppingCart} /></div>
-          <div className="stat-info">
+        <div className="dashboard-stat-card">
+          <div className="dashboard-stat-icon"><FontAwesomeIcon icon={faShoppingCart} /></div>
+          <div className="dashboard-stat-info">
             <h3>Total Orders</h3>
             <p>{stats.totalOrders}</p>
-            <div className="stat-detail">
+            <div className="dashboard-stat-detail">
               <span>Pending: {stats.pendingOrders}</span>
               <span>Approved: {stats.approvedOrders}</span>
               <span>Rejected: {stats.rejectedOrders}</span>
@@ -1166,12 +1323,12 @@ const AdminDashboard = () => {
           </div>
         </div>
         
-        <div className="stat-card">
-          <div className="stat-icon"><FontAwesomeIcon icon={faMoneyBillWave} /></div>
-          <div className="stat-info">
+        <div className="dashboard-stat-card">
+          <div className="dashboard-stat-icon"><FontAwesomeIcon icon={faMoneyBillWave} /></div>
+          <div className="dashboard-stat-info">
             <h3>Total Revenue</h3>
             <p>${(stats.totalRevenue || 0).toFixed(2)}</p>
-            <div className="stat-detail">
+            <div className="dashboard-stat-detail">
               <span>From approved & delivered orders</span>
             </div>
           </div>
@@ -1216,6 +1373,36 @@ const AdminDashboard = () => {
           </div>
         </div>
       </div>
+
+      <div className="admin-section">
+        <h3>Business Information</h3>
+        <div className="business-info-grid">
+          <div className="info-card">
+            <div className="info-label">Contact Email</div>
+            <div className="info-value">{systemSettings.contactEmail}</div>
+          </div>
+          <div className="info-card">
+            <div className="info-label">Support Phone</div>
+            <div className="info-value">{systemSettings.supportPhone}</div>
+          </div>
+          <div className="info-card">
+            <div className="info-label">Business Address</div>
+            <div className="info-value">{systemSettings.businessAddress}</div>
+          </div>
+          <div className="info-card">
+            <div className="info-label">Currency</div>
+            <div className="info-value">{systemSettings.currency}</div>
+          </div>
+          <div className="info-card">
+            <div className="info-label">Tax Rate</div>
+            <div className="info-value">{(systemSettings.taxRate * 100).toFixed(1)}%</div>
+          </div>
+          <div className="info-card">
+            <div className="info-label">Free Shipping</div>
+            <div className="info-value">{systemSettings.currency} {systemSettings.freeShippingThreshold}+</div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 
@@ -1232,27 +1419,47 @@ const AdminDashboard = () => {
       )}
       
       <div className="admin-actions">
-        <button className="primary-btn" onClick={() => {
-          resetUserForm();
-          setShowUserModal(true);
-        }}>
-          <FontAwesomeIcon icon={faUsers} /> Add New User
-        </button>
-        <div className="search-box">
-          <input 
-            type="text" 
-            placeholder="Search users..." 
-            value={userSearchQuery}
-            onChange={(e) => setUserSearchQuery(e.target.value)}
-          />
-          <button onClick={searchUsers}><FontAwesomeIcon icon={faSearch} /></button>
+        <div className="action-buttons-left">
+          <button className="primary-btn" onClick={() => {
+            resetUserForm();
+            setShowUserModal(true);
+          }}>
+            <FontAwesomeIcon icon={faUsers} /> Add New User
+          </button>
+          <button className="refresh-btn" onClick={fetchUsers}>
+            <FontAwesomeIcon icon={faChartLine} /> Refresh
+          </button>
+        </div>
+        <div className="search-container">
+          <div className="search-box">
+            <input 
+              type="text" 
+              placeholder="Search users by name, email..." 
+              value={userSearchQuery}
+              onChange={(e) => setUserSearchQuery(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && searchUsers()}
+            />
+            <button className="search-btn" onClick={searchUsers}>
+              <FontAwesomeIcon icon={faSearch} />
+              <span>Search</span>
+            </button>
+          </div>
         </div>
       </div>
       
       <div className="admin-section">
-        <table className="data-table">
+        {/* User count display */}
+        <div className="users-summary">
+          <h3>
+            <FontAwesomeIcon icon={faUsers} /> 
+            Total Users: <span className="user-count">{users.length}</span>
+          </h3>
+        </div>
+        
+        <table className="user-management-table">
           <thead>
             <tr>
+              <th>#</th>
               <th>Name</th>
               <th>Email</th>
               <th>Role</th>
@@ -1263,8 +1470,9 @@ const AdminDashboard = () => {
           </thead>
           <tbody>
             {users.length > 0 ? (
-              users.map(user => (
+              users.map((user, index) => (
                 <tr key={user._id}>
+                  <td className="user-number">{index + 1}</td>
                   <td>{user.name}</td>
                   <td>{user.email}</td>
                   <td><span className={user.isAdmin ? 'badge admin' : 'badge user'}>{user.isAdmin ? 'Admin' : 'User'}</span></td>
@@ -1442,27 +1650,47 @@ const AdminDashboard = () => {
       )}
       
       <div className="admin-actions">
-        <button className="primary-btn" onClick={() => {
-          resetAdminForm();
-          setShowAdminModal(true);
-        }}>
-          <FontAwesomeIcon icon={faCog} /> Add New Admin
-        </button>
-        <div className="search-box">
-          <input 
-            type="text" 
-            placeholder="Search admins..." 
-            value={adminSearchQuery}
-            onChange={(e) => setAdminSearchQuery(e.target.value)}
-          />
-          <button onClick={searchAdmins}><FontAwesomeIcon icon={faSearch} /></button>
+        <div className="action-buttons-left">
+          <button className="primary-btn" onClick={() => {
+            resetAdminForm();
+            setShowAdminModal(true);
+          }}>
+            <FontAwesomeIcon icon={faCog} /> Add New Admin
+          </button>
+          <button className="refresh-btn" onClick={fetchAdmins}>
+            <FontAwesomeIcon icon={faSync} /> Refresh
+          </button>
+        </div>
+        <div className="search-container">
+          <div className="search-box">
+            <input 
+              type="text" 
+              placeholder="Search admins..." 
+              value={adminSearchQuery}
+              onChange={(e) => setAdminSearchQuery(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && searchAdmins()}
+            />
+            <button className="search-btn" onClick={searchAdmins}>
+              <FontAwesomeIcon icon={faSearch} />
+              <span>Search</span>
+            </button>
+          </div>
         </div>
       </div>
       
       <div className="admin-section">
-        <table className="data-table">
+        {/* Admin count display */}
+        <div className="admins-summary">
+          <h3>
+            <FontAwesomeIcon icon={faCog} /> 
+            Total Admins: <span className="admin-count">{admins.length}</span>
+          </h3>
+        </div>
+        
+        <table className="admin-management-table">
           <thead>
             <tr>
+              <th>#</th>
               <th>Name</th>
               <th>Email</th>
               <th>Role</th>
@@ -1472,8 +1700,9 @@ const AdminDashboard = () => {
           </thead>
           <tbody>
             {admins.length > 0 ? (
-              admins.map(admin => (
+              admins.map((admin, index) => (
                 <tr key={admin._id}>
+                  <td className="admin-number">{index + 1}</td>
                   <td>{admin.name}</td>
                   <td>{admin.email}</td>
                   <td><span className={admin.role === 'super_admin' ? 'badge admin' : 'badge user'}>{admin.role === 'super_admin' ? 'Super Admin' : 'Admin'}</span></td>
@@ -1627,28 +1856,47 @@ const AdminDashboard = () => {
       )}
       
       <div className="admin-actions">
-        <button className="primary-btn" onClick={() => {
-          resetProductForm();
-          setShowProductModal(true);
-        }}>
-          <FontAwesomeIcon icon={faBoxOpen} /> Add New Product
-        </button>
-        <div className="search-box">
-          <input 
-            type="text" 
-            placeholder="Search products..." 
-            value={productSearchQuery}
-            onChange={(e) => setProductSearchQuery(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && searchProducts()}
-          />
-          <button onClick={searchProducts}><FontAwesomeIcon icon={faSearch} /></button>
+        <div className="action-buttons-left">
+          <button className="primary-btn" onClick={() => {
+            resetProductForm();
+            setShowProductModal(true);
+          }}>
+            <FontAwesomeIcon icon={faBoxOpen} /> Add New Product
+          </button>
+          <button className="refresh-btn" onClick={fetchProducts}>
+            <FontAwesomeIcon icon={faSync} /> Refresh
+          </button>
+        </div>
+        <div className="search-container">
+          <div className="search-box">
+            <input 
+              type="text" 
+              placeholder="Search products..." 
+              value={productSearchQuery}
+              onChange={(e) => setProductSearchQuery(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && searchProducts()}
+            />
+            <button className="search-btn" onClick={searchProducts}>
+              <FontAwesomeIcon icon={faSearch} />
+              <span>Search</span>
+            </button>
+          </div>
         </div>
       </div>
       
       <div className="admin-section">
-        <table className="data-table">
+        {/* Product count display */}
+        <div className="products-summary">
+          <h3>
+            <FontAwesomeIcon icon={faBoxOpen} /> 
+            Total Products: <span className="product-count">{products.length}</span>
+          </h3>
+        </div>
+        
+        <table className="product-management-table">
           <thead>
             <tr>
+              <th>#</th>
               <th>Image</th>
               <th>Name</th>
               <th>Category</th>
@@ -1662,8 +1910,9 @@ const AdminDashboard = () => {
           </thead>
           <tbody>
             {products.length > 0 ? (
-              products.map(product => (
+              products.map((product, index) => (
                 <tr key={product._id}>
+                  <td className="product-number">{index + 1}</td>
                   <td>
                     {product.imageUrl ? (
                       <img 
@@ -1750,25 +1999,35 @@ const AdminDashboard = () => {
                 </div>
                 <div className="form-group">
                   <label><FontAwesomeIcon icon={faBoxOpen} /> Category</label>
-                  <input 
-                    type="text" 
+                  <select 
                     name="category" 
                     value={productForm.category} 
                     onChange={handleProductFormChange}
-                    placeholder="Enter product category" 
-                  />
+                  >
+                    <option value="">Select Category</option>
+                    {CATEGORIES.map((category) => (
+                      <option key={category} value={category}>
+                        {category}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
               <div className="form-row">
                 <div className="form-group">
                   <label><FontAwesomeIcon icon={faBoxOpen} /> Brand</label>
-                  <input 
-                    type="text" 
+                  <select 
                     name="brand" 
                     value={productForm.brand} 
                     onChange={handleProductFormChange}
-                    placeholder="Enter brand name" 
-                  />
+                  >
+                    <option value="">Select Brand</option>
+                    {BRANDS.map((brand) => (
+                      <option key={brand} value={brand}>
+                        {brand}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div className="form-group">
                   <label><FontAwesomeIcon icon={faMoneyBillWave} /> Price ($)</label>
@@ -1946,14 +2205,25 @@ const AdminDashboard = () => {
       <div className="module-content">
         <h2><FontAwesomeIcon icon={faShoppingCart} /> Order Management</h2>
         <div className="admin-actions">
-          <div className="search-box">
-            <input 
-              type="text" 
-              placeholder="Search by Order ID or Customer name" 
-              value={orderQuery}
-              onChange={(e) => setOrderQuery(e.target.value)}
-            />
-            <button onClick={fetchAllOrders}><FontAwesomeIcon icon={faSearch} /></button>
+          <div className="action-buttons-left">
+            <button className="refresh-btn" onClick={fetchAllOrders}>
+              <FontAwesomeIcon icon={faSync} /> Refresh
+            </button>
+          </div>
+          <div className="search-container">
+            <div className="search-box">
+              <input 
+                type="text" 
+                placeholder="Search by Order ID or Customer name" 
+                value={orderQuery}
+                onChange={(e) => setOrderQuery(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && fetchAllOrders()}
+              />
+              <button className="search-btn" onClick={fetchAllOrders}>
+                <FontAwesomeIcon icon={faSearch} />
+                <span>Search</span>
+              </button>
+            </div>
           </div>
           <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
             <select
@@ -1980,6 +2250,59 @@ const AdminDashboard = () => {
             <button className="primary-btn" onClick={() => generateOrdersReport()}>
               <FontAwesomeIcon icon={faFilePdf} /> Download Report
             </button>
+          </div>
+        </div>
+
+        {/* Order Count Display */}
+        <div className="orders-summary">
+          <div className="order-count-card total">
+            <div className="order-count-info">
+              <h4>Total Orders</h4>
+              <p className="count">{filteredOrders.length}</p>
+            </div>
+            <div className="order-count-icon">
+              <FontAwesomeIcon icon={faShoppingCart} />
+            </div>
+          </div>
+          
+          <div className="order-count-card pending">
+            <div className="order-count-info">
+              <h4>Pending Orders</h4>
+              <p className="count">{filteredOrders.filter(order => order.status === 'pending').length}</p>
+            </div>
+            <div className="order-count-icon">
+              <FontAwesomeIcon icon={faClipboardList} />
+            </div>
+          </div>
+          
+          <div className="order-count-card approved">
+            <div className="order-count-info">
+              <h4>Approved Orders</h4>
+              <p className="count">{filteredOrders.filter(order => order.status === 'approved').length}</p>
+            </div>
+            <div className="order-count-icon">
+              <FontAwesomeIcon icon={faShoppingCart} />
+            </div>
+          </div>
+          
+          <div className="order-count-card rejected">
+            <div className="order-count-info">
+              <h4>Rejected Orders</h4>
+              <p className="count">{filteredOrders.filter(order => order.status === 'rejected').length}</p>
+            </div>
+            <div className="order-count-icon">
+              <FontAwesomeIcon icon={faExchangeAlt} />
+            </div>
+          </div>
+          
+          <div className="order-count-card cancelled">
+            <div className="order-count-info">
+              <h4>Cancelled Orders</h4>
+              <p className="count">{filteredOrders.filter(order => order.status === 'cancelled').length}</p>
+            </div>
+            <div className="order-count-icon">
+              <FontAwesomeIcon icon={faSignOutAlt} />
+            </div>
           </div>
         </div>
 
@@ -2425,6 +2748,11 @@ const AdminDashboard = () => {
       </div>
 
       <div className="admin-actions">
+        <div className="action-buttons-left">
+          <button className="refresh-btn" onClick={fetchAllReviews}>
+            <FontAwesomeIcon icon={faSync} /> Refresh
+          </button>
+        </div>
         <div className="filter-group">
           <select 
             value={reviewRatingFilter} 
@@ -2446,16 +2774,20 @@ const AdminDashboard = () => {
             <option value="pending">Pending Approval</option>
           </select>
         </div>
-        <div className="search-box">
-          <input 
-            type="text" 
-            placeholder="Search product or customer..." 
-            value={reviewSearchQuery}
-            onChange={(e) => setReviewSearchQuery(e.target.value)}
-          />
-          <button onClick={fetchAllReviews}>
-            <FontAwesomeIcon icon={faSearch} />
-          </button>
+        <div className="search-container">
+          <div className="search-box">
+            <input 
+              type="text" 
+              placeholder="Search product or customer..." 
+              value={reviewSearchQuery}
+              onChange={(e) => setReviewSearchQuery(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && fetchAllReviews()}
+            />
+            <button className="search-btn" onClick={fetchAllReviews}>
+              <FontAwesomeIcon icon={faSearch} />
+              <span>Search</span>
+            </button>
+          </div>
         </div>
       </div>
       
@@ -2694,7 +3026,7 @@ const AdminDashboard = () => {
         </nav>
         
         <div className="sidebar-footer">
-          <button className="settings-btn">
+          <button className="settings-btn" onClick={toggleSettingsModal}>
             <FontAwesomeIcon icon={faCog} /> Settings
           </button>
           <button className="logout-btn" onClick={handleLogout}>
@@ -2705,21 +3037,20 @@ const AdminDashboard = () => {
       
       <div className="admin-main">
         <div className="admin-header">
-          <div className="header-search">
-            <input type="text" placeholder="Search..." />
-          </div>
-          
+          <div className="header-info">
+            <h1 className="site-name">{systemSettings.siteName} - Admin Panel</h1>
+            <p className="site-description">{systemSettings.siteDescription}</p>
+          </div>          
           <div className="header-actions">
-            <div className="notifications">
-              <button className="notification-btn">
-                <FontAwesomeIcon icon={faBell} />
-                {notifications > 0 && <span className="notification-badge">{notifications}</span>}
-              </button>
+            <div className="header-contact">
+              <span className="contact-info">
+                <FontAwesomeIcon icon={faBell} /> {systemSettings.contactEmail}
+              </span>
             </div>
-            
             <div className="header-user">
               <button className="user-btn" onClick={toggleProfileModal}>
-                <span>{adminUser.name ? adminUser.name.charAt(0).toUpperCase() : 'A'}</span>
+                <FontAwesomeIcon icon={faCog} />
+                <span>{adminUser.name ? adminUser.name : 'Admin'}</span>
               </button>
             </div>
           </div>
@@ -2841,6 +3172,406 @@ const AdminDashboard = () => {
               <button className="save-btn" onClick={updateProfile}>
                 <FontAwesomeIcon icon={faCog} /> Save Changes
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Comprehensive Admin Settings Modal */}
+      {showSettingsModal && (
+        <div className="modal-overlay" onClick={() => setShowSettingsModal(false)}>
+          <div className="settings-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2><FontAwesomeIcon icon={faCog} /> System Settings</h2>
+              <button className="close-btn" onClick={() => setShowSettingsModal(false)}>&times;</button>
+            </div>
+            
+            <div className="settings-tabs">
+              <button 
+                className={`tab-btn ${activeSettingsTab === 'general' ? 'active' : ''}`}
+                onClick={() => setActiveSettingsTab('general')}
+              >
+                <FontAwesomeIcon icon={faHome} /> General
+              </button>
+              <button 
+                className={`tab-btn ${activeSettingsTab === 'ecommerce' ? 'active' : ''}`}
+                onClick={() => setActiveSettingsTab('ecommerce')}
+              >
+                <FontAwesomeIcon icon={faShoppingCart} /> E-commerce
+              </button>
+              <button 
+                className={`tab-btn ${activeSettingsTab === 'notifications' ? 'active' : ''}`}
+                onClick={() => setActiveSettingsTab('notifications')}
+              >
+                <FontAwesomeIcon icon={faBell} /> Notifications
+              </button>
+              <button 
+                className={`tab-btn ${activeSettingsTab === 'security' ? 'active' : ''}`}
+                onClick={() => setActiveSettingsTab('security')}
+              >
+                <FontAwesomeIcon icon={faSignOutAlt} /> Security
+              </button>
+              <button 
+                className={`tab-btn ${activeSettingsTab === 'backup' ? 'active' : ''}`}
+                onClick={() => setActiveSettingsTab('backup')}
+              >
+                <FontAwesomeIcon icon={faClipboardList} /> Backup
+              </button>
+            </div>
+
+            <div className="settings-content">
+              {settingsMessage.message && (
+                <div className={`message ${settingsMessage.type}`}>
+                  <FontAwesomeIcon icon={settingsMessage.type === 'success' ? faUsers : faSignOutAlt} />
+                  {settingsMessage.message}
+                </div>
+              )}
+
+              {/* General Settings Tab */}
+              {activeSettingsTab === 'general' && (
+                <div className="settings-section">
+                  <h3><FontAwesomeIcon icon={faHome} /> General Settings</h3>
+                  <div className="form-grid">
+                    <div className="form-group">
+                      <label>Site Name</label>
+                      <input
+                        type="text"
+                        name="siteName"
+                        value={systemSettings.siteName}
+                        onChange={handleSettingsInputChange}
+                        placeholder="Enter site name"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Site Description</label>
+                      <input
+                        type="text"
+                        name="siteDescription"
+                        value={systemSettings.siteDescription}
+                        onChange={handleSettingsInputChange}
+                        placeholder="Enter site description"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Contact Email</label>
+                      <input
+                        type="email"
+                        name="contactEmail"
+                        value={systemSettings.contactEmail}
+                        onChange={handleSettingsInputChange}
+                        placeholder="Enter contact email"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Support Phone</label>
+                      <input
+                        type="text"
+                        name="supportPhone"
+                        value={systemSettings.supportPhone}
+                        onChange={handleSettingsInputChange}
+                        placeholder="Enter support phone"
+                      />
+                    </div>
+                    <div className="form-group full-width">
+                      <label>Business Address</label>
+                      <textarea
+                        name="businessAddress"
+                        value={systemSettings.businessAddress}
+                        onChange={handleSettingsInputChange}
+                        placeholder="Enter business address"
+                        rows="3"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* E-commerce Settings Tab */}
+              {activeSettingsTab === 'ecommerce' && (
+                <div className="settings-section">
+                  <h3><FontAwesomeIcon icon={faShoppingCart} /> E-commerce Settings</h3>
+                  <div className="form-grid">
+                    <div className="form-group">
+                      <label>Currency</label>
+                      <select
+                        name="currency"
+                        value={systemSettings.currency}
+                        onChange={handleSettingsInputChange}
+                      >
+                        <option value="LKR">LKR - Sri Lankan Rupee</option>
+                        <option value="USD">USD - US Dollar</option>
+                        <option value="EUR">EUR - Euro</option>
+                        <option value="GBP">GBP - British Pound</option>
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label>Tax Rate (%)</label>
+                      <input
+                        type="number"
+                        name="taxRate"
+                        value={systemSettings.taxRate * 100}
+                        onChange={(e) => handleSettingsInputChange({target: {name: 'taxRate', value: e.target.value / 100}})}
+                        placeholder="15"
+                        step="0.1"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Shipping Rate</label>
+                      <input
+                        type="number"
+                        name="shippingRate"
+                        value={systemSettings.shippingRate}
+                        onChange={handleSettingsInputChange}
+                        placeholder="500"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Free Shipping Threshold</label>
+                      <input
+                        type="number"
+                        name="freeShippingThreshold"
+                        value={systemSettings.freeShippingThreshold}
+                        onChange={handleSettingsInputChange}
+                        placeholder="5000"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Low Stock Threshold</label>
+                      <input
+                        type="number"
+                        name="lowStockThreshold"
+                        value={systemSettings.lowStockThreshold}
+                        onChange={handleSettingsInputChange}
+                        placeholder="10"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Notifications Settings Tab */}
+              {activeSettingsTab === 'notifications' && (
+                <div className="settings-section">
+                  <h3><FontAwesomeIcon icon={faBell} /> Notification Settings</h3>
+                  <div className="form-grid checkbox-grid">
+                    <div className="form-group checkbox-group">
+                      <label>
+                        <input
+                          type="checkbox"
+                          name="emailNotifications"
+                          checked={systemSettings.emailNotifications}
+                          onChange={handleSettingsInputChange}
+                        />
+                        <span>Email Notifications</span>
+                      </label>
+                      <small>Receive general email notifications</small>
+                    </div>
+                    <div className="form-group checkbox-group">
+                      <label>
+                        <input
+                          type="checkbox"
+                          name="orderNotifications"
+                          checked={systemSettings.orderNotifications}
+                          onChange={handleSettingsInputChange}
+                        />
+                        <span>Order Notifications</span>
+                      </label>
+                      <small>Notifications for new orders and order updates</small>
+                    </div>
+                    <div className="form-group checkbox-group">
+                      <label>
+                        <input
+                          type="checkbox"
+                          name="stockAlerts"
+                          checked={systemSettings.stockAlerts}
+                          onChange={handleSettingsInputChange}
+                        />
+                        <span>Stock Alerts</span>
+                      </label>
+                      <small>Alerts when products are running low on stock</small>
+                    </div>
+                    <div className="form-group checkbox-group">
+                      <label>
+                        <input
+                          type="checkbox"
+                          name="reviewNotifications"
+                          checked={systemSettings.reviewNotifications}
+                          onChange={handleSettingsInputChange}
+                        />
+                        <span>Review Notifications</span>
+                      </label>
+                      <small>Notifications for new customer reviews</small>
+                    </div>
+                    <div className="form-group checkbox-group">
+                      <label>
+                        <input
+                          type="checkbox"
+                          name="promotionNotifications"
+                          checked={systemSettings.promotionNotifications}
+                          onChange={handleSettingsInputChange}
+                        />
+                        <span>Promotion Notifications</span>
+                      </label>
+                      <small>Notifications about running promotions</small>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Security Settings Tab */}
+              {activeSettingsTab === 'security' && (
+                <div className="settings-section">
+                  <h3><FontAwesomeIcon icon={faSignOutAlt} /> Security Settings</h3>
+                  <div className="form-grid">
+                    <div className="form-group">
+                      <label>Session Timeout (minutes)</label>
+                      <input
+                        type="number"
+                        name="sessionTimeout"
+                        value={systemSettings.sessionTimeout}
+                        onChange={handleSettingsInputChange}
+                        placeholder="30"
+                        min="5"
+                        max="480"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Password Expiry (days)</label>
+                      <input
+                        type="number"
+                        name="passwordExpiry"
+                        value={systemSettings.passwordExpiry}
+                        onChange={handleSettingsInputChange}
+                        placeholder="90"
+                        min="30"
+                        max="365"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Max Login Attempts</label>
+                      <input
+                        type="number"
+                        name="loginAttempts"
+                        value={systemSettings.loginAttempts}
+                        onChange={handleSettingsInputChange}
+                        placeholder="5"
+                        min="3"
+                        max="10"
+                      />
+                    </div>
+                    <div className="form-group checkbox-group">
+                      <label>
+                        <input
+                          type="checkbox"
+                          name="twoFactorAuth"
+                          checked={systemSettings.twoFactorAuth}
+                          onChange={handleSettingsInputChange}
+                        />
+                        <span>Enable Two-Factor Authentication</span>
+                      </label>
+                      <small>Add an extra layer of security to admin accounts</small>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Backup Settings Tab */}
+              {activeSettingsTab === 'backup' && (
+                <div className="settings-section">
+                  <h3><FontAwesomeIcon icon={faClipboardList} /> Backup & Performance</h3>
+                  <div className="form-grid">
+                    <div className="form-group checkbox-group">
+                      <label>
+                        <input
+                          type="checkbox"
+                          name="autoBackup"
+                          checked={systemSettings.autoBackup}
+                          onChange={handleSettingsInputChange}
+                        />
+                        <span>Enable Automatic Backups</span>
+                      </label>
+                      <small>Automatically backup system data</small>
+                    </div>
+                    <div className="form-group">
+                      <label>Backup Frequency</label>
+                      <select
+                        name="backupFrequency"
+                        value={systemSettings.backupFrequency}
+                        onChange={handleSettingsInputChange}
+                      >
+                        <option value="hourly">Hourly</option>
+                        <option value="daily">Daily</option>
+                        <option value="weekly">Weekly</option>
+                        <option value="monthly">Monthly</option>
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label>Backup Retention (days)</label>
+                      <input
+                        type="number"
+                        name="backupRetention"
+                        value={systemSettings.backupRetention}
+                        onChange={handleSettingsInputChange}
+                        placeholder="30"
+                        min="1"
+                        max="365"
+                      />
+                    </div>
+                    <div className="form-group checkbox-group">
+                      <label>
+                        <input
+                          type="checkbox"
+                          name="cacheEnabled"
+                          checked={systemSettings.cacheEnabled}
+                          onChange={handleSettingsInputChange}
+                        />
+                        <span>Enable Caching</span>
+                      </label>
+                      <small>Improve site performance with caching</small>
+                    </div>
+                    <div className="form-group checkbox-group">
+                      <label>
+                        <input
+                          type="checkbox"
+                          name="compressionEnabled"
+                          checked={systemSettings.compressionEnabled}
+                          onChange={handleSettingsInputChange}
+                        />
+                        <span>Enable Compression</span>
+                      </label>
+                      <small>Compress data to reduce bandwidth usage</small>
+                    </div>
+                    <div className="form-group checkbox-group">
+                      <label>
+                        <input
+                          type="checkbox"
+                          name="cdnEnabled"
+                          checked={systemSettings.cdnEnabled}
+                          onChange={handleSettingsInputChange}
+                        />
+                        <span>Enable CDN</span>
+                      </label>
+                      <small>Use Content Delivery Network for faster loading</small>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="modal-footer settings-footer">
+              <div className="footer-left">
+                <button className="reset-btn" onClick={resetSettings}>
+                  <FontAwesomeIcon icon={faSync} /> Reset to Default
+                </button>
+              </div>
+              <div className="footer-right">
+                <button className="cancel-btn" onClick={() => setShowSettingsModal(false)}>
+                  Cancel
+                </button>
+                <button className="save-btn" onClick={saveSettings}>
+                  <FontAwesomeIcon icon={faCog} /> Save Settings
+                </button>
+              </div>
             </div>
           </div>
         </div>
