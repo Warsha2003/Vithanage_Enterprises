@@ -1,8 +1,11 @@
 import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrash, faPlus, faMinus } from '@fortawesome/free-solid-svg-icons';
+import { useSettings } from '../../contexts/SettingsContext';
 
 const CartItem = ({ item, updateQuantity, removeItem }) => {
+  const { formatCurrency } = useSettings();
+
   return (
     <div className="cart-item">
       <div className="cart-item-product">
@@ -18,7 +21,7 @@ const CartItem = ({ item, updateQuantity, removeItem }) => {
           <p className="cart-item-brand">Brand: {item.product.brand}</p>
         </div>
       </div>
-      <div className="cart-item-price">${item.product.price.toFixed(2)}</div>
+      <div className="cart-item-price">{formatCurrency(item.product.price)}</div>
       <div className="cart-item-quantity">
         <button 
           className="quantity-btn" 
@@ -36,7 +39,7 @@ const CartItem = ({ item, updateQuantity, removeItem }) => {
         </button>
       </div>
       <div className="cart-item-total">
-        ${(item.product.price * item.quantity).toFixed(2)}
+        {formatCurrency(item.product.price * item.quantity)}
       </div>
       <div className="cart-item-action">
         <button 

@@ -14,10 +14,14 @@ import {
   faChartLine, faStar, faExchangeAlt, faHome, faBell,
   faCog, faSignOutAlt, faClipboardList, faWarehouse, faPercent, faInfoCircle, faEye, faSearch, faFilePdf, faSync
 } from '@fortawesome/free-solid-svg-icons';
+import { useSettings } from '../../contexts/SettingsContext';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
 const AdminDashboard = () => {
+  // Settings hook for global configuration
+  const { settings, updateSettings, formatCurrency } = useSettings();
+  
   // Admin dashboard states
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -118,44 +122,6 @@ const AdminDashboard = () => {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [activeSettingsTab, setActiveSettingsTab] = useState('general');
   const [settingsMessage, setSettingsMessage] = useState({ type: '', message: '' });
-  const [systemSettings, setSystemSettings] = useState({
-    // General Settings
-    siteName: 'Vithanage Enterprises',
-    siteDescription: 'Premium Electronics & Home Appliances',
-    contactEmail: 'admin@vithanageenterprises.com',
-    supportPhone: '+94 77 123 4567',
-    businessAddress: 'Colombo, Sri Lanka',
-    
-    // E-commerce Settings
-    currency: 'LKR',
-    taxRate: 0.15,
-    shippingRate: 500,
-    freeShippingThreshold: 5000,
-    lowStockThreshold: 10,
-    
-    // Notification Settings
-    emailNotifications: true,
-    orderNotifications: true,
-    stockAlerts: true,
-    reviewNotifications: true,
-    promotionNotifications: false,
-    
-    // Security Settings
-    sessionTimeout: 30,
-    passwordExpiry: 90,
-    twoFactorAuth: false,
-    loginAttempts: 5,
-    
-    // Backup Settings
-    autoBackup: true,
-    backupFrequency: 'daily',
-    backupRetention: 30,
-    
-    // Performance Settings
-    cacheEnabled: true,
-    compressionEnabled: true,
-    cdnEnabled: false
-  });
 
   // Admin management state
   const [admins, setAdmins] = useState([]);
@@ -204,8 +170,7 @@ const AdminDashboard = () => {
         email: user.email || ''
       }));
       
-      // Load saved settings from localStorage
-      loadSavedSettings();
+      // Settings are now loaded automatically by SettingsContext
       
       // Fetch data for admin
       fetchUsers();
@@ -1053,21 +1018,19 @@ const AdminDashboard = () => {
 
   const handleSettingsInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setSystemSettings(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
+    const updatedValue = type === 'checkbox' ? checked : value;
+    
+    // Update global settings through context
+    updateSettings({
+      [name]: updatedValue
+    });
   };
 
   const saveSettings = async () => {
     try {
-      const token = localStorage.getItem('token');
-      
-      // Here you would normally save to backend
-      // For now, we'll simulate saving to localStorage
-      localStorage.setItem('systemSettings', JSON.stringify(systemSettings));
-      
-      setSettingsMessage({ type: 'success', message: 'Settings saved successfully!' });
+      // Settings are automatically saved through the context
+      // Just show success message
+      setSettingsMessage({ type: 'success', message: 'Settings saved successfully and applied site-wide!' });
       
       setTimeout(() => {
         setSettingsMessage({ type: '', message: '' });
@@ -1086,6 +1049,7 @@ const AdminDashboard = () => {
         supportPhone: '+94 77 123 4567',
         businessAddress: 'Colombo, Sri Lanka',
         currency: 'LKR',
+        currencySymbol: 'Rs',
         taxRate: 0.15,
         shippingRate: 500,
         freeShippingThreshold: 5000,
@@ -1106,28 +1070,15 @@ const AdminDashboard = () => {
         compressionEnabled: true,
         cdnEnabled: false
       };
-      setSystemSettings(defaultSettings);
-      localStorage.setItem('systemSettings', JSON.stringify(defaultSettings));
+      
+      // Update through context
+      updateSettings(defaultSettings);
       setSettingsMessage({ type: 'success', message: 'Settings reset to default values!' });
     }
   };
 
-  const loadSavedSettings = () => {
-    try {
-      const savedSettings = localStorage.getItem('systemSettings');
-      if (savedSettings) {
-        const settings = JSON.parse(savedSettings);
-        setSystemSettings(prevSettings => ({
-          ...prevSettings,
-          ...settings
-        }));
-        console.log('Loaded saved settings:', settings);
-      }
-    } catch (error) {
-      console.error('Error loading saved settings:', error);
-    }
-  };
-
+  // loadSavedSettings function removed as it's now handled by SettingsContext
+  
   const toggleProfileModal = () => {
     setShowProfileModal(!showProfileModal);
     // Clear any previous messages when opening/closing modal
@@ -1379,27 +1330,27 @@ const AdminDashboard = () => {
         <div className="business-info-grid">
           <div className="info-card">
             <div className="info-label">Contact Email</div>
-            <div className="info-value">{systemSettings.contactEmail}</div>
+            <div className="info-value">{settings.contactEmail}</div>
           </div>
           <div className="info-card">
             <div className="info-label">Support Phone</div>
-            <div className="info-value">{systemSettings.supportPhone}</div>
+            <div className="info-value">{settings.supportPhone}</div>
           </div>
           <div className="info-card">
             <div className="info-label">Business Address</div>
-            <div className="info-value">{systemSettings.businessAddress}</div>
+            <div className="info-value">{settings.businessAddress}</div>
           </div>
           <div className="info-card">
             <div className="info-label">Currency</div>
-            <div className="info-value">{systemSettings.currency}</div>
+            <div className="info-value">{settings.currency}</div>
           </div>
           <div className="info-card">
             <div className="info-label">Tax Rate</div>
-            <div className="info-value">{(systemSettings.taxRate * 100).toFixed(1)}%</div>
+            <div className="info-value">{(settings.taxRate * 100).toFixed(1)}%</div>
           </div>
           <div className="info-card">
             <div className="info-label">Free Shipping</div>
-            <div className="info-value">{systemSettings.currency} {systemSettings.freeShippingThreshold}+</div>
+            <div className="info-value">{formatCurrency(settings.freeShippingThreshold)}+</div>
           </div>
         </div>
       </div>
@@ -2979,7 +2930,7 @@ const AdminDashboard = () => {
     <div className="admin-dashboard-container">
       <div className="admin-sidebar">
         <div className="sidebar-header">
-          <h2>Vithanage</h2>
+          <h2>{settings.siteName}</h2>
           <p>Admin Panel</p>
         </div>
         
@@ -2989,7 +2940,7 @@ const AdminDashboard = () => {
           </div>
           <div className="user-info">
             <h3>{adminUser.name || 'Admin User'}</h3>
-            <p>{adminUser.email || 'admin@vithanage.com'}</p>
+            <p>{adminUser.email || settings.contactEmail}</p>
           </div>
         </div>
         
@@ -3038,13 +2989,13 @@ const AdminDashboard = () => {
       <div className="admin-main">
         <div className="admin-header">
           <div className="header-info">
-            <h1 className="site-name">{systemSettings.siteName} - Admin Panel</h1>
-            <p className="site-description">{systemSettings.siteDescription}</p>
+            <h1 className="site-name">{settings.siteName} - Admin Panel</h1>
+            <p className="site-description">{settings.siteDescription}</p>
           </div>          
           <div className="header-actions">
             <div className="header-contact">
               <span className="contact-info">
-                <FontAwesomeIcon icon={faBell} /> {systemSettings.contactEmail}
+                <FontAwesomeIcon icon={faBell} /> {settings.contactEmail}
               </span>
             </div>
             <div className="header-user">
@@ -3237,7 +3188,7 @@ const AdminDashboard = () => {
                       <input
                         type="text"
                         name="siteName"
-                        value={systemSettings.siteName}
+                        value={settings.siteName}
                         onChange={handleSettingsInputChange}
                         placeholder="Enter site name"
                       />
@@ -3247,7 +3198,7 @@ const AdminDashboard = () => {
                       <input
                         type="text"
                         name="siteDescription"
-                        value={systemSettings.siteDescription}
+                        value={settings.siteDescription}
                         onChange={handleSettingsInputChange}
                         placeholder="Enter site description"
                       />
@@ -3257,7 +3208,7 @@ const AdminDashboard = () => {
                       <input
                         type="email"
                         name="contactEmail"
-                        value={systemSettings.contactEmail}
+                        value={settings.contactEmail}
                         onChange={handleSettingsInputChange}
                         placeholder="Enter contact email"
                       />
@@ -3267,7 +3218,7 @@ const AdminDashboard = () => {
                       <input
                         type="text"
                         name="supportPhone"
-                        value={systemSettings.supportPhone}
+                        value={settings.supportPhone}
                         onChange={handleSettingsInputChange}
                         placeholder="Enter support phone"
                       />
@@ -3276,7 +3227,7 @@ const AdminDashboard = () => {
                       <label>Business Address</label>
                       <textarea
                         name="businessAddress"
-                        value={systemSettings.businessAddress}
+                        value={settings.businessAddress}
                         onChange={handleSettingsInputChange}
                         placeholder="Enter business address"
                         rows="3"
@@ -3295,7 +3246,7 @@ const AdminDashboard = () => {
                       <label>Currency</label>
                       <select
                         name="currency"
-                        value={systemSettings.currency}
+                        value={settings.currency}
                         onChange={handleSettingsInputChange}
                       >
                         <option value="LKR">LKR - Sri Lankan Rupee</option>
@@ -3309,7 +3260,7 @@ const AdminDashboard = () => {
                       <input
                         type="number"
                         name="taxRate"
-                        value={systemSettings.taxRate * 100}
+                        value={settings.taxRate * 100}
                         onChange={(e) => handleSettingsInputChange({target: {name: 'taxRate', value: e.target.value / 100}})}
                         placeholder="15"
                         step="0.1"
@@ -3320,7 +3271,7 @@ const AdminDashboard = () => {
                       <input
                         type="number"
                         name="shippingRate"
-                        value={systemSettings.shippingRate}
+                        value={settings.shippingRate}
                         onChange={handleSettingsInputChange}
                         placeholder="500"
                       />
@@ -3330,7 +3281,7 @@ const AdminDashboard = () => {
                       <input
                         type="number"
                         name="freeShippingThreshold"
-                        value={systemSettings.freeShippingThreshold}
+                        value={settings.freeShippingThreshold}
                         onChange={handleSettingsInputChange}
                         placeholder="5000"
                       />
@@ -3340,7 +3291,7 @@ const AdminDashboard = () => {
                       <input
                         type="number"
                         name="lowStockThreshold"
-                        value={systemSettings.lowStockThreshold}
+                        value={settings.lowStockThreshold}
                         onChange={handleSettingsInputChange}
                         placeholder="10"
                       />
@@ -3359,7 +3310,7 @@ const AdminDashboard = () => {
                         <input
                           type="checkbox"
                           name="emailNotifications"
-                          checked={systemSettings.emailNotifications}
+                          checked={settings.emailNotifications}
                           onChange={handleSettingsInputChange}
                         />
                         <span>Email Notifications</span>
@@ -3371,7 +3322,7 @@ const AdminDashboard = () => {
                         <input
                           type="checkbox"
                           name="orderNotifications"
-                          checked={systemSettings.orderNotifications}
+                          checked={settings.orderNotifications}
                           onChange={handleSettingsInputChange}
                         />
                         <span>Order Notifications</span>
@@ -3383,7 +3334,7 @@ const AdminDashboard = () => {
                         <input
                           type="checkbox"
                           name="stockAlerts"
-                          checked={systemSettings.stockAlerts}
+                          checked={settings.stockAlerts}
                           onChange={handleSettingsInputChange}
                         />
                         <span>Stock Alerts</span>
@@ -3395,7 +3346,7 @@ const AdminDashboard = () => {
                         <input
                           type="checkbox"
                           name="reviewNotifications"
-                          checked={systemSettings.reviewNotifications}
+                          checked={settings.reviewNotifications}
                           onChange={handleSettingsInputChange}
                         />
                         <span>Review Notifications</span>
@@ -3407,7 +3358,7 @@ const AdminDashboard = () => {
                         <input
                           type="checkbox"
                           name="promotionNotifications"
-                          checked={systemSettings.promotionNotifications}
+                          checked={settings.promotionNotifications}
                           onChange={handleSettingsInputChange}
                         />
                         <span>Promotion Notifications</span>
@@ -3428,7 +3379,7 @@ const AdminDashboard = () => {
                       <input
                         type="number"
                         name="sessionTimeout"
-                        value={systemSettings.sessionTimeout}
+                        value={settings.sessionTimeout}
                         onChange={handleSettingsInputChange}
                         placeholder="30"
                         min="5"
@@ -3440,7 +3391,7 @@ const AdminDashboard = () => {
                       <input
                         type="number"
                         name="passwordExpiry"
-                        value={systemSettings.passwordExpiry}
+                        value={settings.passwordExpiry}
                         onChange={handleSettingsInputChange}
                         placeholder="90"
                         min="30"
@@ -3452,7 +3403,7 @@ const AdminDashboard = () => {
                       <input
                         type="number"
                         name="loginAttempts"
-                        value={systemSettings.loginAttempts}
+                        value={settings.loginAttempts}
                         onChange={handleSettingsInputChange}
                         placeholder="5"
                         min="3"
@@ -3464,7 +3415,7 @@ const AdminDashboard = () => {
                         <input
                           type="checkbox"
                           name="twoFactorAuth"
-                          checked={systemSettings.twoFactorAuth}
+                          checked={settings.twoFactorAuth}
                           onChange={handleSettingsInputChange}
                         />
                         <span>Enable Two-Factor Authentication</span>
@@ -3485,7 +3436,7 @@ const AdminDashboard = () => {
                         <input
                           type="checkbox"
                           name="autoBackup"
-                          checked={systemSettings.autoBackup}
+                          checked={settings.autoBackup}
                           onChange={handleSettingsInputChange}
                         />
                         <span>Enable Automatic Backups</span>
@@ -3496,7 +3447,7 @@ const AdminDashboard = () => {
                       <label>Backup Frequency</label>
                       <select
                         name="backupFrequency"
-                        value={systemSettings.backupFrequency}
+                        value={settings.backupFrequency}
                         onChange={handleSettingsInputChange}
                       >
                         <option value="hourly">Hourly</option>
@@ -3510,7 +3461,7 @@ const AdminDashboard = () => {
                       <input
                         type="number"
                         name="backupRetention"
-                        value={systemSettings.backupRetention}
+                        value={settings.backupRetention}
                         onChange={handleSettingsInputChange}
                         placeholder="30"
                         min="1"
@@ -3522,7 +3473,7 @@ const AdminDashboard = () => {
                         <input
                           type="checkbox"
                           name="cacheEnabled"
-                          checked={systemSettings.cacheEnabled}
+                          checked={settings.cacheEnabled}
                           onChange={handleSettingsInputChange}
                         />
                         <span>Enable Caching</span>
@@ -3534,7 +3485,7 @@ const AdminDashboard = () => {
                         <input
                           type="checkbox"
                           name="compressionEnabled"
-                          checked={systemSettings.compressionEnabled}
+                          checked={settings.compressionEnabled}
                           onChange={handleSettingsInputChange}
                         />
                         <span>Enable Compression</span>
@@ -3546,7 +3497,7 @@ const AdminDashboard = () => {
                         <input
                           type="checkbox"
                           name="cdnEnabled"
-                          checked={systemSettings.cdnEnabled}
+                          checked={settings.cdnEnabled}
                           onChange={handleSettingsInputChange}
                         />
                         <span>Enable CDN</span>

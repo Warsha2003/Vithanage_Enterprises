@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faShoppingCart, faUser, faSignOutAlt, faSignInAlt, faSearch } from '@fortawesome/free-solid-svg-icons';
 import { useCart } from '../Cart/CartContext';
+import { useSettings } from '../../contexts/SettingsContext';
 import './Navbar.css';
 
 function Navbar() {
@@ -10,6 +11,7 @@ function Navbar() {
   const [cartCount, setCartCount] = useState(0);
   const navigate = useNavigate();
   const { openCart, totals } = useCart();
+  const { settings } = useSettings();
 
   useEffect(() => {
     // Check if user is logged in
@@ -99,7 +101,10 @@ function Navbar() {
           display: 'flex',
           alignItems: 'center'
         }}>
-          <span style={{ color: '#ff9900', marginRight: '5px' }}>V</span>ithanage Enterprises
+          <span style={{ color: '#ff9900', marginRight: '5px' }}>
+            {settings.siteName.charAt(0).toUpperCase()}
+          </span>
+          {settings.siteName.slice(1)}
         </Link>
         
         {/* Search bar */}

@@ -6,6 +6,7 @@ import './Products.css';
 import './FilterStyles.css';
 import '../Cart/CartIconStyles.css';
 import { useCart } from '../Cart/CartContext';
+import { useSettings } from '../../contexts/SettingsContext';
 
 const Products = () => {
   // States
@@ -22,6 +23,7 @@ const Products = () => {
   const [cartCount, setCartCount] = useState(0);
   const [promotions, setPromotions] = useState([]);
   const { openCart, addItem } = useCart();
+  const { formatCurrency, calculatePriceWithTax } = useSettings();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -400,7 +402,7 @@ const Products = () => {
           <div className="price-filter">
             <div className="price-inputs">
               <div className="price-input-group">
-                <label>Min ($)</label>
+                <label>Min (Currency)</label>
                 <input 
                   type="number" 
                   value={currentPriceRange.min} 
@@ -410,7 +412,7 @@ const Products = () => {
                 />
               </div>
               <div className="price-input-group">
-                <label>Max ($)</label>
+                <label>Max (Currency)</label>
                 <input 
                   type="number" 
                   value={currentPriceRange.max} 
@@ -421,7 +423,7 @@ const Products = () => {
               </div>
             </div>
             <div className="price-range">
-              <span>${priceRange.min}</span>
+              <span>{formatCurrency(priceRange.min)}</span>
               <input 
                 type="range" 
                 min={priceRange.min} 
@@ -430,7 +432,7 @@ const Products = () => {
                 onChange={(e) => handlePriceChange('max', e.target.value)}
                 className="range-slider"
               />
-              <span>${priceRange.max}</span>
+              <span>{formatCurrency(priceRange.max)}</span>
             </div>
           </div>
         </div>
@@ -560,15 +562,15 @@ const Products = () => {
                   <div className="product-price">
                     {getProductPromotion(product) ? (
                       <div className="price-with-promotion">
-                        <span className="discounted-price">${getDiscountedPrice(product).toFixed(2)}</span>
-                        <span className="original-price">${product.price}</span>
+                        <span className="discounted-price">{formatCurrency(getDiscountedPrice(product))}</span>
+                        <span className="original-price">{formatCurrency(product.price)}</span>
                         <span className="discount-percent">
                           -{getProductPromotion(product).discountValue}
-                          {getProductPromotion(product).type === 'percentage' ? '%' : '$'}
+                          {getProductPromotion(product).type === 'percentage' ? '%' : formatCurrency(0).replace('0', '')}
                         </span>
                       </div>
                     ) : (
-                      <span>${product.price}</span>
+                      <span>{formatCurrency(product.price)}</span>
                     )}
                   </div>
                   <div className="product-actions">

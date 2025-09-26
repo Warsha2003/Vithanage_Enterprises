@@ -1,13 +1,16 @@
 import React from 'react';
+import { useSettings } from '../../contexts/SettingsContext';
 import './Footer.css';
 
 function Footer() {
+  const { settings } = useSettings();
+
   return (
     <footer className="footer">
       <div className="footer-container">
         <div className="footer-section">
-          <h3>Vithanage Enterprises</h3>
-          <p>Your trusted source for premium electrical appliances since 2020.</p>
+          <h3>{settings.siteName}</h3>
+          <p>{settings.siteDescription}</p>
         </div>
         
         <div className="footer-section">
@@ -32,14 +35,14 @@ function Footer() {
         
         <div className="footer-section">
           <h3>Contact Us</h3>
-          <p>123 Main Street<br />Colombo, Sri Lanka</p>
-          <p>Email: info@vithanage.com</p>
-          <p>Phone: +94 11 234 5678</p>
+          <p>{settings.businessAddress}</p>
+          <p>Email: {settings.contactEmail}</p>
+          <p>Phone: {settings.supportPhone}</p>
         </div>
       </div>
       
       <div className="footer-bottom">
-        <p>&copy; 2025 Vithanage Enterprises. All Rights Reserved.</p>
+        <p>&copy; 2025 {settings.siteName}. All Rights Reserved.</p>
       </div>
     </footer>
   );

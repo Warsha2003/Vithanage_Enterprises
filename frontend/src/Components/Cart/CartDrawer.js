@@ -1,11 +1,13 @@
 import React from 'react';
 import './CartDrawer.css';
 import { useCart } from './CartContext';
+import { useSettings } from '../../contexts/SettingsContext';
 import { useNavigate } from 'react-router-dom';
 
 const CartDrawer = () => {
   const navigate = useNavigate();
   const { isOpen, closeCart, items, updateQuantity, removeItem, totals, loading } = useCart();
+  const { formatCurrency } = useSettings();
 
   if (!isOpen) return null;
 
@@ -33,11 +35,11 @@ const CartDrawer = () => {
                       updateQuantity(item.product._id, v);
                     }} />
                     <button className="qty-btn" onClick={() => updateQuantity(item.product._id, item.quantity + 1)} disabled={loading}>+</button>
-                    <span style={{ marginLeft: 'auto', fontWeight: 600 }}>${(item.product?.price || 0).toFixed(2)}</span>
+                    <span style={{ marginLeft: 'auto', fontWeight: 600 }}>{formatCurrency(item.product?.price || 0)}</span>
                   </div>
                   <button className="remove-btn" onClick={() => removeItem(item.product._id)} disabled={loading}>Remove</button>
                 </div>
-                <div style={{ fontWeight: 700 }}>${((item.product?.price || 0) * item.quantity).toFixed(2)}</div>
+                <div style={{ fontWeight: 700 }}>{formatCurrency((item.product?.price || 0) * item.quantity)}</div>
               </div>
             ))
           )}
@@ -45,15 +47,15 @@ const CartDrawer = () => {
         <div className="cart-drawer-footer">
           <div className="totals-row">
             <span>Subtotal</span>
-            <span>${totals.subtotal.toFixed(2)}</span>
+            <span>{formatCurrency(totals.subtotal)}</span>
           </div>
           <div className="totals-row">
             <span>Shipping</span>
-            <span>${totals.shipping.toFixed(2)}</span>
+            <span>{formatCurrency(totals.shipping)}</span>
           </div>
           <div className="totals-row" style={{ fontWeight: 700 }}>
             <span>Total</span>
-            <span>${totals.total.toFixed(2)}</span>
+            <span>{formatCurrency(totals.total)}</span>
           </div>
           <button className="checkout-btn" onClick={() => { closeCart(); navigate('/place-order'); }} disabled={loading || items.length === 0}>Place Order</button>
         </div>

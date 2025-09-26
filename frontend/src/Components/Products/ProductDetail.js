@@ -13,6 +13,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import './ProductDetail.css';
 import { useCart } from '../Cart/CartContext';
+import { useSettings } from '../../contexts/SettingsContext';
 import ReviewDisplay from '../Reviews/ReviewDisplay';
 import ReviewForm from '../Reviews/ReviewForm';
 
@@ -20,6 +21,7 @@ const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addItem } = useCart();
+  const { formatCurrency } = useSettings();
   
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -146,7 +148,7 @@ const ProductDetail = () => {
 
           <div className="product-price">
             <FontAwesomeIcon icon={faDollarSign} />
-            <span className="price">${product.price.toFixed(2)}</span>
+            <span className="price">{formatCurrency(product.price)}</span>
           </div>
 
           <div className="product-brand">

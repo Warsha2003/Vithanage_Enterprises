@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useSettings } from '../../contexts/SettingsContext';
 import './Home.css';
 
 function Home() {
@@ -11,6 +12,7 @@ function Home() {
   const [loading, setLoading] = useState(true);
   const [currentCategoryPage, setCurrentCategoryPage] = useState(0);
   const navigate = useNavigate();
+  const { formatCurrency, settings } = useSettings();
   
   useEffect(() => {
     fetchHomeData();
@@ -169,7 +171,7 @@ function Home() {
               if (promotion.type === 'percentage') {
                 return `${promotion.discountValue}% OFF`;
               } else if (promotion.type === 'fixed_amount') {
-                return `$${promotion.discountValue} OFF`;
+                return `${formatCurrency(promotion.discountValue)} OFF`;
               } else if (promotion.type === 'free_shipping') {
                 return 'FREE SHIPPING';
               } else {
@@ -187,7 +189,7 @@ function Home() {
                   <div className="promo-code">Code: {promotion.code}</div>
                   {promotion.minimumOrderValue > 0 && (
                     <small className="promo-min-order">
-                      Min order: ${promotion.minimumOrderValue}
+                      Min order: {formatCurrency(promotion.minimumOrderValue)}
                     </small>
                   )}
                 </div>
@@ -212,7 +214,7 @@ function Home() {
             <div className="promo-icon">🚚</div>
             <div className="promo-content">
               <h3>Free Shipping</h3>
-              <p>On orders over $50</p>
+              <p>On orders over {formatCurrency(settings.freeShippingThreshold)}</p>
               <span className="promo-code">FREE50</span>
             </div>
           </div>
@@ -312,7 +314,7 @@ function Home() {
                   <span className="rating-text">({product.rating || 4.0})</span>
                 </div>
                 <div className="product-price">
-                  <span className="current-price">${product.price}</span>
+                  <span className="current-price">{formatCurrency(product.price)}</span>
                 </div>
               </div>
             </div>
@@ -352,7 +354,7 @@ function Home() {
                   <span className="rating-text">({product.rating || 4.0})</span>
                 </div>
                 <div className="product-price">
-                  <span className="current-price">${product.price}</span>
+                  <span className="current-price">{formatCurrency(product.price)}</span>
                 </div>
               </div>
             </div>
@@ -383,7 +385,7 @@ function Home() {
               <div className="product-info">
                 <h3>{product.name}</h3>
                 <div className="product-price">
-                  <span className="current-price">${product.price}</span>
+                  <span className="current-price">{formatCurrency(product.price)}</span>
                 </div>
               </div>
             </div>
