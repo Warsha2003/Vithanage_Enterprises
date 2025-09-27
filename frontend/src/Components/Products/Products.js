@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUser, faShoppingCart, faStar, faCheck, faSliders, faTag, faSpinner } from '@fortawesome/free-solid-svg-icons';
 import './Products.css';
@@ -18,6 +18,7 @@ const Products = () => {
   const [selectedBrands, setSelectedBrands] = useState([]);
   const [priceRange, setPriceRange] = useState({ min: 0, max: 2000 });
   const [currentPriceRange, setCurrentPriceRange] = useState({ min: 0, max: 2000 });
+  const [searchTerm, setSearchTerm] = useState('');
   const [userName, setUserName] = useState('Guest');
   const [loading, setLoading] = useState(false);
   const [cartCount, setCartCount] = useState(0);
@@ -25,6 +26,23 @@ const Products = () => {
   const { openCart, addItem } = useCart();
   const { formatCurrency, calculatePriceWithTax } = useSettings();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Handle URL parameters for filtering
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const categoryParam = searchParams.get('category');
+    const searchParam = searchParams.get('search');
+    
+    if (categoryParam && categories.length > 0 && categories.includes(categoryParam)) {
+      setSelectedCategory(categoryParam);
+    }
+    
+    if (searchParam) {
+      setSearchTerm(searchParam);
+      setSelectedCategory('All'); // Show all categories when searching
+    }
+  }, [location.search, categories]);
 
   useEffect(() => {
     // Fetch user data
@@ -238,8 +256,18 @@ const Products = () => {
   useEffect(() => {
     let result = products;
     
-    // Filter by category
-    if (selectedCategory !== 'All') {
+    // Filter by search term
+    if (searchTerm) {
+      result = result.filter(product => 
+        product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (product.brand && product.brand.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (product.description && product.description.toLowerCase().includes(searchTerm.toLowerCase()))
+      );
+    }
+    
+    // Filter by category (only if no search term)
+    if (selectedCategory !== 'All' && !searchTerm) {
       result = result.filter(product => product.category === selectedCategory);
     }
     
@@ -255,7 +283,7 @@ const Products = () => {
     );
     
     setFilteredProducts(result);
-  }, [products, selectedCategory, selectedBrands, currentPriceRange]);
+  }, [products, selectedCategory, selectedBrands, currentPriceRange, searchTerm]);
 
   // Toggle brand selection
   const toggleBrand = (brand) => {

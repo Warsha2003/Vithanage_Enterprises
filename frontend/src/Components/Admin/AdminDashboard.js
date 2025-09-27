@@ -123,6 +123,11 @@ const AdminDashboard = () => {
   const [activeSettingsTab, setActiveSettingsTab] = useState('general');
   const [settingsMessage, setSettingsMessage] = useState({ type: '', message: '' });
 
+  // Recent Activities state
+  const [recentActivities, setRecentActivities] = useState([]);
+  const [activitiesLoading, setActivitiesLoading] = useState(false);
+  const [lastActivityUpdate, setLastActivityUpdate] = useState(null);
+
   // Admin management state
   const [admins, setAdmins] = useState([]);
   const [showAdminModal, setShowAdminModal] = useState(false);
@@ -177,6 +182,7 @@ const AdminDashboard = () => {
       fetchAdmins();
       fetchProducts();
       fetchDashboardStats();
+      fetchRecentActivities();
     }
     setLoading(false);
 
@@ -195,6 +201,17 @@ const AdminDashboard = () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
+  // Auto-refresh recent activities every 30 seconds
+  useEffect(() => {
+    if (!loading && isAdmin) {
+      const interval = setInterval(() => {
+        fetchRecentActivities();
+      }, 30 * 1000); // 30 seconds
+
+      return () => clearInterval(interval);
+    }
+  }, [loading, isAdmin]);
 
   const fetchUsers = async () => {
     try {
@@ -914,6 +931,158 @@ const AdminDashboard = () => {
     }
   };
 
+  // Helper function to format activity time
+  const formatActivityTime = (timestamp) => {
+    const now = new Date();
+    const activityDate = new Date(timestamp);
+    const diffInMinutes = Math.floor((now - activityDate) / (1000 * 60));
+    
+    if (diffInMinutes < 1) {
+      return 'Just now';
+    } else if (diffInMinutes < 60) {
+      return `${diffInMinutes}m ago`;
+    } else if (diffInMinutes < 24 * 60) {
+      const hours = Math.floor(diffInMinutes / 60);
+      return `${hours}h ago`;
+    } else if (diffInMinutes < 7 * 24 * 60) {
+      const days = Math.floor(diffInMinutes / (24 * 60));
+      return `${days}d ago`;
+    } else {
+      return activityDate.toLocaleDateString();
+    }
+  };
+
+  // Fetch recent activities from multiple sources
+  const fetchRecentActivities = async () => {
+    setActivitiesLoading(true);
+    const activities = [];
+    
+    try {
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      
+      // Fetch recent orders
+      try {
+        const ordersResponse = await fetch('http://localhost:5000/api/admin/orders', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (ordersResponse.ok) {
+          const ordersData = await ordersResponse.json();
+          console.log('Orders API data sample:', ordersData[0]); // Debug log
+          
+          // Sort orders by creation date (newest first) and get last 3 orders
+          const sortedOrders = ordersData.sort((a, b) => {
+            const dateA = new Date(a.createdAt || a.updatedAt || Date.now());
+            const dateB = new Date(b.createdAt || b.updatedAt || Date.now());
+            return dateB - dateA;
+          });
+          
+          sortedOrders.slice(0, 3).forEach(order => {
+            const orderDate = order.createdAt || order.updatedAt || Date.now();
+            const totalAmount = order.totals?.total || order.total || 0;
+            console.log('Processing order:', { id: order._id, date: orderDate, amount: totalAmount }); // Debug log
+            activities.push({
+              id: `order_${order._id}`,
+              type: 'order',
+              message: `New order #${order._id.slice(-6)} received for ${formatCurrency(totalAmount)}`,
+              time: new Date(orderDate).toLocaleString(),
+              timestamp: new Date(orderDate).getTime()
+            });
+          });
+        }
+      } catch (error) {
+        console.log('Could not fetch recent orders for activities:', error);
+      }
+
+      // Fetch recent user registrations
+      try {
+        const usersResponse = await fetch('http://localhost:5000/api/admin/users', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (usersResponse.ok) {
+          const usersData = await usersResponse.json();
+          console.log('Users API data sample:', usersData[0]); // Debug log
+          
+          // Sort users by creation date (newest first) and get last 2 users
+          const sortedUsers = usersData.sort((a, b) => {
+            const dateA = new Date(a.createdAt || Date.now());
+            const dateB = new Date(b.createdAt || Date.now());
+            return dateB - dateA;
+          });
+          
+          sortedUsers.slice(0, 2).forEach(user => {
+            const userDate = user.createdAt || Date.now();
+            console.log('Processing user:', { id: user._id, name: user.name, date: userDate }); // Debug log
+            activities.push({
+              id: `user_${user._id}`,
+              type: 'user',
+              message: `New user ${user.name || 'Anonymous'} registered`,
+              time: new Date(userDate).toLocaleString(),
+              timestamp: new Date(userDate).getTime()
+            });
+          });
+        }
+      } catch (error) {
+        console.log('Could not fetch recent users for activities:', error);
+      }
+
+      // Fetch recent reviews
+      try {
+        const reviewsResponse = await fetch('http://localhost:5000/api/reviews', {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (reviewsResponse.ok) {
+          const reviewsData = await reviewsResponse.json();
+          // Get last 2 reviews
+          reviewsData.slice(0, 2).forEach(review => {
+            const reviewDate = review.createdAt || Date.now();
+            activities.push({
+              id: `review_${review._id}`,
+              type: 'review',
+              message: `New ${review.rating}-star review received`,
+              time: new Date(reviewDate).toLocaleString(),
+              timestamp: new Date(reviewDate).getTime()
+            });
+          });
+        }
+      } catch (error) {
+        console.log('Could not fetch recent reviews for activities');
+      }
+
+      // Sort activities by timestamp (most recent first)
+      activities.sort((a, b) => b.timestamp - a.timestamp);
+      
+      // Keep only top 5 activities
+      setRecentActivities(activities.slice(0, 5));
+      setLastActivityUpdate(new Date());
+      
+    } catch (error) {
+      console.error('Error fetching recent activities:', error);
+      // Fallback to sample activities if fetch fails
+      setRecentActivities([
+        {
+          id: 'sample_1',
+          type: 'info',
+          message: 'System initialized successfully',
+          time: new Date().toLocaleString(),
+          timestamp: Date.now()
+        }
+      ]);
+    } finally {
+      setActivitiesLoading(false);
+    }
+  };
+
   const fetchAllOrders = async () => {
     try {
       setOrdersLoading(true);
@@ -1304,25 +1473,53 @@ const AdminDashboard = () => {
       </div>
 
       <div className="admin-section">
-        <h3>Recent Activity</h3>
-        <div className="activity-list">
-          <div className="activity-item">
-            <div className="activity-time">Today, 10:45 AM</div>
-            <div className="activity-detail">New order #ORD7823 received for $175.99</div>
-          </div>
-          <div className="activity-item">
-            <div className="activity-time">Today, 09:30 AM</div>
-            <div className="activity-detail">User John D. left a 5-star review on Deluxe Microwave</div>
-          </div>
-          <div className="activity-item">
-            <div className="activity-time">Yesterday, 03:15 PM</div>
-            <div className="activity-detail">Inventory updated - Added 15 new Samsung Refrigerators</div>
-          </div>
-          <div className="activity-item">
-            <div className="activity-time">Yesterday, 12:30 PM</div>
-            <div className="activity-detail">New user Sarah J. registered</div>
-          </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+          <h3>Recent Activity</h3>
+          {lastActivityUpdate && (
+            <small style={{ color: '#666', fontSize: '12px' }}>
+              Last updated: {formatActivityTime(lastActivityUpdate.getTime())}
+            </small>
+          )}
         </div>
+        <div className="activity-list">
+          {activitiesLoading ? (
+            <div className="activity-item">
+              <div className="activity-detail">Loading recent activities...</div>
+            </div>
+          ) : recentActivities.length > 0 ? (
+            recentActivities.map((activity) => (
+              <div key={activity.id} className="activity-item">
+                <div className="activity-time">{formatActivityTime(activity.timestamp)}</div>
+                <div className="activity-detail">{activity.message}</div>
+              </div>
+            ))
+          ) : (
+            <div className="activity-item">
+              <div className="activity-detail">No recent activities found</div>
+            </div>
+          )}
+        </div>
+        <button 
+          className="refresh-activities-btn" 
+          onClick={fetchRecentActivities}
+          disabled={activitiesLoading}
+          title="Click to refresh activities immediately"
+          style={{
+            marginTop: '15px',
+            padding: '10px 20px',
+            backgroundColor: activitiesLoading ? '#6c757d' : '#28a745',
+            color: 'white',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: activitiesLoading ? 'not-allowed' : 'pointer',
+            fontSize: '14px',
+            fontWeight: '500',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+            transition: 'all 0.3s ease'
+          }}
+        >
+          {activitiesLoading ? '🔄 Refreshing...' : '🔄 Refresh Now'}
+        </button>
       </div>
 
       <div className="admin-section">

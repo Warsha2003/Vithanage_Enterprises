@@ -125,7 +125,7 @@ function Home() {
   return (
     <div className="home-container">
       {/* Main Hero Banner */}
-      <section className="hero-section">
+      <section className="hero-section" style={{backgroundImage: 'url(/images/categories/background.jpg)'}}>
         <div className="hero-banner">
           <div className="hero-content">
             <div className="hero-badge">🔥 MEGA SALE</div>
@@ -139,9 +139,6 @@ function Home() {
                 View All Deals
               </button>
             </div>
-          </div>
-          <div className="hero-image">
-            <img src="https://via.placeholder.com/600x400/FF6B6B/FFFFFF?text=MEGA+SALE+70%25+OFF" alt="Mega Sale" />
           </div>
         </div>
       </section>
@@ -265,7 +262,7 @@ function Home() {
               <div 
                 key={index} 
                 className="carousel-category-card" 
-                onClick={() => navigate('/products')}
+                onClick={() => handleCategoryClick(category.name)}
               >
                 <div className="category-image">
                   <img 

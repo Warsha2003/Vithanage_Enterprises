@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faShoppingCart, faUser, faSignOutAlt, faSignInAlt, faSearch } from '@fortawesome/free-solid-svg-icons';
+import { faShoppingCart, faUser, faSignOutAlt, faSignInAlt, faSearch, faBars, faTimes, faFire, faTag, faStar, faGift } from '@fortawesome/free-solid-svg-icons';
 import { useCart } from '../Cart/CartContext';
 import { useSettings } from '../../contexts/SettingsContext';
 import './Navbar.css';
@@ -9,6 +9,10 @@ import './Navbar.css';
 function Navbar() {
   const [user, setUser] = useState(null);
   const [cartCount, setCartCount] = useState(0);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [categories, setCategories] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
   const { openCart, totals } = useCart();
   const { settings } = useSettings();
@@ -26,6 +30,9 @@ function Navbar() {
         handleLogout();
       }
     }
+    
+    // Fetch categories for navigation
+    fetchCategories();
   }, []);
 
   // Update cart count from Cart context
@@ -59,6 +66,25 @@ function Navbar() {
     };
   }, []);
 
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/products');
+      const products = await response.json();
+      const uniqueCategories = [...new Set(products.map(product => product.category))];
+      setCategories(uniqueCategories.slice(0, 8)); // Get first 8 categories
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
+  };
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
+      setSearchQuery('');
+    }
+  };
+
   const handleLogout = () => {
     // Clear auth data
     localStorage.removeItem('token');
@@ -71,6 +97,7 @@ function Navbar() {
     
     // Clear user state
     setUser(null);
+    setShowUserMenu(false);
     
     // Trigger cart update events to clear cart counts in all components
     if (window.clearCartOnLogout) {
@@ -82,276 +109,165 @@ function Navbar() {
   };
 
   return (
-    <nav className="navbar" style={{ backgroundColor: '#232f3e', color: 'white', padding: '0' }}>
-      {/* Top bar with logo and search */}
-      <div className="navbar-top" style={{ 
-        padding: '15px 20px', 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'space-between',
-        flexWrap: 'wrap',
-        borderBottom: '1px solid rgba(255,255,255,0.05)',
-        backgroundColor: '#232f3e'
-      }}>
-        <Link to="/" className="nav-logo" style={{ 
-          color: 'white', 
-          fontSize: '24px', 
-          fontWeight: '700', 
-          textDecoration: 'none',
-          display: 'flex',
-          alignItems: 'center'
-        }}>
-          <span style={{ color: '#ff9900', marginRight: '5px' }}>
-            {settings.siteName.charAt(0).toUpperCase()}
-          </span>
-          {settings.siteName.slice(1)}
-        </Link>
-        
-        {/* Search bar */}
-        <div className="search-container" style={{ 
-          flex: '1',
-          margin: '0 20px',
-          maxWidth: '600px',
-          display: 'flex',
-          height: '40px',
-          borderRadius: '4px',
-          overflow: 'hidden'
-        }}>
-          <input 
-            type="text" 
-            placeholder="Search for products..." 
-            style={{ 
-              flex: '1',
-              border: 'none',
-              padding: '0 15px',
-              fontSize: '14px',
-              outline: 'none'
-            }}
-          />
-          <button style={{ 
-            backgroundColor: '#ff9900', 
-            border: 'none',
-            padding: '0 15px',
-            color: '#232f3e',
-            fontWeight: 'bold',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center'
-          }}>
-            <FontAwesomeIcon icon={faSearch} />
-          </button>
-        </div>
-        
-        {/* User and Cart icons */}
-        <div className="nav-icons" style={{ 
-          display: 'flex',
-          alignItems: 'center'
-        }}>
-          {/* Cart icon with count */}
-          <div 
-            className="nav-icon cart-icon-wrapper" 
-            onClick={() => { if (user) openCart(); else navigate('/login'); }}
-            style={{ 
-              position: 'relative', 
-              marginRight: '20px',
-              display: 'flex',
-              alignItems: 'center',
-              cursor: 'pointer'
-            }}
-          >
-            <FontAwesomeIcon icon={faShoppingCart} style={{ 
-              color: 'white', 
-              fontSize: '22px' 
-            }} />
-            {user && cartCount > 0 && (
-              <span className="cart-count" style={{
-                position: 'absolute',
-                top: '-8px',
-                right: '-8px',
-                background: '#ff9900',
-                color: '#232f3e',
-                borderRadius: '10px',
-                minWidth: '18px',
-                height: '18px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '10px',
-                fontWeight: 'bold',
-                padding: '0 4px',
-                boxShadow: '0 0 0 1px rgba(0, 0, 0, 0.1)'
-              }}>
-                {cartCount}
-              </span>
-            )}
+    <>
+      {/* Main Navigation Bar */}
+      <nav className="main-navbar">
+        <div className="navbar-container">
+          {/* Logo */}
+          <div className="navbar-brand">
+            <Link to="/" className="brand-logo">
+              <span className="brand-icon">{settings.siteName.charAt(0).toUpperCase()}</span>
+              <span className="brand-text">{settings.siteName.slice(1)}</span>
+            </Link>
           </div>
           
-          {/* User menu or login */}
-          {user ? (
-            <div className="user-menu" style={{
-              position: 'relative',
-              cursor: 'pointer'
-            }}>
-              <div style={{ 
-                display: 'flex', 
-                alignItems: 'center',
-                color: 'white'
-              }}>
-                <FontAwesomeIcon icon={faUser} style={{ marginRight: '5px', color: 'white' }} />
-                <span className="user-name" style={{ color: 'white' }}>
-                  {user.name}
-                </span>
+          {/* Search Bar */}
+          <div className="navbar-search">
+            <form onSubmit={handleSearch} className="search-container">
+              <input 
+                type="text" 
+                placeholder="Search for products, brands and more..." 
+                className="search-input"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              <button type="submit" className="search-btn">
+                <FontAwesomeIcon icon={faSearch} />
+              </button>
+            </form>
+          </div>
+          
+          {/* Right Side Actions */}
+          <div className="navbar-actions">
+            {/* User Menu */}
+            {user ? (
+              <div 
+                className="user-wrapper"
+                onClick={() => setShowUserMenu(!showUserMenu)}
+              >
+                <FontAwesomeIcon icon={faUser} className="user-icon" />
+                <div className="user-info">
+                  <span className="user-greeting">Hello, {user.name}</span>
+                  <span className="user-account">Account & Lists</span>
+                </div>
+                {showUserMenu && (
+                  <div className="user-dropdown">
+                    <Link to="/my-orders" className="dropdown-item">My Orders</Link>
+                    {user && <Link to="/my-reviews" className="dropdown-item">My Reviews</Link>}
+                    {user?.isAdmin && <Link to="/admin" className="dropdown-item admin-link">Admin Dashboard</Link>}
+                    <hr className="dropdown-divider" />
+                    <button onClick={handleLogout} className="dropdown-item logout-btn">
+                      <FontAwesomeIcon icon={faSignOutAlt} />
+                      Sign Out
+                    </button>
+                  </div>
+                )}
               </div>
-              <div className="dropdown-menu" style={{
-                position: 'absolute',
-                top: '100%',
-                right: '0',
-                backgroundColor: 'white',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                borderRadius: '4px',
-                width: '200px',
-                marginTop: '10px',
-                zIndex: '1001',
-                display: 'none'
-              }}>
-                <button onClick={handleLogout} style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  padding: '12px 16px',
-                  width: '100%',
-                  textAlign: 'left',
-                  backgroundColor: 'transparent',
-                  border: 'none',
-                  cursor: 'pointer'
-                }}>
-                  <FontAwesomeIcon icon={faSignOutAlt} style={{ marginRight: '8px', color: '#666' }} />
-                  Logout
-                </button>
-              </div>
+            ) : (
+              <Link to="/login" className="login-wrapper">
+                <FontAwesomeIcon icon={faSignInAlt} className="login-icon" />
+                <div className="login-info">
+                  <span className="login-greeting">Hello, Sign in</span>
+                  <span className="login-account">Account & Lists</span>
+                </div>
+              </Link>
+            )}
+            
+            {/* Cart Icon */}
+            <div 
+              className="cart-wrapper" 
+              onClick={() => { if (user) openCart(); else navigate('/login'); }}
+            >
+              <FontAwesomeIcon icon={faShoppingCart} className="cart-icon" />
+              {user && cartCount > 0 && (
+                <span className="cart-badge">{cartCount}</span>
+              )}
+              <span className="cart-text">Cart</span>
             </div>
-          ) : (
-            <Link to="/login" className="nav-link login-link" style={{ 
-              color: 'white',
-              display: 'flex',
-              alignItems: 'center'
-            }}>
-              <FontAwesomeIcon icon={faSignInAlt} style={{ marginRight: '5px', color: 'white' }} />
-              Login
-            </Link>
-          )}
+            
+            {/* Mobile Menu Toggle */}
+            <button 
+              className="mobile-toggle"
+              onClick={() => setShowMobileMenu(!showMobileMenu)}
+            >
+              <FontAwesomeIcon icon={showMobileMenu ? faTimes : faBars} />
+            </button>
+          </div>
         </div>
-      </div>
-      
-      {/* Bottom navigation with links */}
-      <div className="navbar-bottom" style={{ 
-        backgroundColor: '#232f3e',
-        padding: '0 20px',
-        display: 'flex',
-        alignItems: 'center',
-        height: '40px',
-        borderTop: '1px solid rgba(255,255,255,0.05)'
-      }}>
-        <div className="nav-links" style={{
-          display: 'flex',
-          alignItems: 'center',
-          height: '100%'
-        }}>
-          <Link to="/" className="nav-link" style={{ 
-            color: 'white',
-            padding: '0 15px',
-            height: '100%',
-            display: 'flex',
-            alignItems: 'center',
-            borderBottom: '3px solid transparent',
-            transition: 'all 0.2s'
-          }}>
-            Home
-          </Link>
-          <Link to="/products" className="nav-link" style={{ 
-            color: 'white',
-            padding: '0 15px',
-            height: '100%',
-            display: 'flex',
-            alignItems: 'center',
-            borderBottom: '3px solid transparent',
-            transition: 'all 0.2s'
-          }}>
-            Products
-          </Link>
-          <Link to="/" className="nav-link" style={{ 
-            color: 'white',
-            padding: '0 15px',
-            height: '100%',
-            display: 'flex',
-            alignItems: 'center',
-            borderBottom: '3px solid transparent',
-            transition: 'all 0.2s'
-          }}>
-            Best Sellers
-          </Link>
-          <Link to="/" className="nav-link" style={{ 
-            color: 'white',
-            padding: '0 15px',
-            height: '100%',
-            display: 'flex',
-            alignItems: 'center',
-            borderBottom: '3px solid transparent',
-            transition: 'all 0.2s'
-          }}>
-            New Arrivals
-          </Link>
-          <Link to="/" className="nav-link" style={{ 
-            color: '#ff9900',
-            padding: '0 15px',
-            height: '100%',
-            display: 'flex',
-            alignItems: 'center',
-            borderBottom: '3px solid transparent',
-            transition: 'all 0.2s',
-            fontWeight: '600'
-          }}>
-            Deals
-          </Link>
-          <Link to="/my-orders" className="nav-link" style={{ 
-            color: 'white',
-            padding: '0 15px',
-            height: '100%',
-            display: 'flex',
-            alignItems: 'center',
-            borderBottom: '3px solid transparent',
-            transition: 'all 0.2s'
-          }}>
-            My Orders
-          </Link>
-          {user && (
-            <Link to="/my-reviews" className="nav-link" style={{ 
-              color: 'white',
-              padding: '0 15px',
-              height: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              borderBottom: '3px solid transparent',
-              transition: 'all 0.2s'
-            }}>
-              My Reviews
+      </nav>
+
+      {/* Secondary Navigation Bar */}
+      <nav className="secondary-navbar">
+        <div className="secondary-container">
+          {/* Quick Links */}
+          <div className="quick-links">
+            <Link to="/" className="secondary-link">
+              <FontAwesomeIcon icon={faFire} />
+              Home
             </Link>
-          )}
-          {user?.isAdmin && (
-            <Link to="/admin" className="nav-link" style={{ 
-              color: 'white',
-              padding: '0 15px',
-              height: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              borderBottom: '3px solid transparent',
-              transition: 'all 0.2s'
-            }}>
-              Admin
+            <Link to="/products?featured=true" className="secondary-link">
+              <FontAwesomeIcon icon={faStar} />
+              Best Sellers
             </Link>
-          )}
+            <Link to="/products?sale=true" className="secondary-link sale-link">
+              <FontAwesomeIcon icon={faTag} />
+              Today's Deals
+            </Link>
+            <Link to="/products?new=true" className="secondary-link">
+              <FontAwesomeIcon icon={faGift} />
+              New Arrivals
+            </Link>
+          </div>
+          
+          {/* Categories */}
+          <div className="category-links">
+            {categories.map((category, index) => (
+              <Link 
+                key={index}
+                to={`/products?category=${encodeURIComponent(category)}`} 
+                className="category-link"
+              >
+                {category}
+              </Link>
+            ))}
+          </div>
         </div>
-      </div>
-    </nav>
+      </nav>
+
+      {/* Mobile Menu */}
+      {showMobileMenu && (
+        <div className="mobile-menu">
+          <div className="mobile-menu-header">
+            <h3>Menu</h3>
+            <button onClick={() => setShowMobileMenu(false)}>
+              <FontAwesomeIcon icon={faTimes} />
+            </button>
+          </div>
+          
+          <div className="mobile-menu-content">
+            <Link to="/" onClick={() => setShowMobileMenu(false)}>Home</Link>
+            <Link to="/products?featured=true" onClick={() => setShowMobileMenu(false)}>Best Sellers</Link>
+            <Link to="/products?sale=true" onClick={() => setShowMobileMenu(false)}>Today's Deals</Link>
+            <Link to="/products?new=true" onClick={() => setShowMobileMenu(false)}>New Arrivals</Link>
+            <Link to="/my-orders" onClick={() => setShowMobileMenu(false)}>My Orders</Link>
+            {user && <Link to="/my-reviews" onClick={() => setShowMobileMenu(false)}>My Reviews</Link>}
+            {user?.isAdmin && <Link to="/admin" onClick={() => setShowMobileMenu(false)}>Admin</Link>}
+            
+            <hr />
+            <h4>Categories</h4>
+            {categories.map((category, index) => (
+              <Link 
+                key={index}
+                to={`/products?category=${encodeURIComponent(category)}`} 
+                onClick={() => setShowMobileMenu(false)}
+              >
+                {category}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 

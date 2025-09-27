@@ -49,7 +49,9 @@
 
 /* Hero Section */
 .hero-section {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   position: relative;
   overflow: hidden;
   min-height: 600px;
@@ -62,45 +64,40 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(45deg, rgba(255,255,255,0.1) 25%, transparent 25%, transparent 75%, rgba(255,255,255,0.1) 75%);
-  background-size: 40px 40px;
-  animation: slide 20s linear infinite;
-}
-
-@keyframes slide {
-  0% { background-position: 0 0; }
-  100% { background-position: 40px 40px; }
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 1;
 }
 
 .hero-banner {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 80px 20px;
+  padding: 100px 20px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 60px;
+  justify-content: center;
+  text-align: center;
   position: relative;
   z-index: 2;
+  min-height: 600px;
 }
 
 .hero-content {
-  flex: 1;
   color: white;
+  max-width: 700px;
 }
 
 .hero-badge {
   display: inline-block;
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: #ff4757;
   padding: 12px 24px;
   border-radius: 50px;
   font-size: 0.9rem;
-  font-weight: 600;
+  font-weight: 700;
   margin-bottom: 30px;
   text-transform: uppercase;
   letter-spacing: 1px;
+  color: white;
+  box-shadow: 0 4px 20px rgba(255, 71, 87, 0.4);
 }
 
 .hero-content h1 {
@@ -108,20 +105,21 @@
   font-weight: 900;
   line-height: 1.1;
   margin-bottom: 25px;
-  text-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  text-shadow: 2px 4px 8px rgba(0,0,0,0.6);
 }
 
 .hero-content p {
   font-size: 1.4rem;
   line-height: 1.6;
   margin-bottom: 40px;
-  color: rgba(255, 255, 255, 0.9);
-  max-width: 500px;
+  color: rgba(255, 255, 255, 0.95);
+  text-shadow: 1px 2px 4px rgba(0,0,0,0.5);
 }
 
 .hero-buttons {
   display: flex;
   gap: 20px;
+  justify-content: center;
   flex-wrap: wrap;
 }
 
@@ -132,55 +130,57 @@
   font-weight: 700;
   border: none;
   cursor: pointer;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s ease;
   text-decoration: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   position: relative;
-  overflow: hidden;
+  min-width: 160px;
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+  background: #ff4757;
   color: white;
-  box-shadow: 0 10px 40px rgba(255, 107, 107, 0.4);
+  box-shadow: 0 8px 25px rgba(255, 71, 87, 0.4);
 }
 
 .btn-primary:hover {
-  transform: translateY(-3px) scale(1.05);
-  box-shadow: 0 15px 50px rgba(255, 107, 107, 0.5);
+  background: #ff3742;
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(255, 71, 87, 0.5);
 }
 
 .btn-secondary {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
+  background: transparent;
   color: white;
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  border: 2px solid white;
 }
 
 .btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.2);
-  transform: translateY(-3px);
-  border-color: rgba(255, 255, 255, 0.5);
+  background: white;
+  color: #333;
+  transform: translateY(-2px);
 }
 
-.hero-image {
-  flex: 1;
-  text-align: center;
-}
-
-.hero-image img {
-  max-width: 100%;
-  height: auto;
-  border-radius: 25px;
-  box-shadow: 0 30px 80px rgba(0,0,0,0.3);
-  transform: perspective(1000px) rotateY(-10deg) rotateX(5deg);
-  transition: all 0.6s ease;
-}
-
-.hero-image img:hover {
-  transform: perspective(1000px) rotateY(0deg) rotateX(0deg) scale(1.05);
+/* Responsive Design */
+@media (max-width: 768px) {
+  .hero-content h1 {
+    font-size: 3rem;
+  }
+  
+  .hero-content p {
+    font-size: 1.2rem;
+  }
+  
+  .hero-banner {
+    padding: 60px 20px;
+  }
+  
+  .btn-primary, .btn-secondary {
+    padding: 14px 28px;
+    font-size: 1rem;
+  }
 }
 
 /* Promotional Banners */
