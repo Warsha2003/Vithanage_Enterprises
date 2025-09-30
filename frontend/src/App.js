@@ -15,7 +15,7 @@ import CartDrawer from './Components/Cart/CartDrawer';
 import PlaceOrder from './Components/Cart/PlaceOrder';
 import MyOrders from './Components/Cart/MyOrders';
 import MyReviewsPage from './Components/User/MyReviewsPage';
-import InvoicePage from './Components/Invoice/InvoicePage';
+
 
 // Direct approach to protected routes without state management
 // eslint-disable-next-line no-unused-vars
