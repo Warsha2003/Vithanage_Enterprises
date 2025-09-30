@@ -15,7 +15,7 @@ import CartDrawer from './Components/Cart/CartDrawer';
 import PlaceOrder from './Components/Cart/PlaceOrder';
 import MyOrders from './Components/Cart/MyOrders';
 import MyReviewsPage from './Components/User/MyReviewsPage';
-
+import InvoicePage from'./Components/Invoice/InvoicePage';
 
 // Direct approach to protected routes without state management
 // eslint-disable-next-line no-unused-vars
@@ -111,6 +111,7 @@ function App() {
               {/* Make cart accessible without login, checking will happen inside */}
               <Route path="/cart" element={<Cart />} />
               <Route path="/place-order" element={<PlaceOrder />} />
+              <Route path="/invoice/" element={<InvoicePage />} />
               <Route path="/my-orders" element={<MyOrders />} />
               <Route path="/my-reviews" element={<MyReviewsPage />} />
               {/* Catch-all redirect to home */}

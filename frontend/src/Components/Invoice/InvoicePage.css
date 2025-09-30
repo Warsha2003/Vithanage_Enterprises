@@ -1,0 +1,58 @@
+.invoice-page {
+  max-width: 600px;
+  margin: 40px auto;
+  padding: 32px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+.invoice-page h2 {
+  margin-bottom: 16px;
+}
+.invoice-page h3 {
+  margin-top: 24px;
+}
+.invoice-page ul {
+  padding-left: 20px;
+}
+.invoice-page button {
+  margin-top: 24px;
+  padding: 10px 24px;
+  background: #1976d2;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+}
+.invoice-page button:hover {
+  background: #1565c0;
+}
+
+.invoice-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+.invoice-header h1 {
+  margin: 0;
+  font-size: 2rem;
+  color: #1976d2;
+}
+.invoice-contact p {
+  margin: 2px 0;
+  font-size: 1rem;
+  color: #444;
+}
+.invoice-paid-stamp {
+  margin: 32px auto 0 auto;
+  width: 120px;
+  text-align: center;
+  font-size: 2.2rem;
+  font-weight: bold;
+  color: #d32f2f;
+  border: 3px solid #d32f2f;
+  border-radius: 12px;
+  background: rgba(211,47,47,0.08);
+  transform: rotate(-10deg);
+  box-shadow: 0 2px 8px rgba(211,47,47,0.12);
+}

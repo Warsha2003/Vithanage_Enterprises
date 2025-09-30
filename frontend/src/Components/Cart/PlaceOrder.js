@@ -144,7 +144,7 @@ const PlaceOrder = () => {
       });
       const data = await res.json().catch(() => ({}));
       if (res.ok) {
-        console.log('ORDER SAVED:', data);
+        /*console.log('ORDER SAVED:', data);
         alert('Successfully placed your order!');
         // Server clears the cart; sync client cache/UI
         localStorage.setItem('userCart', JSON.stringify([]));
@@ -155,7 +155,35 @@ const PlaceOrder = () => {
         console.error('Order creation failed:', data);
         alert(data?.message || 'Failed to place order. Please try again.');
       }
-    } catch (err) {
+    } */
+   console.log('ORDER SAVED:', data);
+  
+  // Store order data for confirmation page
+  const orderData = {
+    ...data,
+    customer: payload.customer,
+    shippingAddress: payload.shippingAddress,
+    items: payload.items,
+    totals: payload.totals,
+    promotion: payload.promotion
+  };
+  
+  // Store in localStorage as backup
+  localStorage.setItem('lastOrder', JSON.stringify(orderData));
+  
+  // Redirect to invoice page with order data
+  navigate('/invoice', { state: { order: orderData } });
+  
+  // Clear cart after successful order
+  localStorage.setItem('userCart', JSON.stringify([]));
+  document.dispatchEvent(new Event('cartUpdated'));
+  try { await fetchCart(); } catch (_) {}
+  } else {
+  console.error('Order creation failed:', data);
+  alert(data?.message || 'Failed to place order. Please try again.');
+  }//update in 9/29
+    }
+   catch (err) {
       console.error('Order request error:', err);
       alert('Failed to place order. Please try again.');
     }
