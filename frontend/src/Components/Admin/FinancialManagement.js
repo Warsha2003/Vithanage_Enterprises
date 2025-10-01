@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faTags, faCheckCircle, faClock, faUsers, faPercentage,
-  faPlus, faSearch, faSyncAlt, faEdit, faPlay, faPause, faTrash
+  faPlus, faSearch, faSyncAlt, faEdit, faPlay, faPause, faTrash,
+  faBuilding
 } from '@fortawesome/free-solid-svg-icons';
 import './FinancialManagement.css';
+import SupplierManagement from './SupplierManagement';
 
 const FinancialManagement = () => {
   const [promotions, setPromotions] = useState([]);
@@ -13,6 +15,7 @@ const FinancialManagement = () => {
   const [showModal, setShowModal] = useState(false);
   const [selectedPromotion, setSelectedPromotion] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [currentView, setCurrentView] = useState('promotions'); // 'promotions' or 'suppliers'
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -412,11 +415,23 @@ const FinancialManagement = () => {
     );
   }
 
+  // Show Supplier Management if selected
+  if (currentView === 'suppliers') {
+    return <SupplierManagement onBack={() => setCurrentView('promotions')} />;
+  }
+
   return (
     <div className="financial-management">
       <div className="page-header">
         <h2>Financial & Promotion Management</h2>
         <div className="header-actions">
+          <button
+            className="btn-secondary"
+            onClick={() => setCurrentView('suppliers')}
+          >
+            <FontAwesomeIcon icon={faBuilding} />
+            Manage Suppliers
+          </button>
           <button
             className="btn-primary"
             onClick={() => openModal()}

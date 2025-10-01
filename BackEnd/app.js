@@ -84,6 +84,9 @@ app.use('/api/admin/refunds', adminRefundRoutes);
 app.use('/api/admin/inventory', inventoryRoutes);
 // Promotion routes
 app.use('/api/promotions', promotionRoutes);
+// Supplier routes
+const supplierRoutes = require('./Routes/supplierRoutes');
+app.use('/api/suppliers', supplierRoutes);
 
 mongoose.connect("mongodb+srv://admin:V2ft5D1dbTssVJzR@cluster0.fq7u6hk.mongodb.net/test")
 .then(()=> {
