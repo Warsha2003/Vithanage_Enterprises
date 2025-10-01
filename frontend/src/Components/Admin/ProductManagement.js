@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useSettings } from '../../contexts/SettingsContext';
 import './AdminDashboard.css';
 
 const ProductManagement = () => {
+  const { settings, formatCurrency } = useSettings();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -369,7 +371,7 @@ const ProductManagement = () => {
                       <td>{product.name}</td>
                       <td>{product.category}</td>
                       <td>{product.brand}</td>
-                      <td>${product.price.toFixed(2)}</td>
+                      <td>{formatCurrency(product.price)}</td>
                       <td>{product.stock}</td>
                       <td className="action-buttons">
                         <button 

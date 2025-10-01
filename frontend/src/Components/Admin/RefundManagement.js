@@ -4,9 +4,11 @@ import {
   faUndo, faClock, faCheckCircle, faTimesCircle, faChartLine,
   faSearch, faSyncAlt, faEye, faCheck, faTimes
 } from '@fortawesome/free-solid-svg-icons';
+import { useSettings } from '../../contexts/SettingsContext';
 import './RefundManagement.css';
 
 const RefundManagement = () => {
+    const { settings, formatCurrency } = useSettings();
     const [refunds, setRefunds] = useState([]);
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -372,7 +374,7 @@ const RefundManagement = () => {
                                             </div>
                                         </td>
                                         <td>
-                                            <span className="amount">${refund.refundAmount}</span>
+                                            <span className="amount">{formatCurrency(refund.refundAmount)}</span>
                                         </td>
                                         <td>
                                             <span className="reason-badge">{refund.reason}</span>
@@ -440,7 +442,7 @@ const RefundManagement = () => {
                             <div className="refund-summary">
                                 <p><strong>Customer:</strong> {selectedRefund?.userId?.name}</p>
                                 <p><strong>Product:</strong> {selectedRefund?.productId?.name}</p>
-                                <p><strong>Amount:</strong> ${selectedRefund?.refundAmount}</p>
+                                <p><strong>Amount:</strong> {formatCurrency(selectedRefund?.refundAmount)}</p>
                                 <p><strong>Reason:</strong> {selectedRefund?.reason}</p>
                                 <p><strong>Description:</strong> {selectedRefund?.description}</p>
                             </div>

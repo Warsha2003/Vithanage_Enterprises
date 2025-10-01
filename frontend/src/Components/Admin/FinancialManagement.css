@@ -659,27 +659,32 @@
   }
   
   .stats-grid {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 10px;
   }
   
   .stat-card {
-    padding: 15px 10px;
-    gap: 10px;
+    padding: 12px 8px;
+    gap: 8px;
+    min-width: 120px;
   }
   
   .stat-icon {
-    width: 40px;
-    height: 40px;
-    font-size: 16px;
+    width: 35px;
+    height: 35px;
+    font-size: 14px;
   }
   
   .stat-value {
-    font-size: 20px;
+    font-size: 16px;
   }
   
   .stat-label {
-    font-size: 10px;
+    font-size: 9px;
+    text-align: center;
+    line-height: 1.2;
   }
   
   .promotions-grid {
@@ -718,15 +723,33 @@
 
 @media (max-width: 480px) {
   .stats-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 5px;
+    overflow-x: auto;
+    padding-bottom: 10px;
   }
   
   .stat-card {
-    padding: 20px;
+    padding: 10px 6px;
+    gap: 6px;
+    min-width: 100px;
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .stat-icon {
+    width: 30px;
+    height: 30px;
+    font-size: 12px;
   }
   
   .stat-value {
-    font-size: 24px;
+    font-size: 14px;
+  }
+  
+  .stat-label {
+    font-size: 8px;
+    line-height: 1.1;
   }
   
   .modal-actions {
@@ -768,24 +791,29 @@ input[type="checkbox"] {
 
 /* Scrollbar styling */
 .modal-content::-webkit-scrollbar,
-.product-selection::-webkit-scrollbar {
+.product-selection::-webkit-scrollbar,
+.stats-grid::-webkit-scrollbar {
   width: 6px;
+  height: 6px;
 }
 
 .modal-content::-webkit-scrollbar-track,
-.product-selection::-webkit-scrollbar-track {
+.product-selection::-webkit-scrollbar-track,
+.stats-grid::-webkit-scrollbar-track {
   background: #f1f1f1;
   border-radius: 3px;
 }
 
 .modal-content::-webkit-scrollbar-thumb,
-.product-selection::-webkit-scrollbar-thumb {
+.product-selection::-webkit-scrollbar-thumb,
+.stats-grid::-webkit-scrollbar-thumb {
   background: #c1c1c1;
   border-radius: 3px;
 }
 
 .modal-content::-webkit-scrollbar-thumb:hover,
-.product-selection::-webkit-scrollbar-thumb:hover {
+.product-selection::-webkit-scrollbar-thumb:hover,
+.stats-grid::-webkit-scrollbar-thumb:hover {
   background: #a1a1a1;
 }
 

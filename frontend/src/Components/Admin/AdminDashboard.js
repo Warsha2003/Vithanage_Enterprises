@@ -843,7 +843,7 @@ const AdminDashboard = () => {
       doc.setFontSize(12);
       doc.text(`Total Orders: ${totalOrders}`, margin, y); y += 16;
       doc.text(`Pending: ${byStatus.pending || 0}  Approved: ${byStatus.approved || 0}  Rejected: ${byStatus.rejected || 0}`, margin, y); y += 16;
-      doc.text(`Total Revenue: $${totalRevenue.toFixed(2)}`, margin, y); y += 24;
+      doc.text(`Total Revenue: ${formatCurrency(totalRevenue)}`, margin, y); y += 24;
 
       const rows = filteredOrders.map(o => [
         o._id?.slice(-8),
@@ -851,7 +851,7 @@ const AdminDashboard = () => {
         o.customer?.email || '-',
         o.status,
         new Date(o.createdAt).toLocaleString(),
-        `$${(o.totals?.total || 0).toFixed(2)}`
+        `${formatCurrency(o.totals?.total || 0)}`
       ]);
       autoTable(doc, {
         startY: y,
@@ -1447,7 +1447,7 @@ const AdminDashboard = () => {
           <div className="dashboard-stat-icon"><FontAwesomeIcon icon={faMoneyBillWave} /></div>
           <div className="dashboard-stat-info">
             <h3>Total Revenue</h3>
-            <p>${(stats.totalRevenue || 0).toFixed(2)}</p>
+            <p>{formatCurrency(stats.totalRevenue || 0)}</p>
             <div className="dashboard-stat-detail">
               <span>From approved & delivered orders</span>
             </div>
@@ -2078,7 +2078,7 @@ const AdminDashboard = () => {
                   <td>{product.name}</td>
                   <td><span className="badge category">{product.category}</span></td>
                   <td>{product.brand}</td>
-                  <td>${product.price.toFixed(2)}</td>
+                  <td>{formatCurrency(product.price)}</td>
                   <td>
                     <span className={product.stock < 10 ? 'badge low-stock' : 'badge in-stock'}>
                       {product.stock}
@@ -2300,7 +2300,7 @@ const AdminDashboard = () => {
                   <strong>Brand:</strong> {selectedProduct.brand}
                 </div>
                 <div className="detail-row">
-                  <strong>Price:</strong> <span style={{color: '#2e8b57', fontWeight: 'bold'}}>${selectedProduct.price.toFixed(2)}</span>
+                  <strong>Price:</strong> <span style={{color: '#2e8b57', fontWeight: 'bold'}}>{formatCurrency(selectedProduct.price)}</span>
                 </div>
                 <div className="detail-row">
                   <strong>Stock:</strong> 
@@ -2486,7 +2486,7 @@ const AdminDashboard = () => {
                       <td>{o.customer?.email || '-'}</td>
                       <td>{o.customer?.phone || '-'}</td>
                       <td>{new Date(o.createdAt).toLocaleString()}</td>
-                      <td>${o.totals?.total?.toFixed(2)}</td>
+                      <td>{formatCurrency(o.totals?.total)}</td>
                       <td className="action-buttons">
                         <button
                           className="view-btn"
@@ -2584,7 +2584,7 @@ const AdminDashboard = () => {
                     <p><strong>Order ID:</strong> {selectedOrder._id}</p>
                     <p><strong>Status:</strong> <span className={`badge ${selectedOrder.status}`}>{selectedOrder.status}</span></p>
                     <p><strong>Date:</strong> {new Date(selectedOrder.createdAt).toLocaleString()}</p>
-                    <p><strong>Total:</strong> ${selectedOrder.totals?.total?.toFixed(2)}</p>
+                    <p><strong>Total:</strong> {formatCurrency(selectedOrder.totals?.total)}</p>
                   </div>
                 </div>
 
@@ -2634,8 +2634,8 @@ const AdminDashboard = () => {
                         <tr key={idx}>
                           <td>{it.name}</td>
                           <td>{it.quantity}</td>
-                          <td>${it.price?.toFixed(2)}</td>
-                          <td>${(it.price * it.quantity).toFixed(2)}</td>
+                          <td>{formatCurrency(it.price)}</td>
+                          <td>{formatCurrency(it.price * it.quantity)}</td>
                         </tr>
                       ))}
                     </tbody>

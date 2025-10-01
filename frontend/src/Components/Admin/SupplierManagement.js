@@ -8,9 +8,11 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import { useSettings } from '../../contexts/SettingsContext';
 import './SupplierManagement.css';
 
 const SupplierManagement = ({ onBack }) => {
+  const { formatCurrency } = useSettings();
   const [suppliers, setSuppliers] = useState([]);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -451,8 +453,8 @@ const SupplierManagement = ({ onBack }) => {
       ['Total Suppliers', stats.totalSuppliers.toString()],
       ['Active Suppliers', stats.activeSuppliers.toString()],
       ['Inactive Suppliers', stats.inactiveSuppliers.toString()],
-      ['Total Order Value', `$${stats.totalOrderValue?.toFixed(2) || '0.00'}`],
-      ['Average Order Value', `$${stats.totalSuppliers > 0 ? (stats.totalOrderValue / stats.totalSuppliers).toFixed(2) : '0.00'}`]
+      ['Total Order Value', formatCurrency(stats.totalOrderValue || 0)],
+      ['Average Order Value', formatCurrency(stats.totalSuppliers > 0 ? (stats.totalOrderValue / stats.totalSuppliers) : 0)]
     ];
     
     // Display statistics as simple text for now
@@ -483,7 +485,7 @@ const SupplierManagement = ({ onBack }) => {
         supplier.email || 'N/A',
         supplier.contactNumber || 'N/A',
         products.length.toString(),
-        `$${supplier.totalOrderValue?.toFixed(2) || '0.00'}`,
+        formatCurrency(supplier.totalOrderValue || 0),
         supplier.status || 'N/A'
       ];
     });
@@ -536,8 +538,8 @@ const SupplierManagement = ({ onBack }) => {
             item.product?.name || 'Unknown Product',
             item.product?.category || 'N/A',
             item.quantity?.toString() || '0',
-            `$${item.unitPrice?.toFixed(2) || '0.00'}`,
-            `$${(item.quantity * item.unitPrice)?.toFixed(2) || '0.00'}`
+            formatCurrency(item.unitPrice || 0),
+            formatCurrency((item.quantity * item.unitPrice) || 0)
           ]);
         });
       }
@@ -694,25 +696,8 @@ const SupplierManagement = ({ onBack }) => {
             <FontAwesomeIcon icon={faDollarSign} />
           </div>
           <div className="stat-content">
-            <div className="stat-value">${stats.totalOrderValue?.toFixed(2) || '0.00'}</div>
+            <div className="stat-value">{formatCurrency(stats.totalOrderValue || 0)}</div>
             <div className="stat-label">Total Order Value</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Quick Actions */}
-      <div className="quick-actions-section">
-        <div className="quick-actions-card">
-          <h3>Report Generation</h3>
-          <p>Generate comprehensive supplier reports with all details, statistics, and product information.</p>
-          <div className="quick-action-buttons">
-            <button className="btn-download-large" onClick={generatePDFReport}>
-              <FontAwesomeIcon icon={faFilePdf} />
-              <span>
-                <strong>Download Full Report</strong>
-                <small>All suppliers, products & statistics</small>
-              </span>
-            </button>
           </div>
         </div>
       </div>
@@ -819,7 +804,7 @@ const SupplierManagement = ({ onBack }) => {
                     <td>
                       <div className="total-value">
                         <FontAwesomeIcon icon={faDollarSign} className="icon" />
-                        ${supplier.totalOrderValue?.toFixed(2) || '0.00'}
+                        {formatCurrency(supplier.totalOrderValue || 0)}
                       </div>
                     </td>
                     <td>
@@ -1032,7 +1017,7 @@ const SupplierManagement = ({ onBack }) => {
                         <option value="">Choose a product...</option>
                         {products.map(product => (
                           <option key={product._id} value={product._id}>
-                            {product.name} - ${product.price}
+                            {product.name} - {formatCurrency(product.price)}
                           </option>
                         ))}
                       </select>
@@ -1084,7 +1069,7 @@ const SupplierManagement = ({ onBack }) => {
                           <div key={index} className="product-item-form">
                             <div className="product-info">
                               <strong>{product?.name || 'Unknown Product'}</strong>
-                              <span>Qty: {item.quantity} × ${item.unitPrice} = ${(item.quantity * item.unitPrice).toFixed(2)}</span>
+                              <span>Qty: {item.quantity} × {formatCurrency(item.unitPrice)} = {formatCurrency(item.quantity * item.unitPrice)}</span>
                             </div>
                             <button
                               type="button"
@@ -1098,7 +1083,7 @@ const SupplierManagement = ({ onBack }) => {
                       })}
                     </div>
                     <div className="products-total">
-                      Total Value: ${formData.products.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0).toFixed(2)}
+                      Total Value: {formatCurrency(formData.products.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0))}
                     </div>
                   </div>
                 )}
@@ -1141,7 +1126,7 @@ const SupplierManagement = ({ onBack }) => {
                     <option value="">Select a product</option>
                     {products && products.map(product => (
                       <option key={product._id} value={product._id}>
-                        {product.name || 'Unknown Product'} - ${product.price || 0}
+                        {product.name || 'Unknown Product'} - {formatCurrency(product.price || 0)}
                       </option>
                     ))}
                   </select>

@@ -4,9 +4,11 @@ import {
   faBoxOpen, faPlus, faMinus, faEdit, faEye, faExclamationTriangle,
   faSearch, faFilter, faDownload, faWarehouse, faChartLine
 } from '@fortawesome/free-solid-svg-icons';
+import { useSettings } from '../../contexts/SettingsContext';
 import './InventoryManagement.css';
 
 const InventoryManagement = () => {
+  const { settings, formatCurrency } = useSettings();
   const [inventory, setInventory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -272,7 +274,7 @@ const InventoryManagement = () => {
             <div className="stat-icon"><FontAwesomeIcon icon={faChartLine} /></div>
             <div className="stat-info">
               <h3>Total Stock Value</h3>
-              <p>${stats.totalStockValue.toFixed(2)}</p>
+              <p>{formatCurrency(stats.totalStockValue)}</p>
             </div>
           </div>
         </div>
