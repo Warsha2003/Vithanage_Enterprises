@@ -42,13 +42,82 @@ function Home() {
       
       // Fetch promotions
       try {
-        const promoResponse = await fetch('http://localhost:5000/api/promotions/active');
+        console.log('🔄 Fetching promotions from API...');
+        console.log('📅 Current date/time:', new Date().toISOString());
+        
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+        
+        // Use the new flexible homepage endpoint
+        const promoResponse = await fetch('http://localhost:5000/api/promotions/homepage', {
+          signal: controller.signal,
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        clearTimeout(timeoutId);
+        console.log('📡 Promotions API response status:', promoResponse.status);
+        
         if (promoResponse.ok) {
           const promoData = await promoResponse.json();
-          setPromotions(promoData.data || []);
+          console.log('📦 Promotions API full response:', promoData);
+          
+          let promotionsToShow = [];
+          
+          if (promoData.success && Array.isArray(promoData.data)) {
+            // Get all promotions and filter more loosely
+            const allPromotions = promoData.data;
+            console.log('🎁 Total promotions found:', allPromotions.length);
+            
+            // Filter promotions more flexibly - show if ANY of these conditions are met:
+            // 1. isActive is true
+            // 2. No isActive field (assume active)
+            // 3. Has a valid name and code
+            promotionsToShow = allPromotions.filter(promo => {
+              const hasBasicInfo = promo.name && promo.code;
+              const isActiveField = promo.isActive !== false; // true or undefined
+              const isNotExpired = !promo.endDate || new Date(promo.endDate) >= new Date();
+              
+              console.log(`🔍 Checking promotion: ${promo.name}`);
+              console.log(`   - Has basic info: ${hasBasicInfo}`);
+              console.log(`   - Active field: ${promo.isActive} (treating as ${isActiveField})`);
+              console.log(`   - End date: ${promo.endDate} (expired: ${!isNotExpired})`);
+              
+              return hasBasicInfo && (isActiveField || isNotExpired);
+            });
+            
+            // If still no promotions, just take the first 3 that have name and code
+            if (promotionsToShow.length === 0 && allPromotions.length > 0) {
+              console.log('🚨 FORCING promotions to show - taking first available promotions');
+              promotionsToShow = allPromotions
+                .filter(promo => promo.name && promo.code)
+                .slice(0, 3);
+            }
+            
+            console.log('✅ Final promotions to display:', promotionsToShow.length);
+            promotionsToShow.forEach((promo, index) => {
+              console.log(`   ${index + 1}. ${promo.name} (${promo.code}) - ${promo.type}`);
+            });
+            
+            setPromotions(promotionsToShow);
+          } else {
+            console.warn('⚠️ Invalid promotions data structure:', promoData);
+            setPromotions([]);
+          }
+        } else {
+          console.error('❌ Promotions API failed with status:', promoResponse.status);
+          const errorData = await promoResponse.text();
+          console.error('Error response:', errorData);
+          setPromotions([]); // Ensure fallback promotions show
         }
       } catch (error) {
-        console.log('No promotions available');
+        if (error.name === 'AbortError') {
+          console.error('❌ Promotions API request timed out');
+        } else {
+          console.error('❌ Error fetching promotions:', error);
+        }
+        setPromotions([]); // Ensure fallback promotions show
       }
       
       setLoading(false);
@@ -128,23 +197,229 @@ function Home() {
       <section className="hero-section" style={{backgroundImage: 'url(/images/categories/background.jpg)'}}>
         <div className="hero-banner">
           <div className="hero-content">
-            <div className="hero-badge">🔥 MEGA SALE</div>
-            <h1>Up to 70% OFF</h1>
-            <p>On Premium Electronics & Fashion Items</p>
+            <div className="hero-badge">✨ Vithanage Enterprises</div>
+            <h1>Premium Electronics Store</h1>
+            <p>Discover cutting-edge technology and innovative solutions for your digital lifestyle</p>
+            <div className="hero-features">
+              <div className="hero-feature">
+                <span className="feature-icon">🚚</span>
+                <span>Fast Shipping</span>
+              </div>
+              <div className="hero-feature">
+                <span className="feature-icon">🛡️</span>
+                <span>Warranty Guaranteed</span>
+              </div>
+              <div className="hero-feature">
+                <span className="feature-icon">⭐</span>
+                <span>Premium Quality</span>
+              </div>
+            </div>
             <div className="hero-buttons">
               <button className="btn-primary" onClick={() => navigate('/products')}>
-                Shop Now
+                Explore Products
               </button>
               <button className="btn-secondary" onClick={() => navigate('/products')}>
-                View All Deals
+                Latest Arrivals
               </button>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Promotional Banners - Real Database Promotions */}
-      {promotions.length > 0 && (
+      {/* Debug info */}
+      {console.log('Current promotions state:', promotions)}
+      {console.log('Promotions length:', promotions.length)}
+      
+      {/* Promotion Section */}
+      <section className="promo-banners">
+        
+        {/* Database promotions if available */}
+        {promotions.length > 0 && promotions.slice(0, 3).map((promotion, index) => {
+          // Determine promotion type for styling and icons
+          const getPromotionStyle = (type) => {
+            switch (type) {
+              case 'percentage':
+                return { class: 'flash-deal', icon: '⚡' };
+              case 'fixed_amount':
+                return { class: 'flash-deal', icon: '💰' };
+              case 'free_shipping':
+                return { class: 'free-shipping', icon: '🚚' };
+              default:
+                return { class: 'new-arrivals', icon: '✨' };
+            }
+          };
+
+          const style = getPromotionStyle(promotion.type);
+          
+          // Format discount display
+          const getDiscountText = () => {
+            if (promotion.type === 'percentage') {
+              return `${promotion.discountValue}% OFF`;
+            } else if (promotion.type === 'fixed_amount') {
+              return `${formatCurrency(promotion.discountValue)} OFF`;
+            } else if (promotion.type === 'free_shipping') {
+              return 'FREE SHIPPING';
+            } else {
+              return 'SPECIAL OFFER';
+            }
+          };
+
+          return (
+            <div key={promotion._id} className={`promo-banner ${style.class}`}>
+              <div className="promo-icon">{style.icon}</div>
+              <div className="promo-content">
+                <h3>{promotion.name}</h3>
+                <p>{promotion.description}</p>
+                <span className="promo-discount">{getDiscountText()}</span>
+                <div className="promo-code-container">
+                  <div className="promo-code">Code: {promotion.code}</div>
+                  <button 
+                    className="copy-code-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigator.clipboard.writeText(promotion.code).then(() => {
+                        // Show success feedback
+                        const btn = e.target;
+                        const originalText = btn.textContent;
+                        btn.textContent = '✅ Copied!';
+                        btn.style.backgroundColor = '#28a745';
+                        setTimeout(() => {
+                          btn.textContent = originalText;
+                          btn.style.backgroundColor = '';
+                        }, 2000);
+                      }).catch(() => {
+                        // Fallback for older browsers
+                        const textArea = document.createElement('textarea');
+                        textArea.value = promotion.code;
+                        document.body.appendChild(textArea);
+                        textArea.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(textArea);
+                        
+                        const btn = e.target;
+                        const originalText = btn.textContent;
+                        btn.textContent = '✅ Copied!';
+                        btn.style.backgroundColor = '#28a745';
+                        setTimeout(() => {
+                          btn.textContent = originalText;
+                          btn.style.backgroundColor = '';
+                        }, 2000);
+                      });
+                    }}
+                    title="Click to copy promotion code"
+                  >
+                    📋 Copy
+                  </button>
+                </div>
+                {promotion.minimumOrderValue > 0 && (
+                  <small className="promo-min-order">
+                    Min order: {formatCurrency(promotion.minimumOrderValue)}
+                  </small>
+                )}
+              </div>
+            </div>
+          );
+        })}
+        
+        {/* Fallback promotions if no database promotions */}
+        {promotions.length === 0 && (
+          <>
+            <div className="promo-banner flash-deal">
+              <div className="promo-icon">⚡</div>
+              <div className="promo-content">
+                <h3>Flash Deal</h3>
+                <p>Limited Time Only!</p>
+                <span className="promo-discount">50% OFF</span>
+                <div className="promo-code-container">
+                  <div className="promo-code">Code: FLASH50</div>
+                  <button 
+                    className="copy-code-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigator.clipboard.writeText('FLASH50').then(() => {
+                        const btn = e.target;
+                        const originalText = btn.textContent;
+                        btn.textContent = '✅ Copied!';
+                        btn.style.backgroundColor = '#28a745';
+                        setTimeout(() => {
+                          btn.textContent = originalText;
+                          btn.style.backgroundColor = '';
+                        }, 2000);
+                      });
+                    }}
+                    title="Click to copy promotion code"
+                  >
+                    📋 Copy
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div className="promo-banner free-shipping">
+              <div className="promo-icon">🚚</div>
+              <div className="promo-content">
+                <h3>Free Shipping</h3>
+                <p>On orders over {formatCurrency(settings.freeShippingThreshold || 100)}</p>
+                <span className="promo-discount">FREE DELIVERY</span>
+                <div className="promo-code-container">
+                  <div className="promo-code">Code: FREESHIP</div>
+                  <button 
+                    className="copy-code-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigator.clipboard.writeText('FREESHIP').then(() => {
+                        const btn = e.target;
+                        const originalText = btn.textContent;
+                        btn.textContent = '✅ Copied!';
+                        btn.style.backgroundColor = '#28a745';
+                        setTimeout(() => {
+                          btn.textContent = originalText;
+                          btn.style.backgroundColor = '';
+                        }, 2000);
+                      });
+                    }}
+                    title="Click to copy promotion code"
+                  >
+                    📋 Copy
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div className="promo-banner new-arrivals">
+              <div className="promo-icon">✨</div>
+              <div className="promo-content">
+                <h3>Special Offer</h3>
+                <p>Latest Collection</p>
+                <span className="promo-discount">30% OFF</span>
+                <div className="promo-code-container">
+                  <div className="promo-code">Code: SPECIAL30</div>
+                  <button 
+                    className="copy-code-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigator.clipboard.writeText('SPECIAL30').then(() => {
+                        const btn = e.target;
+                        const originalText = btn.textContent;
+                        btn.textContent = '✅ Copied!';
+                        btn.style.backgroundColor = '#28a745';
+                        setTimeout(() => {
+                          btn.textContent = originalText;
+                          btn.style.backgroundColor = '';
+                        }, 2000);
+                      });
+                    }}
+                    title="Click to copy promotion code"
+                  >
+                    📋 Copy
+                  </button>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+      </section>
+      
+      {/* Original Promotional Banners - Real Database Promotions */}
+      {false && promotions.length > 0 && (
         <section className="promo-banners">
           {promotions.slice(0, 3).map((promotion, index) => {
             // Determine promotion type for styling and icons
@@ -197,7 +472,7 @@ function Home() {
       )}
 
       {/* Fallback Promotional Banners - If no database promotions */}
-      {promotions.length === 0 && (
+      {false && promotions.length === 0 && (
         <section className="promo-banners">
           <div className="promo-banner flash-deal">
             <div className="promo-icon">⚡</div>
@@ -205,22 +480,25 @@ function Home() {
               <h3>Flash Deal</h3>
               <p>Limited Time Only!</p>
               <span className="promo-discount">50% OFF</span>
+              <div className="promo-code">Code: FLASH50</div>
             </div>
           </div>
           <div className="promo-banner free-shipping">
             <div className="promo-icon">🚚</div>
             <div className="promo-content">
               <h3>Free Shipping</h3>
-              <p>On orders over {formatCurrency(settings.freeShippingThreshold)}</p>
-              <span className="promo-code">FREE50</span>
+              <p>On orders over {formatCurrency(settings.freeShippingThreshold || 100)}</p>
+              <span className="promo-discount">FREE DELIVERY</span>
+              <div className="promo-code">Code: FREESHIP</div>
             </div>
           </div>
           <div className="promo-banner new-arrivals">
             <div className="promo-icon">✨</div>
             <div className="promo-content">
-              <h3>New Arrivals</h3>
+              <h3>Special Offer</h3>
               <p>Latest Collection</p>
-              <span className="promo-text">Explore Now</span>
+              <span className="promo-discount">30% OFF</span>
+              <div className="promo-code">Code: SPECIAL30</div>
             </div>
           </div>
         </section>

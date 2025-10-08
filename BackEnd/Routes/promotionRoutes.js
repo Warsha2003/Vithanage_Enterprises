@@ -17,6 +17,31 @@ const { adminAuthMiddleware, authMiddleware } = require('../Controllers/authMidd
 
 // Public routes (no authentication required)
 router.get('/active', getActivePromotions);
+router.get('/homepage', async (req, res) => {
+  try {
+    const Promotion = require('../Models/Promotion');
+    // Get all promotions for homepage with minimal filtering
+    const promotions = await Promotion.find({
+      $or: [
+        { isActive: true },
+        { isActive: { $exists: false } }, // Include promotions without isActive field
+        { name: { $exists: true }, code: { $exists: true } } // Include any promotion with name and code
+      ]
+    }).limit(10).sort({ createdAt: -1 });
+    
+    res.status(200).json({
+      success: true,
+      data: promotions
+    });
+  } catch (error) {
+    console.error('Error fetching homepage promotions:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching promotions',
+      data: []
+    });
+  }
+});
 
 // User routes (require user authentication)
 router.post('/validate', authMiddleware, validatePromotionCode);
