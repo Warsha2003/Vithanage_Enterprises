@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useSettings } from '../../contexts/SettingsContext';
 import './MyRefunds.css';
 
 const MyRefunds = () => {
+    const { settings, formatCurrency } = useSettings();
     const [refunds, setRefunds] = useState([]);
     const [loading, setLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState(1);
@@ -59,6 +61,29 @@ const MyRefunds = () => {
         }
     };
 
+    const getStatusTimeline = (currentStatus) => {
+        const statuses = ['Pending', 'Approved', 'Processing', 'Completed'];
+        const rejectedStatuses = ['Pending', 'Rejected'];
+        
+        if (currentStatus === 'Rejected') {
+            return rejectedStatuses.map((status, index) => ({
+                name: status,
+                icon: getStatusIcon(status),
+                color: getStatusColor(status),
+                isActive: index <= rejectedStatuses.indexOf(currentStatus),
+                isCurrent: status === currentStatus
+            }));
+        }
+        
+        return statuses.map((status, index) => ({
+            name: status,
+            icon: getStatusIcon(status),
+            color: getStatusColor(status),
+            isActive: index <= statuses.indexOf(currentStatus),
+            isCurrent: status === currentStatus
+        }));
+    };
+
     const formatDate = (dateString) => {
         return new Date(dateString).toLocaleDateString('en-US', {
             year: 'numeric',
@@ -110,6 +135,42 @@ const MyRefunds = () => {
                                 </div>
                             </div>
 
+                            {/* Enhanced Status Timeline */}
+                            <div className="status-timeline">
+                                <h5>Refund Progress</h5>
+                                <div className="timeline-container">
+                                    {getStatusTimeline(refund.status).map((step, index) => (
+                                        <div 
+                                            key={step.name}
+                                            className={`timeline-step ${step.isActive ? 'active' : 'inactive'} ${step.isCurrent ? 'current' : ''}`}
+                                        >
+                                            <div 
+                                                className="timeline-icon"
+                                                style={{ 
+                                                    backgroundColor: step.isActive ? step.color : '#e9ecef',
+                                                    color: step.isActive ? '#fff' : '#6c757d'
+                                                }}
+                                            >
+                                                {step.icon}
+                                            </div>
+                                            <div className="timeline-label">
+                                                <span className={`step-name ${step.isCurrent ? 'current-step' : ''}`}>
+                                                    {step.name}
+                                                </span>
+                                                {step.isCurrent && (
+                                                    <div className="current-indicator">Current Status</div>
+                                                )}
+                                            </div>
+                                            {index < getStatusTimeline(refund.status).length - 1 && (
+                                                <div 
+                                                    className={`timeline-line ${step.isActive ? 'active-line' : 'inactive-line'}`}
+                                                />
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
                             <div className="refund-details">
                                 <div className="detail-row">
                                     <span className="label">Reason:</span>
@@ -117,7 +178,7 @@ const MyRefunds = () => {
                                 </div>
                                 <div className="detail-row">
                                     <span className="label">Amount:</span>
-                                    <span className="value amount">${refund.refundAmount}</span>
+                                    <span className="value amount">{formatCurrency(refund.refundAmount)}</span>
                                 </div>
                                 <div className="detail-row">
                                     <span className="label">Requested:</span>

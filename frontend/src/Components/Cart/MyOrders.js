@@ -1,17 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import './MyOrders.css';
 import RefundRequest from '../Refund/RefundRequest';
+import { useSettings } from '../../contexts/SettingsContext';
 
 const MyOrders = () => {
+  const { settings, formatCurrency } = useSettings();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showRefundModal, setShowRefundModal] = useState(false);
   const [selectedRefundItem, setSelectedRefundItem] = useState(null);
   const [cancellingOrder, setCancellingOrder] = useState(null);
+  const [refunds, setRefunds] = useState({});
 
   useEffect(() => {
-    const fetchOrders = async () => {
+    const fetchData = async () => {
       try {
         const token = localStorage.getItem('token') || sessionStorage.getItem('token');
         if (!token) {
@@ -19,17 +22,67 @@ const MyOrders = () => {
           setLoading(false);
           return;
         }
-        const res = await fetch('http://localhost:5000/api/orders/mine', {
+
+        // Fetch orders
+        const ordersRes = await fetch('http://localhost:5000/api/orders/mine', {
           headers: {
             'x-auth-token': token,
             'Content-Type': 'application/json'
           }
         });
-        const data = await res.json().catch(() => ([]));
-        if (res.ok) {
-          setOrders(Array.isArray(data) ? data : []);
+        const ordersData = await ordersRes.json().catch(() => ([]));
+        
+        if (ordersRes.ok) {
+          const ordersList = Array.isArray(ordersData) ? ordersData : [];
+          setOrders(ordersList);
+
+          // Fetch refunds for these orders
+          try {
+            const refundsRes = await fetch('http://localhost:5000/api/refunds', {
+              headers: {
+                'x-auth-token': token,
+                'Content-Type': 'application/json'
+              }
+            });
+            
+            console.log('Refunds API response status:', refundsRes.status);
+            
+            if (refundsRes.ok) {
+              const refundsData = await refundsRes.json();
+              console.log('Refunds data received:', refundsData);
+              
+              if (refundsData.success) {
+                // Create a map of refunds by orderId and productId
+                const refundMap = {};
+                const localRefundUpdates = {};
+                
+                refundsData.data.refunds.forEach(refund => {
+                  const key = `${refund.orderId._id || refund.orderId}-${refund.productId._id || refund.productId}`;
+                  refundMap[key] = refund;
+                  localRefundUpdates[key] = refund.status;
+                  console.log('Adding refund to map:', { key, status: refund.status });
+                });
+                
+                // Update localStorage with latest refund statuses
+                try {
+                  const existingLocal = JSON.parse(localStorage.getItem('userRefunds') || '{}');
+                  const updatedLocal = { ...existingLocal, ...localRefundUpdates };
+                  localStorage.setItem('userRefunds', JSON.stringify(updatedLocal));
+                } catch (e) {
+                  console.log('Could not update localStorage:', e);
+                }
+                
+                console.log('Final refund map:', refundMap);
+                setRefunds(refundMap);
+              }
+            } else {
+              console.log('Refunds API failed:', refundsRes.status);
+            }
+          } catch (refundError) {
+            console.log('Could not fetch refunds:', refundError);
+          }
         } else {
-          setError(data?.message || 'Failed to load orders');
+          setError(ordersData?.message || 'Failed to load orders');
         }
       } catch (e) {
         setError('Failed to load orders');
@@ -37,7 +90,7 @@ const MyOrders = () => {
         setLoading(false);
       }
     };
-    fetchOrders();
+    fetchData();
   }, []);
 
   const handleRefundRequest = (order, item) => {
@@ -62,13 +115,67 @@ const MyOrders = () => {
   const handleRefundSuccess = () => {
     setShowRefundModal(false);
     setSelectedRefundItem(null);
-    // Optionally refresh orders or show a success message
+    // Refresh the page to show the new refund status
+    window.location.reload();
+  };
+
+  // Function to get refund status for a specific order item
+  const getRefundStatus = (orderId, item) => {
+    const productId = item.productId || item.product;
+    const refundKey = `${orderId}-${productId}`;
+    console.log('Checking refund status:', { orderId, productId, refundKey, hasRefund: !!refunds[refundKey] });
+    const refund = refunds[refundKey];
+    if (refund) {
+      console.log('Found refund:', refund);
+    }
+    return refund;
+  };
+
+  // Function to get refund status display
+  const getRefundStatusDisplay = (refundStatus) => {
+    if (!refundStatus) return null;
+    
+    const statusColors = {
+      'Pending': '#ffc107',
+      'Approved': '#28a745', 
+      'Processing': '#007bff',
+      'Completed': '#6f42c1',
+      'Rejected': '#dc3545'
+    };
+
+    return (
+      <div style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        backgroundColor: statusColors[refundStatus] || '#6c757d',
+        color: 'white',
+        padding: '4px 8px',
+        borderRadius: '12px',
+        fontSize: '0.75rem',
+        fontWeight: '600',
+        marginLeft: '8px'
+      }}>
+        Refund: {refundStatus}
+      </div>
+    );
+  };
+
+  // Function to check if item has refund request in localStorage
+  const getLocalRefundStatus = (orderId, item) => {
+    try {
+      const localRefunds = JSON.parse(localStorage.getItem('userRefunds') || '{}');
+      const productId = item.productId || item.product;
+      const key = `${orderId}-${productId}`;
+      return localRefunds[key] || null;
+    } catch (e) {
+      return null;
+    }
   };
 
   const handleCancelOrder = async (order) => {
     // Show confirmation dialog
     const confirmCancel = window.confirm(
-      `Are you sure you want to cancel this order?\n\nOrder ID: ${order._id}\nTotal: $${order.totals?.total?.toFixed(2)}\n\nThis action cannot be undone.`
+      `Are you sure you want to cancel this order?\n\nOrder ID: ${order._id}\nTotal: ${formatCurrency(order.totals?.total)}\n\nThis action cannot be undone.`
     );
     
     if (!confirmCancel) return;
@@ -164,16 +271,22 @@ const MyOrders = () => {
                   )}
                 </div>
                 <div className="order-items">
-                  {order.items.map((it, idx) => (
-                    <div className="order-line" key={idx}>
-                      <div className="item-info">
-                        <span>{it.name} × {it.quantity}</span>
-                        <span>${(it.price * it.quantity).toFixed(2)}</span>
-                      </div>
-                      {/* Show status */}
-                      <small style={{color: '#666', fontSize: '0.8rem'}}>
-                        Status: {order.status}
-                      </small>
+                  {order.items.map((it, idx) => {
+                    const refundStatus = getRefundStatus(order._id, it);
+                    const localRefundStatus = getLocalRefundStatus(order._id, it);
+                    return (
+                      <div className="order-line" key={idx}>
+                        <div className="item-info">
+                          <span>{it.name} × {it.quantity}</span>
+                          <div style={{ display: 'flex', alignItems: 'center' }}>
+                            <span>{formatCurrency(it.price * it.quantity)}</span>
+                            {getRefundStatusDisplay(refundStatus?.status || localRefundStatus)}
+                          </div>
+                        </div>
+                        {/* Show order status */}
+                        <small style={{color: '#666', fontSize: '0.8rem'}}>
+                          Status: {order.status}
+                        </small>
                       
                       {/* Show refund button only for approved/delivered orders */}
                       {(order.status === 'approved' || order.status === 'Delivered' || 
@@ -203,7 +316,8 @@ const MyOrders = () => {
                         </small>
                       )}
                     </div>
-                  ))}
+                  );
+                  })}
                 </div>
                 <div className="order-totals">
                   <div className="total-row"><span>Status</span><span><span className={`badge ${order.status}`}>{order.status}</span></span></div>
@@ -220,15 +334,15 @@ const MyOrders = () => {
                       </div>
                     </div>
                   )}
-                  <div className="total-row"><span>Subtotal</span><span>${order.totals?.subtotal?.toFixed(2)}</span></div>
+                  <div className="total-row"><span>Subtotal</span><span>{formatCurrency(order.totals?.subtotal)}</span></div>
                   {order.promotion && (
                     <div className="total-row promotion-used">
                       <span>🎉 Promotion "{order.promotion.code}" Applied</span>
-                      <span>-${order.totals?.discount?.toFixed(2) || '0.00'}</span>
+                      <span>-{formatCurrency(order.totals?.discount || 0)}</span>
                     </div>
                   )}
-                  <div className="total-row"><span>Shipping</span><span>${order.totals?.shipping?.toFixed(2)}</span></div>
-                  <div className="total-row total"><span>Total</span><span>${order.totals?.total?.toFixed(2)}</span></div>
+                  <div className="total-row"><span>Shipping</span><span>{formatCurrency(order.totals?.shipping)}</span></div>
+                  <div className="total-row total"><span>Total</span><span>{formatCurrency(order.totals?.total)}</span></div>
                 </div>
               </div>
             ))}

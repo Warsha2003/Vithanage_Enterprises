@@ -101,6 +101,16 @@ const RefundRequest = ({ orderId, productId, productName, productPrice, onClose,
             const data = await response.json();
 
             if (data.success) {
+                // Save refund status to localStorage for immediate display
+                try {
+                    const localRefunds = JSON.parse(localStorage.getItem('userRefunds') || '{}');
+                    const refundKey = `${orderId}-${productId}`;
+                    localRefunds[refundKey] = 'Pending'; // Initial status
+                    localStorage.setItem('userRefunds', JSON.stringify(localRefunds));
+                } catch (e) {
+                    console.log('Could not save to localStorage:', e);
+                }
+                
                 alert('Refund request submitted successfully!');
                 onSuccess && onSuccess(data.data);
                 onClose();
