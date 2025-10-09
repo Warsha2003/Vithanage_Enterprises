@@ -24,7 +24,7 @@ const getAllPromotions = async (req, res) => {
   }
 };
 
-// Get active promotions (public)
+// Get active promotions.show customers (public)
 const getActivePromotions = async (req, res) => {
   try {
     const promotions = await Promotion.getActivePromotions();
