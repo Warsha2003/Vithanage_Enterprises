@@ -43,7 +43,6 @@ const SupplierManagement = ({ onBack }) => {
       postalCode: ''
     },
     status: 'Active',
-    paymentTerms: 'Net 30',
     notes: '',
     products: []
   });
@@ -165,7 +164,6 @@ const SupplierManagement = ({ onBack }) => {
         postalCode: ''
       },
       status: 'Active',
-      paymentTerms: 'Net 30',
       notes: '',
       products: []
     });
@@ -255,7 +253,6 @@ const SupplierManagement = ({ onBack }) => {
           postalCode: ''
         },
         status: supplier.status,
-        paymentTerms: supplier.paymentTerms,
         notes: supplier.notes || '',
         products: (supplier.products || []).map(item => ({
           product: item.product?._id || item.product,
@@ -974,20 +971,7 @@ const SupplierManagement = ({ onBack }) => {
                   </select>
                 </div>
 
-                <div className="form-group">
-                  <label>Payment Terms</label>
-                  <select
-                    name="paymentTerms"
-                    value={formData.paymentTerms}
-                    onChange={handleInputChange}
-                  >
-                    <option value="Net 15">Net 15</option>
-                    <option value="Net 30">Net 30</option>
-                    <option value="Net 45">Net 45</option>
-                    <option value="Net 60">Net 60</option>
-                    <option value="COD">Cash on Delivery</option>
-                  </select>
-                </div>
+                
 
                 <div className="form-group full-width">
                   <label>Notes</label>

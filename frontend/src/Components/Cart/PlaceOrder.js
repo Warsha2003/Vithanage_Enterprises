@@ -26,6 +26,8 @@ const PlaceOrder = () => {
     expiryYear: '',
     cvv: ''
   });
+  const [paymentMethod, setPaymentMethod] = useState('online'); // 'online' | 'cod' | 'bank'
+  const [cardType, setCardType] = useState('visa'); // 'visa' | 'master'
   const [errors, setErrors] = useState({});
 
   const onChange = (e) => {
@@ -85,35 +87,38 @@ const PlaceOrder = () => {
   else if (!/^\d+$/.test(form.postalCode.replace(/\s+/g, ''))) newErrors.postalCode = 'Postal Code must be numeric';
     if (!form.country.trim()) newErrors.country = 'Country is required';
 
-    // Payment
-    if (!form.cardName.trim()) newErrors.cardName = 'Name on Card is required';
-    if (!form.cardNumber.trim()) newErrors.cardNumber = 'Card Number is required';
-    else if (!/^\d{13,19}$/.test(form.cardNumber.replace(/\s/g, ''))) newErrors.cardNumber = 'Invalid card number';
-    // Expiry month/year validation
-    const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth() + 1; // 1-12
+    // Payment: validate only when Pay Online is selected
+    if (paymentMethod === 'online') {
+      if (!form.cardName.trim()) newErrors.cardName = 'Name on Card is required';
+      if (!form.cardNumber.trim()) newErrors.cardNumber = 'Card Number is required';
+      else if (!/^\d{13,19}$/.test(form.cardNumber.replace(/\s/g, ''))) newErrors.cardNumber = 'Invalid card number';
 
-    if (!form.expiryMonth.trim()) newErrors.expiryMonth = 'Expiry Month is required';
-    else if (!/^(0[1-9]|1[0-2])$/.test(form.expiryMonth)) newErrors.expiryMonth = 'Invalid month';
+      // Expiry month/year validation
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth() + 1; // 1-12
 
-    if (!form.expiryYear.trim()) newErrors.expiryYear = 'Expiry Year is required';
-    else if (!/^\d{4}$/.test(form.expiryYear)) newErrors.expiryYear = 'Invalid year';
-    else {
-      const yearNum = parseInt(form.expiryYear, 10);
-      const monthNum = parseInt(form.expiryMonth, 10);
-      if (yearNum < currentYear) {
-        newErrors.expiryYear = `Expiry year must be ${currentYear} or later`;
-      } else if (monthNum < 1 || monthNum > 12) {
-        newErrors.expiryMonth = 'Invalid month';
-      } else if (yearNum === currentYear && monthNum < currentMonth) {
-        newErrors.expiryMonth = 'Card has already expired';
+      if (!form.expiryMonth.trim()) newErrors.expiryMonth = 'Expiry Month is required';
+      else if (!/^(0[1-9]|1[0-2])$/.test(form.expiryMonth)) newErrors.expiryMonth = 'Invalid month';
+
+      if (!form.expiryYear.trim()) newErrors.expiryYear = 'Expiry Year is required';
+      else if (!/^\d{4}$/.test(form.expiryYear)) newErrors.expiryYear = 'Invalid year';
+      else {
+        const yearNum = parseInt(form.expiryYear, 10);
+        const monthNum = parseInt(form.expiryMonth, 10);
+        if (yearNum < currentYear) {
+          newErrors.expiryYear = `Expiry year must be ${currentYear} or later`;
+        } else if (monthNum < 1 || monthNum > 12) {
+          newErrors.expiryMonth = 'Invalid month';
+        } else if (yearNum === currentYear && monthNum < currentMonth) {
+          newErrors.expiryMonth = 'Card has already expired';
+        }
       }
-    }
-    if (!form.cvv.trim()) newErrors.cvv = 'CVV is required';
-    else {
-      const digitsOnlyCvv = form.cvv.replace(/\D/g, '');
-      if (!/^\d{3}$/.test(digitsOnlyCvv)) newErrors.cvv = 'Invalid CVV';
+      if (!form.cvv.trim()) newErrors.cvv = 'CVV is required';
+      else {
+        const digitsOnlyCvv = form.cvv.replace(/\D/g, '');
+        if (!/^\d{3}$/.test(digitsOnlyCvv)) newErrors.cvv = 'Invalid CVV';
+      }
     }
 
     setErrors(newErrors);
@@ -137,13 +142,20 @@ const PlaceOrder = () => {
         postalCode: form.postalCode,
         country: form.country
       },
-      payment: {
+      payment: (paymentMethod === 'online') ? {
+        method: 'online',
+        cardType,
         cardName: form.cardName,
         cardNumber: form.cardNumber,
         expiryMonth: form.expiryMonth,
         expiryYear: form.expiryYear,
         cvv: form.cvv
-      },
+      } : (paymentMethod === 'cod') ? { method: 'cod' } : { method: 'bank', bankDetails: {
+        accountNumber: '1234567890',
+        shopName: 'Vithanage Enterprises',
+        bank: 'Sample Bank',
+        branch: 'Main Branch'
+      } },
       items: items,
       totals,
       promotion: appliedPromotion
@@ -272,41 +284,105 @@ const PlaceOrder = () => {
 
             <fieldset>
               <legend>Payment</legend>
-              <div className="po-row">
-                <label>Name on Card</label>
-                <input name="cardName" value={form.cardName} onChange={onChange} required />
-                {errors.cardName && <span className="po-error">{errors.cardName}</span>}
-              </div>
-              <div className="po-row">
-                <label>Card Number</label>
-                <input name="cardNumber" value={form.cardNumber} onChange={onChange} required />
-                {errors.cardNumber && <span className="po-error">{errors.cardNumber}</span>}
-              </div>
-              <div className="po-row-3">
-                <div>
-                  <label>Expiry Month</label>
-                  <input name="expiryMonth" value={form.expiryMonth} onChange={onChange} required />
-                  {errors.expiryMonth && <span className="po-error">{errors.expiryMonth}</span>}
+              <div className="po-payment-methods">
+                <label>Payment Method</label>
+                <div className="pm-buttons">
+                  <button
+                    type="button"
+                    className={"pm-btn " + (paymentMethod === 'online' ? 'active' : '')}
+                    onClick={() => setPaymentMethod('online')}
+                  >
+                    Pay Online
+                  </button>
+                  <button
+                    type="button"
+                    className={"pm-btn " + (paymentMethod === 'cod' ? 'active' : '')}
+                    onClick={() => setPaymentMethod('cod')}
+                  >
+                    Cash on delivery
+                  </button>
+                  <button
+                    type="button"
+                    className={"pm-btn " + (paymentMethod === 'bank' ? 'active' : '')}
+                    onClick={() => setPaymentMethod('bank')}
+                  >
+                    Bank transfer
+                  </button>
                 </div>
-                <div>
-                  <label>Expiry Year</label>
-                  <input name="expiryYear" value={form.expiryYear} onChange={onChange} required />
-                  {errors.expiryYear && <span className="po-error">{errors.expiryYear}</span>}
-                </div>
-                <div>
-                  <label>CVV</label>
-                  <input
-                    name="cvv"
-                    value={form.cvv}
-                    onChange={onChange}
-                    required
-                    maxLength={3}
-                    inputMode="numeric"
-                    pattern="\d{3}"
-                    placeholder="123"
-                  />
-                  {errors.cvv && <span className="po-error">{errors.cvv}</span>}
-                </div>
+
+                {paymentMethod === 'online' && (
+                  <div className="po-card-section">
+                    <label>Card Type</label>
+                    <div className="card-type-buttons">
+                      <button
+                        type="button"
+                        className={"card-btn " + (cardType === 'visa' ? 'active' : '')}
+                        onClick={() => setCardType('visa')}
+                      >
+                        Visa
+                      </button>
+                      <button
+                        type="button"
+                        className={"card-btn " + (cardType === 'master' ? 'active' : '')}
+                        onClick={() => setCardType('master')}
+                      >
+                        MasterCard
+                      </button>
+                    </div>
+
+                    <div className="po-row">
+                      <label>Name on Card</label>
+                      <input name="cardName" value={form.cardName} onChange={onChange} />
+                      {errors.cardName && <span className="po-error">{errors.cardName}</span>}
+                    </div>
+                    <div className="po-row">
+                      <label>Card Number</label>
+                      <input name="cardNumber" value={form.cardNumber} onChange={onChange} />
+                      {errors.cardNumber && <span className="po-error">{errors.cardNumber}</span>}
+                    </div>
+                    <div className="po-row-3">
+                      <div>
+                        <label>Expiry Month</label>
+                        <input name="expiryMonth" value={form.expiryMonth} onChange={onChange} />
+                        {errors.expiryMonth && <span className="po-error">{errors.expiryMonth}</span>}
+                      </div>
+                      <div>
+                        <label>Expiry Year</label>
+                        <input name="expiryYear" value={form.expiryYear} onChange={onChange} />
+                        {errors.expiryYear && <span className="po-error">{errors.expiryYear}</span>}
+                      </div>
+                      <div>
+                        <label>CVV</label>
+                        <input
+                          name="cvv"
+                          value={form.cvv}
+                          onChange={onChange}
+                          maxLength={3}
+                          inputMode="numeric"
+                          pattern="\d{3}"
+                          placeholder="123"
+                        />
+                        {errors.cvv && <span className="po-error">{errors.cvv}</span>}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {paymentMethod === 'cod' && (
+                  <div className="po-cod-message">
+                    <p>You have selected Cash on Delivery. Please have the exact amount ready when the courier arrives.</p>
+                  </div>
+                )}
+
+                {paymentMethod === 'bank' && (
+                  <div className="po-bank-details">
+                    <p>Please transfer the order total to the following bank account. Once payment is made, upload the receipt in your orders page.</p>
+                    <div className="bank-row"><strong>Account Number:</strong> <span>1234567890</span></div>
+                    <div className="bank-row"><strong>Shop Name:</strong> <span>Vithanage Enterprises</span></div>
+                    <div className="bank-row"><strong>Bank:</strong> <span>Sample Bank</span></div>
+                    <div className="bank-row"><strong>Branch:</strong> <span>Main Branch</span></div>
+                  </div>
+                )}
               </div>
             </fieldset>
 

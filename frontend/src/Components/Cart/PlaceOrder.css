@@ -507,4 +507,71 @@
   letter-spacing: 0.02em;
 }
 
+/* Payment method buttons */
+.po-payment-methods .pm-buttons {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.pm-btn {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 2px solid #e1e5e9;
+  background: #fff;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.pm-btn.active {
+  background: linear-gradient(90deg, #667eea, #764ba2);
+  color: white;
+  border-color: transparent;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(102,126,234,0.18);
+}
+
+.card-type-buttons {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.card-btn {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid #e1e5e9;
+  background: #fff;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.card-btn.active {
+  background: #f5f7ff;
+  border-color: #667eea;
+}
+
+.po-cod-message {
+  padding: 12px 14px;
+  background: #fff4e6;
+  border: 1px solid #ffead5;
+  border-radius: 8px;
+  color: #7a4a00;
+}
+
+.po-bank-details {
+  padding: 12px 14px;
+  background: #eef7ff;
+  border: 1px solid #dfefff;
+  border-radius: 8px;
+  color: #08306b;
+}
+
+.bank-row {
+  margin-top: 8px;
+}
+
+
 
