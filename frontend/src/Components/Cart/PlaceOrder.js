@@ -75,25 +75,46 @@ const PlaceOrder = () => {
     if (!form.email.trim()) newErrors.email = 'Email is required';
     else if (!/^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/.test(form.email)) newErrors.email = 'Invalid email address';
     if (!form.phone.trim()) newErrors.phone = 'Phone is required';
-    else if (!/^\d{10,15}$/.test(form.phone.replace(/\D/g, ''))) newErrors.phone = 'Invalid phone number';
+    else if (!/^\d{10}$/.test(form.phone.replace(/\D/g, ''))) newErrors.phone = 'Invalid phone number';
 
     // Shipping
     if (!form.addressLine1.trim()) newErrors.addressLine1 = 'Address Line 1 is required';
     if (!form.city.trim()) newErrors.city = 'City is required';
     if (!form.state.trim()) newErrors.state = 'State/Province is required';
-    if (!form.postalCode.trim()) newErrors.postalCode = 'Postal Code is required';
+  if (!form.postalCode.trim()) newErrors.postalCode = 'Postal Code is required';
+  else if (!/^\d+$/.test(form.postalCode.replace(/\s+/g, ''))) newErrors.postalCode = 'Postal Code must be numeric';
     if (!form.country.trim()) newErrors.country = 'Country is required';
 
     // Payment
     if (!form.cardName.trim()) newErrors.cardName = 'Name on Card is required';
     if (!form.cardNumber.trim()) newErrors.cardNumber = 'Card Number is required';
     else if (!/^\d{13,19}$/.test(form.cardNumber.replace(/\s/g, ''))) newErrors.cardNumber = 'Invalid card number';
+    // Expiry month/year validation
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1; // 1-12
+
     if (!form.expiryMonth.trim()) newErrors.expiryMonth = 'Expiry Month is required';
     else if (!/^(0[1-9]|1[0-2])$/.test(form.expiryMonth)) newErrors.expiryMonth = 'Invalid month';
+
     if (!form.expiryYear.trim()) newErrors.expiryYear = 'Expiry Year is required';
     else if (!/^\d{4}$/.test(form.expiryYear)) newErrors.expiryYear = 'Invalid year';
+    else {
+      const yearNum = parseInt(form.expiryYear, 10);
+      const monthNum = parseInt(form.expiryMonth, 10);
+      if (yearNum < currentYear) {
+        newErrors.expiryYear = `Expiry year must be ${currentYear} or later`;
+      } else if (monthNum < 1 || monthNum > 12) {
+        newErrors.expiryMonth = 'Invalid month';
+      } else if (yearNum === currentYear && monthNum < currentMonth) {
+        newErrors.expiryMonth = 'Card has already expired';
+      }
+    }
     if (!form.cvv.trim()) newErrors.cvv = 'CVV is required';
-    else if (!/^\d{3,4}$/.test(form.cvv)) newErrors.cvv = 'Invalid CVV';
+    else {
+      const digitsOnlyCvv = form.cvv.replace(/\D/g, '');
+      if (!/^\d{3}$/.test(digitsOnlyCvv)) newErrors.cvv = 'Invalid CVV';
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -274,7 +295,16 @@ const PlaceOrder = () => {
                 </div>
                 <div>
                   <label>CVV</label>
-                  <input name="cvv" value={form.cvv} onChange={onChange} required />
+                  <input
+                    name="cvv"
+                    value={form.cvv}
+                    onChange={onChange}
+                    required
+                    maxLength={3}
+                    inputMode="numeric"
+                    pattern="\d{3}"
+                    placeholder="123"
+                  />
                   {errors.cvv && <span className="po-error">{errors.cvv}</span>}
                 </div>
               </div>
