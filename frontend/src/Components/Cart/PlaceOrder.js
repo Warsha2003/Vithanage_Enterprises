@@ -394,7 +394,9 @@ const PlaceOrder = () => {
               </div>
             </fieldset>
 
-            <button className="po-submit" type="submit">Pay Now</button>
+            {paymentMethod === 'online' && (
+              <button className="po-submit" type="submit">Pay Now</button>
+            )}
           </form>
 
           <aside className="po-summary">
