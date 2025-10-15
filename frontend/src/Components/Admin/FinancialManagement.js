@@ -198,6 +198,10 @@ const FinancialManagement = () => {
     setSuccess('');
   };
 
+  // Today's date in YYYY-MM-DD format for min attribute on date inputs
+  const todayLocal = new Date();
+  const todayStr = todayLocal.toISOString().split('T')[0];
+
   const openModal = (promotion = null) => {
     if (promotion) {
       setSelectedPromotion(promotion);
@@ -743,6 +747,7 @@ const FinancialManagement = () => {
                     name="startDate"
                     value={formData.startDate}
                     onChange={handleInputChange}
+                    min={todayStr}
                     required
                   />
                 </div>
@@ -754,6 +759,7 @@ const FinancialManagement = () => {
                     name="endDate"
                     value={formData.endDate}
                     onChange={handleInputChange}
+                    min={todayStr}
                     required
                   />
                 </div>
