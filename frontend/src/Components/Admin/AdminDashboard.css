@@ -136,8 +136,12 @@
 }
 
 .logout-btn {
-  background-color: rgba(234, 67, 53, 0.8);
-  color: white;
+  background-color: rgba(255, 21, 0, 0.8);
+  color: #fff;
+  
+}
+button.logout-btn {
+  color: #fff !important;
 }
 
 .settings-btn:hover {
