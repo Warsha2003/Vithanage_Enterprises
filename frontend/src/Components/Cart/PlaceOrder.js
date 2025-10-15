@@ -376,11 +376,11 @@ const PlaceOrder = () => {
 
                 {paymentMethod === 'bank' && (
                   <div className="po-bank-details">
-                    <p>Please transfer the order total to the following bank account. Once payment is made, upload the receipt in your orders page.</p>
+                    <p>Please transfer the order total to the following bank account. Once payment is made, send the receipt to our whatsapp account.</p>
                     <div className="bank-row"><strong>Account Number:</strong> <span>1234567890</span></div>
                     <div className="bank-row"><strong>Shop Name:</strong> <span>Vithanage Enterprises</span></div>
                     <div className="bank-row"><strong>Bank:</strong> <span>Sample Bank</span></div>
-                    <div className="bank-row"><strong>Branch:</strong> <span>Main Branch</span></div>
+                    <div className="bank-row"><strong>Branch:</strong> <span>Main Branch, Colomb</span></div>
                   </div>
                 )}
               </div>
