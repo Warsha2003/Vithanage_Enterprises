@@ -23,6 +23,7 @@ const SupplierManagement = ({ onBack }) => {
   const [statusFilter, setStatusFilter] = useState('All');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [shopNameError, setShopNameError] = useState('');
   const [stats, setStats] = useState({
     totalSuppliers: 0,
     activeSuppliers: 0,
@@ -127,18 +128,48 @@ const SupplierManagement = ({ onBack }) => {
     
     if (name.includes('address.')) {
       const addressField = name.split('.')[1];
-      setFormData({
-        ...formData,
-        address: {
-          ...formData.address,
-          [addressField]: value
+      // If postalCode, allow digits only
+      if (addressField === 'postalCode') {
+        const digitsOnly = value.replace(/\D/g, '');
+        if (digitsOnly !== value) {
+          setError('Postal code can contain numbers only');
+        } else {
+          setError('');
         }
-      });
+        setFormData({
+          ...formData,
+          address: {
+            ...formData.address,
+            [addressField]: digitsOnly
+          }
+        });
+      } else {
+        setFormData({
+          ...formData,
+          address: {
+            ...formData.address,
+            [addressField]: value
+          }
+        });
+      }
     } else {
-      setFormData({
-        ...formData,
-        [name]: value
-      });
+      // If contactNumber, allow digits only and enforce max length
+      if (name === 'contactNumber') {
+        const digitsOnly = value.replace(/\D/g, '');
+        if (digitsOnly.length > 10) {
+          // store only first 10 digits to avoid overflow but show error
+          setFormData({ ...formData, contactNumber: digitsOnly.slice(0, 10) });
+          setError('Contact number must be exactly 10 digits');
+        } else {
+          setFormData({ ...formData, contactNumber: digitsOnly });
+          setError('');
+        }
+      } else {
+        setFormData({
+          ...formData,
+          [name]: value
+        });
+      }
     }
   };
 
@@ -175,6 +206,7 @@ const SupplierManagement = ({ onBack }) => {
       quantity: '',
       unitPrice: ''
     });
+    setShopNameError('');
   };
 
   const resetProductForm = () => {
@@ -288,6 +320,27 @@ const SupplierManagement = ({ onBack }) => {
     setLoading(true);
     setError('');
     setSuccess('');
+
+    // Client-side validation for contact number and postal code
+    // Shop name must not be empty
+    if (!formData.shopName || formData.shopName.trim() === '') {
+      setShopNameError('Shop name cannot be empty');
+      setLoading(false);
+      return;
+    } else {
+      setShopNameError('');
+    }
+    if (!/^\d{10}$/.test(formData.contactNumber)) {
+      setError('Contact number must be exactly 10 digits');
+      setLoading(false);
+      return;
+    }
+
+    if (formData.address.postalCode && /\D/.test(formData.address.postalCode)) {
+      setError('Postal code must contain numbers only');
+      setLoading(false);
+      return;
+    }
 
     try {
       const url = selectedSupplier
@@ -877,6 +930,9 @@ const SupplierManagement = ({ onBack }) => {
                     required
                     placeholder="Enter shop name"
                   />
+                  {shopNameError && (
+                    <small className="field-error">{shopNameError}</small>
+                  )}
                 </div>
 
                 <div className="form-group">
@@ -898,9 +954,15 @@ const SupplierManagement = ({ onBack }) => {
                     name="contactNumber"
                     value={formData.contactNumber}
                     onChange={handleInputChange}
-                    required
                     placeholder="Enter contact number"
+                    maxLength={10}
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    required
                   />
+                  {formData.contactNumber && formData.contactNumber.length !== 10 && (
+                    <small className="field-error">Contact number must be exactly 10 digits</small>
+                  )}
                 </div>
 
                 <div className="form-group">
@@ -955,7 +1017,12 @@ const SupplierManagement = ({ onBack }) => {
                     value={formData.address.postalCode}
                     onChange={handleInputChange}
                     placeholder="Enter postal code"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                   />
+                  {formData.address.postalCode && /\D/.test(formData.address.postalCode) && (
+                    <small className="field-error">Postal code must contain only numbers</small>
+                  )}
                 </div>
 
                 <div className="form-group">
