@@ -1809,7 +1809,8 @@ const AdminDashboard = () => {
             <FontAwesomeIcon icon={faSync} /> Refresh
           </button>
         </div>
-        <div className="search-container">
+        {/* searchbox */}
+        <div className="search-container"> 
           <div className="search-box">
             <input 
               type="text" 
