@@ -246,8 +246,11 @@
 }
 
 .logout-btn {
-  color: #dc3545 !important;
+  color: azure !important;
+  
 }
+
+
 
 /* Secondary Navigation Bar */
 .secondary-navbar {
