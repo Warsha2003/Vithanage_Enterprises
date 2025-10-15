@@ -91,7 +91,15 @@ const PlaceOrder = () => {
     if (paymentMethod === 'online') {
       if (!form.cardName.trim()) newErrors.cardName = 'Name on Card is required';
       if (!form.cardNumber.trim()) newErrors.cardNumber = 'Card Number is required';
-      else if (!/^\d{13,19}$/.test(form.cardNumber.replace(/\s/g, ''))) newErrors.cardNumber = 'Invalid card number';
+      else {
+        // Allow spaces in input but validate digits-only length exactly 16
+        const cardDigits = form.cardNumber.replace(/\s/g, '');
+        if (!/^\d+$/.test(cardDigits)) {
+          newErrors.cardNumber = 'Card Number must contain digits only';
+        } else if (cardDigits.length !== 16) {
+          newErrors.cardNumber = 'Card Number must be exactly 16 digits';
+        }
+      }
 
       // Expiry month/year validation
       const now = new Date();
