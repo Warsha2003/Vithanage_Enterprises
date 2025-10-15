@@ -5,6 +5,8 @@ import {
   faSearch, faFilter, faDownload, faWarehouse, faChartLine
 } from '@fortawesome/free-solid-svg-icons';
 import { useSettings } from '../../contexts/SettingsContext';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import './InventoryManagement.css';
 
 const InventoryManagement = () => {
@@ -34,6 +36,7 @@ const InventoryManagement = () => {
     reference: '',
     notes: ''
   });
+  const [generatingPDF, setGeneratingPDF] = useState(false);
 
   useEffect(() => {
     fetchInventory();
@@ -223,6 +226,105 @@ const InventoryManagement = () => {
     }
   };
 
+  const handleDownloadPDF = (items) => {
+    try {
+      const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+
+      // Shop header (similar to invoice)
+      doc.setFontSize(18);
+      doc.text('Vithanage Enterprises', 40, 50);
+      doc.setFontSize(11);
+      doc.text('Email: info@vithanage.com', 40, 70);
+      doc.text('Phone: +94 77 123 4567', 40, 84);
+      doc.text('Address: 123 Main St, Colombo, Sri Lanka', 40, 98);
+
+      doc.setFontSize(14);
+      doc.text('Inventory Report', 40, 125);
+
+      // Small gap between headers and table data
+      const startY = 145;
+
+      const body = (items || []).map((it) => ([
+        (it.productInfo?.name || '').toString(),
+        (it.productInfo?.category || '').toString(),
+        (typeof it.currentStock !== 'undefined' ? it.currentStock : '').toString(),
+        (typeof it.reorderPoint !== 'undefined' ? it.reorderPoint : '').toString(),
+        (it.status || '').replace('_', ' '),
+        (it.updatedAt ? new Date(it.updatedAt).toLocaleDateString() : '')
+      ]));
+
+      autoTable(doc, {
+        head: [[
+          'Product', 'Category', 'Current Stock', 'Reorder Point', 'Status', 'Last Updated'
+        ]],
+        body,
+        startY,
+        theme: 'grid',
+        headStyles: { fillColor: [25, 118, 210] },
+        styles: { fontSize: 10, cellPadding: 4 },
+        // ensure compact rows (no extra spacing between cells)
+        didDrawCell: (data) => {
+          // no-op, left for potential future tweaks
+        }
+      });
+
+      doc.save('inventory_report.pdf');
+    } catch (err) {
+      console.error('Failed to generate PDF', err);
+      alert('Failed to generate PDF');
+    }
+  };
+
+  // Fetch all inventory pages from server and return combined array
+  const fetchAllInventoryForReport = async () => {
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+    const allItems = [];
+    let page = 1;
+    const limit = 50; // fetch in chunks
+
+    while (true) {
+      const queryParams = new URLSearchParams({ page, limit, search: '', status: 'all' });
+      const response = await fetch(`http://localhost:5000/api/admin/inventory?${queryParams}`, {
+        headers: {
+          'x-auth-token': token,
+          'Content-Type': 'application/json'
+        }
+      });
+      const data = await response.json();
+      if (!data || !data.success) {
+        throw new Error(data?.message || 'Failed to fetch inventory');
+      }
+      const items = data.data || [];
+      allItems.push(...items);
+
+      // If pagination info exists use it, otherwise stop when fewer than limit returned
+      const totalPages = data.pagination?.pages;
+      if (totalPages) {
+        if (page >= totalPages) break;
+      } else if (items.length < limit) {
+        break;
+      }
+
+      page += 1;
+    }
+
+    return allItems;
+  };
+
+  // Wrapper to fetch all inventory and then call PDF generator
+  const generateFullReport = async () => {
+    try {
+      setGeneratingPDF(true);
+      const allItems = await fetchAllInventoryForReport();
+      handleDownloadPDF(allItems);
+    } catch (err) {
+      console.error('Error generating full inventory report:', err);
+      alert('Failed to generate full inventory report. Check console for details.');
+    } finally {
+      setGeneratingPDF(false);
+    }
+  };
+
   return (
     <div className="inventory-management">
       <div className="inventory-header">
@@ -230,7 +332,7 @@ const InventoryManagement = () => {
           <FontAwesomeIcon icon={faWarehouse} /> Inventory Management
         </h2>
         
-        {/* Stats Cards */}
+  {/* Stats Cards */}
         <div className="inventory-stats">
           <div className="stat-card">
             <div className="stat-icon"><FontAwesomeIcon icon={faBoxOpen} /></div>
@@ -304,16 +406,23 @@ const InventoryManagement = () => {
           </select>
         </div>
         
-        <button className="primary-btn" onClick={initializeInventory}>
-          Initialize Inventory
+      {/*inventory report download*/}
+        <button
+          className="primary-btn"
+          onClick={generateFullReport}
+          title="Download full inventory report as PDF"
+          style={{ marginLeft: '8px' }}
+          disabled={generatingPDF}
+        >
+          <FontAwesomeIcon icon={faDownload} /> {generatingPDF ? 'Generating...' : 'Download Report'}
         </button>
       </div>
 
-      {/* Inventory Table */}
+  {/* Inventory Table */}
       <div className="inventory-table-container">
         {loading ? (
           <div className="loading">Loading inventory...</div>
-        ) : error ? (
+          ) : error ? (
           <div className="error">{error}</div>
         ) : (
           <table className="inventory-table">
@@ -322,7 +431,6 @@ const InventoryManagement = () => {
                 <th>Product</th>
                 <th>Category</th>
                 <th>Current Stock</th>
-                <th>Min/Max Levels</th>
                 <th>Reorder Point</th>
                 <th>Status</th>
                 <th>Last Updated</th>
@@ -334,21 +442,16 @@ const InventoryManagement = () => {
                 <tr key={item._id}>
                   <td>
                     <div className="product-info">
-                      <strong>{item.productInfo.name}</strong>
+                      <strong>{item.productInfo?.name}</strong>
                       <br />
-                      <small>ID: {item.productInfo._id}</small>
+                      <small>ID: {item.productInfo?._id}</small>
                     </div>
                   </td>
-                  <td>{item.productInfo.category}</td>
+                  <td>{item.productInfo?.category}</td>
                   <td>
                     <span className="stock-quantity">{item.currentStock}</span>
                   </td>
-                  <td>
-                    <span className="stock-levels">
-                      Min: {item.minStockLevel}<br/>
-                      Max: {item.maxStockLevel}
-                    </span>
-                  </td>
+                  
                   <td>{item.reorderPoint}</td>
                   <td>
                     <span 
@@ -356,7 +459,7 @@ const InventoryManagement = () => {
                       style={{ backgroundColor: getStatusColor(item.status), color: 'white' }}
                     >
                       <FontAwesomeIcon icon={getStatusIcon(item.status)} />
-                      {item.status.replace('_', ' ')}
+                      {item.status?.replace('_', ' ')}
                     </span>
                   </td>
                   <td>{new Date(item.updatedAt).toLocaleDateString()}</td>
