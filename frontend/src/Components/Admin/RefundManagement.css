@@ -101,6 +101,14 @@
   background: linear-gradient(135deg, #17a2b8, #6f42c1);
 }
 
+.stat-card.completed {
+  border-left-color: #28a745;
+}
+
+.stat-card.completed .stat-icon {
+  background: linear-gradient(135deg, #28a745, #20c997);
+}
+
 .stat-content {
   flex: 1;
 }

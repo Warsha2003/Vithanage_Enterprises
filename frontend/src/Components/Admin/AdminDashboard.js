@@ -12,15 +12,28 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faUsers, faBoxOpen, faShoppingCart, faMoneyBillWave, 
   faChartLine, faStar, faExchangeAlt, faHome, faBell,
-  faCog, faSignOutAlt, faClipboardList, faWarehouse, faPercent, faInfoCircle, faEye, faSearch, faFilePdf, faSync
+  faCog, faSignOutAlt, faClipboardList, faWarehouse, faPercent, 
+  faInfoCircle, faEye, faSearch, faFilePdf, faSync, faCalendar
 } from '@fortawesome/free-solid-svg-icons';
 import { useSettings } from '../../contexts/SettingsContext';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { useCurrency } from '../../contexts/CurrencyContext';
 
 const AdminDashboard = () => {
   // Settings hook for global configuration
   const { settings, updateSettings, formatCurrency } = useSettings();
+  // Currency hook for price display
+  const { formatPrice, setAdminCurrency, currency } = useCurrency();
+  
+  // Admin price display function - shows prices in admin's preferred currency
+  // But all database operations should still use LKR
+  const formatAdminPrice = (priceInLKR) => {
+    // Always use formatPrice (CurrencyContext) for consistency
+    return formatPrice(priceInLKR);
+  };
+
+  // Price validation removed - currency system is now properly implemented
   
   // Admin dashboard states
   const [isAdmin, setIsAdmin] = useState(false);
@@ -128,6 +141,28 @@ const AdminDashboard = () => {
   const [activitiesLoading, setActivitiesLoading] = useState(false);
   const [lastActivityUpdate, setLastActivityUpdate] = useState(null);
 
+  // Daily Deals management state
+  const [dailyDeals, setDailyDeals] = useState([]);
+  const [showDealModal, setShowDealModal] = useState(false);
+  const [showDealViewModal, setShowDealViewModal] = useState(false);
+  const [editingDeal, setEditingDeal] = useState(null);
+  const [selectedDeal, setSelectedDeal] = useState(null);
+  const [dealMessage, setDealMessage] = useState({ type: '', message: '' });
+  const [dealSearchQuery, setDealSearchQuery] = useState('');
+  const [dealStatusFilter, setDealStatusFilter] = useState('all');
+  const [dealForm, setDealForm] = useState({
+    productId: '',
+    dealTitle: '',
+    originalPrice: '',
+    dealPrice: '',
+    discountPercentage: '',
+    startDate: '',
+    endDate: '',
+    dealQuantity: '',
+    dealType: 'flash',
+    isActive: true
+  });
+
   // Admin management state
   const [admins, setAdmins] = useState([]);
   const [showAdminModal, setShowAdminModal] = useState(false);
@@ -181,6 +216,7 @@ const AdminDashboard = () => {
       fetchUsers();
       fetchAdmins();
       fetchProducts();
+      fetchDailyDeals();
       fetchDashboardStats();
       fetchRecentActivities();
     }
@@ -202,16 +238,27 @@ const AdminDashboard = () => {
     };
   }, []);
 
-  // Auto-refresh recent activities every 30 seconds
+  // Initialize admin currency display when settings are loaded
+  useEffect(() => {
+    if (settings.currency && setAdminCurrency) {
+      console.log('🔧 Setting admin dashboard currency to:', settings.currency);
+      setAdminCurrency(settings.currency);
+    }
+  }, [settings.currency, setAdminCurrency]);
+
+  // Auto-refresh recent activities every 30 seconds and when currency changes
   useEffect(() => {
     if (!loading && isAdmin) {
+      // Refresh activities immediately when currency changes
+      fetchRecentActivities();
+      
       const interval = setInterval(() => {
         fetchRecentActivities();
       }, 30 * 1000); // 30 seconds
 
       return () => clearInterval(interval);
     }
-  }, [loading, isAdmin]);
+  }, [loading, isAdmin, currency]); // Added currency dependency
 
   const fetchUsers = async () => {
     try {
@@ -788,6 +835,48 @@ const AdminDashboard = () => {
     }
   };
 
+  // Toggle New Arrival status
+  const toggleNewArrival = async (productId, currentStatus) => {
+    try {
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      if (!token) {
+        setProductMessage({ type: 'error', message: 'You must be logged in to perform this action' });
+        return;
+      }
+
+      const endpoint = currentStatus ? 'remove-new-arrival' : 'mark-new-arrival';
+      const response = await fetch(`http://localhost:5000/api/products/${productId}/${endpoint}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update new arrival status');
+      }
+
+      const action = currentStatus ? 'removed from' : 'marked as';
+      setProductMessage({ 
+        type: 'success', 
+        message: `Product ${action} new arrivals successfully!` 
+      });
+      
+      // Refresh products list to show updated status
+      fetchProducts();
+
+      // Clear message after delay
+      setTimeout(() => {
+        setProductMessage({ type: '', message: '' });
+      }, 3000);
+      
+    } catch (err) {
+      setProductMessage({ type: 'error', message: err.message });
+    }
+  };
+
   const searchProducts = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -819,6 +908,254 @@ const AdminDashboard = () => {
     }
   };
 
+  // Daily Deals CRUD Functions
+  const fetchDailyDeals = async () => {
+    try {
+      console.log('fetchDailyDeals called');
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:5000/api/deals/admin/all', {
+        headers: {
+          'x-auth-token': token,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to fetch daily deals');
+      }
+      
+      setDailyDeals(data.data || []);
+    } catch (error) {
+      console.error('Error fetching daily deals:', error);
+      setError(error.message);
+    }
+  };
+
+  const handleDealFormChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setDealForm(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+    
+    // Auto-calculate discount percentage if original and deal prices are set
+    if (name === 'originalPrice' || name === 'dealPrice') {
+      const originalPrice = name === 'originalPrice' ? parseFloat(value) : parseFloat(dealForm.originalPrice);
+      const dealPrice = name === 'dealPrice' ? parseFloat(value) : parseFloat(dealForm.dealPrice);
+      
+      if (originalPrice && dealPrice && originalPrice > dealPrice) {
+        const discount = ((originalPrice - dealPrice) / originalPrice * 100).toFixed(0);
+        setDealForm(prev => ({
+          ...prev,
+          [name]: value,
+          discountPercentage: discount
+        }));
+        return;
+      }
+    }
+    
+    // Clear messages when user starts typing
+    if (dealMessage.message) {
+      setDealMessage({ type: '', message: '' });
+    }
+  };
+
+  const resetDealForm = () => {
+    setDealForm({
+      productId: '',
+      dealTitle: '',
+      originalPrice: '',
+      dealPrice: '',
+      discountPercentage: '',
+      startDate: '',
+      endDate: '',
+      dealQuantity: '',
+      dealType: 'flash',
+      isActive: true
+    });
+    setEditingDeal(null);
+    setDealMessage({ type: '', message: '' });
+  };
+
+  const viewDeal = (deal) => {
+    setSelectedDeal(deal);
+    setShowDealViewModal(true);
+  };
+
+  const editDeal = (deal) => {
+    setEditingDeal(deal);
+    setDealForm({
+      productId: deal.productId._id || deal.productId,
+      dealTitle: deal.dealTitle,
+      originalPrice: deal.originalPrice.toString(),
+      dealPrice: deal.dealPrice.toString(),
+      discountPercentage: deal.discountPercentage.toString(),
+      startDate: new Date(deal.startDate).toISOString().slice(0, 16),
+      endDate: new Date(deal.endDate).toISOString().slice(0, 16),
+      dealQuantity: deal.dealQuantity.toString(),
+      dealType: deal.dealType,
+      isActive: deal.isActive
+    });
+    setShowDealModal(true);
+    setShowDealViewModal(false);
+  };
+
+  const saveDeal = async () => {
+    try {
+      console.log('saveDeal called with form data:', dealForm);
+      
+      // Validate form
+      if (!dealForm.productId || !dealForm.dealTitle.trim() || !dealForm.originalPrice || !dealForm.dealPrice || !dealForm.startDate || !dealForm.endDate || !dealForm.dealQuantity) {
+        console.log('Validation failed - missing fields');
+        setDealMessage({ type: 'error', message: 'All fields are required' });
+        return;
+      }
+
+      const originalPrice = parseFloat(dealForm.originalPrice);
+      const dealPrice = parseFloat(dealForm.dealPrice);
+
+      if (dealPrice >= originalPrice) {
+        setDealMessage({ type: 'error', message: 'Deal price must be lower than original price' });
+        return;
+      }
+
+      if (new Date(dealForm.endDate) <= new Date(dealForm.startDate)) {
+        setDealMessage({ type: 'error', message: 'End date must be after start date' });
+        return;
+      }
+
+      const token = localStorage.getItem('token');
+      console.log('Token found:', token ? 'Yes' : 'No');
+      
+      const url = editingDeal 
+        ? `http://localhost:5000/api/deals/admin/${editingDeal._id}`
+        : 'http://localhost:5000/api/deals/admin/create';
+      
+      const method = editingDeal ? 'PUT' : 'POST';
+      console.log('API URL:', url);
+      console.log('Method:', method);
+      
+      const body = {
+        productId: dealForm.productId,
+        dealTitle: dealForm.dealTitle,
+        originalPrice: parseFloat(dealForm.originalPrice),
+        dealPrice: parseFloat(dealForm.dealPrice),
+        discountPercentage: parseInt(dealForm.discountPercentage),
+        startDate: dealForm.startDate,
+        endDate: dealForm.endDate,
+        dealQuantity: parseInt(dealForm.dealQuantity),
+        dealType: dealForm.dealType,
+        isActive: dealForm.isActive
+      };
+
+      console.log('Request body:', body);
+      
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'x-auth-token': token
+        },
+        body: JSON.stringify(body)
+      });
+
+      console.log('Response status:', response.status);
+      const data = await response.json();
+      console.log('Response data:', data);
+
+      if (!response.ok) {
+        throw new Error(data.message || `Failed to ${editingDeal ? 'update' : 'create'} deal`);
+      }
+
+      setDealMessage({ 
+        type: 'success', 
+        message: `Deal ${editingDeal ? 'updated' : 'created'} successfully!` 
+      });
+      
+      // Refresh deals list
+      fetchDailyDeals();
+      
+      // Close modal after delay
+      setTimeout(() => {
+        setShowDealModal(false);
+        resetDealForm();
+      }, 1500);
+
+    } catch (error) {
+      setDealMessage({ type: 'error', message: error.message });
+    }
+  };
+
+  const deleteDeal = async (dealId) => {
+    if (!window.confirm('Are you sure you want to delete this deal? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/deals/admin/${dealId}`, {
+        method: 'DELETE',
+        headers: {
+          'x-auth-token': token
+        }
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to delete deal');
+      }
+
+      setDealMessage({ type: 'success', message: 'Deal deleted successfully!' });
+      
+      // Refresh deals list
+      fetchDailyDeals();
+
+      // Clear message after delay
+      setTimeout(() => {
+        setDealMessage({ type: '', message: '' });
+      }, 3000);
+
+    } catch (error) {
+      setDealMessage({ type: 'error', message: error.message });
+    }
+  };
+
+  const toggleDealStatus = async (dealId, currentStatus) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:5000/api/deals/admin/${dealId}/toggle-status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-auth-token': token
+        },
+        body: JSON.stringify({ isActive: !currentStatus })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to toggle deal status');
+      }
+
+      setDealMessage({ 
+        type: 'success', 
+        message: `Deal ${!currentStatus ? 'activated' : 'deactivated'} successfully!` 
+      });
+      
+      fetchDailyDeals();
+
+      setTimeout(() => {
+        setDealMessage({ type: '', message: '' });
+      }, 3000);
+
+    } catch (error) {
+      setDealMessage({ type: 'error', message: error.message });
+    }
+  };
+
   const filteredOrders = orders.filter((o) => {
     const q = orderQuery.trim().toLowerCase();
     const idMatch = (o._id || '').toLowerCase().includes(q);
@@ -843,7 +1180,7 @@ const AdminDashboard = () => {
       doc.setFontSize(12);
       doc.text(`Total Orders: ${totalOrders}`, margin, y); y += 16;
       doc.text(`Pending: ${byStatus.pending || 0}  Approved: ${byStatus.approved || 0}  Rejected: ${byStatus.rejected || 0}`, margin, y); y += 16;
-      doc.text(`Total Revenue: ${formatCurrency(totalRevenue)}`, margin, y); y += 24;
+      doc.text(`Total Revenue: ${formatPrice(totalRevenue)}`, margin, y); y += 24;
 
       const rows = filteredOrders.map(o => [
         o._id?.slice(-8),
@@ -851,7 +1188,7 @@ const AdminDashboard = () => {
         o.customer?.email || '-',
         o.status,
         new Date(o.createdAt).toLocaleString(),
-        `${formatCurrency(o.totals?.total || 0)}`
+        `${formatPrice(o.totals?.total || 0)}`
       ]);
       autoTable(doc, {
         startY: y,
@@ -865,6 +1202,185 @@ const AdminDashboard = () => {
     } catch (e) {
       console.error('Report generation failed', e);
       alert('Failed to generate report');
+    }
+  };
+
+  // Generate Reviews PDF Report
+  const generateReviewsReport = () => {
+    try {
+      const doc = new jsPDF('p', 'pt');
+      const margin = 40;
+      let y = margin;
+
+      doc.setFontSize(18);
+      doc.text('Reviews Management Report', margin, y);
+      y += 24;
+
+      const totalReviews = filteredReviews.length;
+      const approvedReviews = filteredReviews.filter(r => r.isApproved).length;
+      const pendingReviews = filteredReviews.filter(r => !r.isApproved).length;
+      const avgRating = filteredReviews.length > 0 ? 
+        (filteredReviews.reduce((sum, r) => sum + r.rating, 0) / filteredReviews.length).toFixed(1) : '0';
+      
+      doc.setFontSize(12);
+      doc.text(`Total Reviews: ${totalReviews}`, margin, y); y += 16;
+      doc.text(`Approved: ${approvedReviews}  Pending: ${pendingReviews}`, margin, y); y += 16;
+      doc.text(`Average Rating: ${avgRating} stars`, margin, y); y += 24;
+
+      const reviewRows = filteredReviews.map(r => [
+        r.product?.name?.substring(0, 25) || 'Unknown Product',
+        r.user?.name || 'Anonymous',
+        `${r.rating} ★`,
+        r.comment?.substring(0, 40) + (r.comment?.length > 40 ? '...' : ''),
+        r.isApproved ? 'Approved' : 'Pending',
+        new Date(r.createdAt).toLocaleDateString()
+      ]);
+      
+      autoTable(doc, {
+        startY: y,
+        head: [[ 'Product', 'Customer', 'Rating', 'Comment', 'Status', 'Date' ]],
+        body: reviewRows,
+        styles: { fontSize: 10 },
+        headStyles: { fillColor: [35, 47, 62] },
+        columnStyles: {
+          0: { cellWidth: 120 },
+          1: { cellWidth: 80 },
+          2: { cellWidth: 50 },
+          3: { cellWidth: 150 },
+          4: { cellWidth: 60 },
+          5: { cellWidth: 70 }
+        }
+      });
+
+      doc.save(`reviews-report-${new Date().toISOString().slice(0,10)}.pdf`);
+    } catch (e) {
+      console.error('Reviews report generation failed', e);
+      alert('Failed to generate reviews report');
+    }
+  };
+
+  // Generate Refunds PDF Report
+  const generateRefundsReport = () => {
+    try {
+      const doc = new jsPDF('p', 'pt');
+      const margin = 40;
+      let y = margin;
+
+      doc.setFontSize(18);
+      doc.text('Refunds Management Report', margin, y);
+      y += 24;
+
+      // Get refunds data - using a placeholder for now since we need to add refunds state
+      const totalRefunds = 0; // Will be updated when refunds data is available
+      const approvedRefunds = 0;
+      const pendingRefunds = 0;
+      const rejectedRefunds = 0;
+      
+      doc.setFontSize(12);
+      doc.text(`Total Refunds: ${totalRefunds}`, margin, y); y += 16;
+      doc.text(`Approved: ${approvedRefunds}  Pending: ${pendingRefunds}  Rejected: ${rejectedRefunds}`, margin, y); y += 16;
+      doc.text(`Report Generated: ${new Date().toLocaleString()}`, margin, y); y += 24;
+
+      // Placeholder data - will be populated when refunds state is added
+      const refundRows = [
+        ['No refunds data available', '', '', '', '', '']
+      ];
+      
+      autoTable(doc, {
+        startY: y,
+        head: [[ 'Order #', 'Customer', 'Amount', 'Reason', 'Status', 'Date' ]],
+        body: refundRows,
+        styles: { fontSize: 10 },
+        headStyles: { fillColor: [35, 47, 62] },
+        columnStyles: {
+          0: { cellWidth: 80 },
+          1: { cellWidth: 100 },
+          2: { cellWidth: 80 },
+          3: { cellWidth: 120 },
+          4: { cellWidth: 60 },
+          5: { cellWidth: 80 }
+        }
+      });
+
+      doc.save(`refunds-report-${new Date().toISOString().slice(0,10)}.pdf`);
+    } catch (e) {
+      console.error('Refunds report generation failed', e);
+      alert('Failed to generate refunds report');
+    }
+  };
+
+  // Generate Users PDF Report
+  const generateUsersReport = () => {
+    try {
+      const doc = new jsPDF('p', 'pt');
+      const margin = 40;
+      let y = margin;
+
+      doc.setFontSize(18);
+      doc.text('User Management Report', margin, y);
+      y += 24;
+
+      // Calculate statistics
+      const totalUsers = users.length;
+      const adminUsers = users.filter(u => u.isAdmin).length;
+      const regularUsers = users.filter(u => !u.isAdmin).length;
+      const usersWithPhone = users.filter(u => u.phone && u.phone.trim()).length;
+      
+      doc.setFontSize(12);
+      doc.text(`Total Users: ${totalUsers}`, margin, y); y += 16;
+      doc.text(`Regular Users: ${regularUsers}  Admin Users: ${adminUsers}`, margin, y); y += 16;
+      doc.text(`Users with Phone: ${usersWithPhone}`, margin, y); y += 16;
+      doc.text(`Report Generated: ${new Date().toLocaleString()}`, margin, y); y += 24;
+
+      // Filter users based on current search if any
+      const filteredUsers = userSearchQuery.trim() 
+        ? users.filter(user => {
+            const query = userSearchQuery.toLowerCase();
+            return user.name.toLowerCase().includes(query) ||
+                   user.email.toLowerCase().includes(query) ||
+                   (user.phone && user.phone.toLowerCase().includes(query));
+          })
+        : users;
+
+      if (userSearchQuery.trim()) {
+        doc.text(`Filtered by search: "${userSearchQuery}" (${filteredUsers.length} results)`, margin, y);
+        y += 16;
+      }
+
+      // Prepare user data for table
+      const userRows = filteredUsers.map((user, index) => [
+        (index + 1).toString(),
+        user.name || 'N/A',
+        user.email || 'N/A',
+        user.isAdmin ? 'Admin' : 'User',
+        user.phone || 'N/A',
+        user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'
+      ]);
+      
+      autoTable(doc, {
+        startY: y,
+        head: [[ '#', 'Name', 'Email', 'Role', 'Phone', 'Registered' ]],
+        body: userRows,
+        styles: { fontSize: 10 },
+        headStyles: { fillColor: [35, 47, 62] },
+        columnStyles: {
+          0: { cellWidth: 30 },
+          1: { cellWidth: 120 },
+          2: { cellWidth: 150 },
+          3: { cellWidth: 60 },
+          4: { cellWidth: 100 },
+          5: { cellWidth: 80 }
+        }
+      });
+
+      const filename = userSearchQuery.trim() 
+        ? `users-report-filtered-${new Date().toISOString().slice(0,10)}.pdf`
+        : `users-report-${new Date().toISOString().slice(0,10)}.pdf`;
+      
+      doc.save(filename);
+    } catch (e) {
+      console.error('Users report generation failed', e);
+      alert('Failed to generate users report');
     }
   };
 
@@ -987,7 +1503,7 @@ const AdminDashboard = () => {
             activities.push({
               id: `order_${order._id}`,
               type: 'order',
-              message: `New order #${order._id.slice(-6)} received for ${formatCurrency(totalAmount)}`,
+              message: `New order #${order._id.slice(-6)} received for ${formatPrice(totalAmount)}`,
               time: new Date(orderDate).toLocaleString(),
               timestamp: new Date(orderDate).getTime()
             });
@@ -1155,6 +1671,13 @@ const AdminDashboard = () => {
     }
   }, [activeModule]);
 
+  // Load daily deals when Daily Deals module is active
+  useEffect(() => {
+    if (activeModule === 'daily-deals') {
+      fetchDailyDeals();
+    }
+  }, [activeModule]);
+
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
@@ -1193,6 +1716,13 @@ const AdminDashboard = () => {
     updateSettings({
       [name]: updatedValue
     });
+
+    // If admin changes currency, update admin dashboard display only
+    if (name === 'currency') {
+      console.log('🔧 Admin changed dashboard currency to:', updatedValue);
+      // This only affects admin dashboard display, not the main website
+      setAdminCurrency(updatedValue);
+    }
   };
 
   const saveSettings = async () => {
@@ -1386,6 +1916,8 @@ const AdminDashboard = () => {
         return renderInventory();
       case 'financial':
         return renderFinancial();
+      case 'daily-deals':
+        return renderDailyDeals();
       case 'reviews':
         return renderReviews();
       case 'refunds':
@@ -1447,7 +1979,7 @@ const AdminDashboard = () => {
           <div className="dashboard-stat-icon"><FontAwesomeIcon icon={faMoneyBillWave} /></div>
           <div className="dashboard-stat-info">
             <h3>Total Revenue</h3>
-            <p>{formatCurrency(stats.totalRevenue || 0)}</p>
+            <p>{formatAdminPrice(stats.totalRevenue || 0)}</p>
             <div className="dashboard-stat-detail">
               <span>From approved & delivered orders</span>
             </div>
@@ -1547,12 +2079,385 @@ const AdminDashboard = () => {
           </div>
           <div className="info-card">
             <div className="info-label">Free Shipping</div>
-            <div className="info-value">{formatCurrency(settings.freeShippingThreshold)}+</div>
+            <div className="info-value">{formatPrice(settings.freeShippingThreshold)}+</div>
           </div>
         </div>
       </div>
     </div>
   );
+
+  const renderDailyDeals = () => {
+    const filteredDeals = dailyDeals.filter(deal => {
+      const query = dealSearchQuery.toLowerCase().trim();
+      const statusMatch = dealStatusFilter === 'all' ? true : 
+                         dealStatusFilter === 'active' ? deal.isActive : !deal.isActive;
+      const searchMatch = !query || 
+                         deal.dealTitle.toLowerCase().includes(query) ||
+                         (deal.productId?.name || '').toLowerCase().includes(query);
+      return searchMatch && statusMatch;
+    });
+
+    return (
+      <div className="module-content">
+        <h2><FontAwesomeIcon icon={faPercent} /> Daily Deals Management</h2>
+        
+        {error && <div className="error-message">{error}</div>}
+        {dealMessage.message && (
+          <div className={`message ${dealMessage.type}`}>
+            <FontAwesomeIcon icon={dealMessage.type === 'success' ? faPercent : faSignOutAlt} />
+            {dealMessage.message}
+          </div>
+        )}
+        
+        <div className="admin-actions">
+          <div className="action-buttons-left">
+            <button className="primary-btn" onClick={() => {
+              resetDealForm();
+              setShowDealModal(true);
+            }}>
+              <FontAwesomeIcon icon={faPercent} /> Create New Deal
+            </button>
+            <button className="refresh-btn" onClick={fetchDailyDeals}>
+              <FontAwesomeIcon icon={faSync} /> Refresh
+            </button>
+          </div>
+          <div className="search-container">
+            <div className="search-box">
+              <input 
+                type="text" 
+                placeholder="Search deals..." 
+                value={dealSearchQuery}
+                onChange={(e) => setDealSearchQuery(e.target.value)}
+              />
+              <select 
+                value={dealStatusFilter} 
+                onChange={(e) => setDealStatusFilter(e.target.value)}
+                className="filter-select"
+              >
+                <option value="all">All Status</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+              <button className="search-btn" onClick={fetchDailyDeals}>
+                <FontAwesomeIcon icon={faSearch} />
+                <span>Search</span>
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <div className="admin-section">
+          <div className="deals-summary">
+            <h3>
+              <FontAwesomeIcon icon={faPercent} /> 
+              Total Deals: <span className="deal-count">{filteredDeals.length}</span>
+              <span className="active-deals"> | Active: {filteredDeals.filter(d => d.isActive).length}</span>
+            </h3>
+          </div>
+          
+          <table className="deals-management-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Deal Title</th>
+                <th>Product</th>
+                <th>Original Price</th>
+                <th>Deal Price</th>
+                <th>Discount</th>
+                <th>Quantity</th>
+                <th>Start Date</th>
+                <th>End Date</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredDeals.length > 0 ? (
+                filteredDeals.map((deal, index) => (
+                  <tr key={deal._id}>
+                    <td className="deal-number">{index + 1}</td>
+                    <td className="deal-title">{deal.dealTitle}</td>
+                    <td className="product-name">{deal.productId?.name || 'Unknown Product'}</td>
+                    <td className="original-price">{formatPrice(deal.originalPrice)}</td>
+                    <td className="deal-price" style={{color: '#28a745', fontWeight: 'bold'}}>
+                      {formatPrice(deal.dealPrice)}
+                    </td>
+                    <td className="discount-percent" style={{color: '#dc3545', fontWeight: 'bold'}}>
+                      -{deal.discountPercentage}%
+                    </td>
+                    <td className="deal-quantity">{deal.dealQuantity}</td>
+                    <td className="start-date">{new Date(deal.startDate).toLocaleDateString()}</td>
+                    <td className="end-date">{new Date(deal.endDate).toLocaleDateString()}</td>
+                    <td className="deal-status">
+                      <span className={deal.isActive ? 'badge admin' : 'badge user'}>
+                        {deal.isActive ? 'Active' : 'Inactive'}
+                      </span>
+                    </td>
+                    <td className="action-buttons">
+                      <button className="view-btn" title="View Details" onClick={() => viewDeal(deal)}>
+                        <FontAwesomeIcon icon={faEye} />
+                      </button>
+                      <button className="edit-btn" title="Edit Deal" onClick={() => editDeal(deal)}>
+                        <FontAwesomeIcon icon={faCog} />
+                      </button>
+                      <button 
+                        className={deal.isActive ? "deactivate-btn" : "activate-btn"} 
+                        title={deal.isActive ? "Deactivate Deal" : "Activate Deal"}
+                        onClick={() => toggleDealStatus(deal._id, deal.isActive)}
+                      >
+                        <FontAwesomeIcon icon={deal.isActive ? faExchangeAlt : faPercent} />
+                      </button>
+                      <button className="delete-btn" title="Delete Deal" onClick={() => deleteDeal(deal._id)}>
+                        <FontAwesomeIcon icon={faSignOutAlt} />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="11" className="no-data">No deals found</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Deal Modal for Create/Edit */}
+        {showDealModal && (
+          <div className="modal-overlay" onClick={() => setShowDealModal(false)}>
+            <div className="profile-modal large-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <h2>
+                  <FontAwesomeIcon icon={faPercent} /> 
+                  {editingDeal ? 'Edit Deal' : 'Create New Deal'}
+                </h2>
+                <button className="close-btn" onClick={() => {
+                  setShowDealModal(false);
+                  resetDealForm();
+                }}>&times;</button>
+              </div>
+              <div className="modal-body">
+                <div className="form-row">
+                  <div className="form-group">
+                    <label><FontAwesomeIcon icon={faBoxOpen} /> Product</label>
+                    <select 
+                      name="productId" 
+                      value={dealForm.productId} 
+                      onChange={handleDealFormChange}
+                      required
+                    >
+                      <option value="">Select a product</option>
+                      {products && products.length > 0 ? (
+                        products.map(product => (
+                          <option key={product._id} value={product._id}>
+                            {product.name} - {formatPrice(product.price)}
+                          </option>
+                        ))
+                      ) : (
+                        <option disabled>No products available</option>
+                      )}
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label><FontAwesomeIcon icon={faPercent} /> Deal Title</label>
+                    <input 
+                      type="text" 
+                      name="dealTitle" 
+                      value={dealForm.dealTitle} 
+                      onChange={handleDealFormChange}
+                      placeholder="e.g., Flash Sale, Weekend Deal" 
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label><FontAwesomeIcon icon={faMoneyBillWave} /> Original Price</label>
+                    <input 
+                      type="number" 
+                      name="originalPrice" 
+                      value={dealForm.originalPrice} 
+                      onChange={handleDealFormChange}
+                      placeholder="Original price" 
+                      step="0.01"
+                      min="0"
+                      required
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label><FontAwesomeIcon icon={faMoneyBillWave} /> Deal Price</label>
+                    <input 
+                      type="number" 
+                      name="dealPrice" 
+                      value={dealForm.dealPrice} 
+                      onChange={handleDealFormChange}
+                      placeholder="Deal price" 
+                      step="0.01"
+                      min="0"
+                      required
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label><FontAwesomeIcon icon={faPercent} /> Discount %</label>
+                    <input 
+                      type="number" 
+                      name="discountPercentage" 
+                      value={dealForm.discountPercentage} 
+                      onChange={handleDealFormChange}
+                      placeholder="Auto-calculated" 
+                      min="0"
+                      max="100"
+                      readOnly
+                    />
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label><FontAwesomeIcon icon={faBoxOpen} /> Deal Quantity</label>
+                    <input 
+                      type="number" 
+                      name="dealQuantity" 
+                      value={dealForm.dealQuantity} 
+                      onChange={handleDealFormChange}
+                      placeholder="Limited quantity for deal" 
+                      min="1"
+                      required
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label><FontAwesomeIcon icon={faPercent} /> Deal Type</label>
+                    <select 
+                      name="dealType" 
+                      value={dealForm.dealType} 
+                      onChange={handleDealFormChange}
+                    >
+                      <option value="flash">Flash Sale</option>
+                      <option value="daily">Daily Deal</option>
+                      <option value="weekend">Weekend Deal</option>
+                      <option value="limited">Limited Time</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label><FontAwesomeIcon icon={faCalendar} /> Start Date & Time</label>
+                    <input 
+                      type="datetime-local" 
+                      name="startDate" 
+                      value={dealForm.startDate} 
+                      onChange={handleDealFormChange}
+                      required
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label><FontAwesomeIcon icon={faCalendar} /> End Date & Time</label>
+                    <input 
+                      type="datetime-local" 
+                      name="endDate" 
+                      value={dealForm.endDate} 
+                      onChange={handleDealFormChange}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label>
+                    <input 
+                      type="checkbox" 
+                      name="isActive" 
+                      checked={dealForm.isActive} 
+                      onChange={handleDealFormChange}
+                    />
+                    <span style={{ marginLeft: '8px' }}>Active Deal</span>
+                  </label>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button className="cancel-btn" onClick={() => {
+                  setShowDealModal(false);
+                  resetDealForm();
+                }}>Cancel</button>
+                <button className="save-btn" onClick={saveDeal}>
+                  <FontAwesomeIcon icon={faPercent} /> {editingDeal ? 'Update' : 'Create'} Deal
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Deal View Modal */}
+        {showDealViewModal && selectedDeal && (
+          <div className="modal-overlay" onClick={() => setShowDealViewModal(false)}>
+            <div className="profile-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <h2><FontAwesomeIcon icon={faPercent} /> Deal Details</h2>
+                <button className="close-btn" onClick={() => setShowDealViewModal(false)}>&times;</button>
+              </div>
+              <div className="modal-body">
+                <div className="deal-details">
+                  <div className="detail-row">
+                    <strong>Deal Title:</strong> {selectedDeal.dealTitle}
+                  </div>
+                  <div className="detail-row">
+                    <strong>Product:</strong> {selectedDeal.productId?.name || 'Unknown Product'}
+                  </div>
+                  <div className="detail-row">
+                    <strong>Original Price:</strong> {formatPrice(selectedDeal.originalPrice)}
+                  </div>
+                  <div className="detail-row">
+                    <strong>Deal Price:</strong> 
+                    <span style={{color: '#28a745', fontWeight: 'bold'}}>
+                      {formatPrice(selectedDeal.dealPrice)}
+                    </span>
+                  </div>
+                  <div className="detail-row">
+                    <strong>Discount:</strong> 
+                    <span style={{color: '#dc3545', fontWeight: 'bold'}}>
+                      -{selectedDeal.discountPercentage}%
+                    </span>
+                  </div>
+                  <div className="detail-row">
+                    <strong>Deal Quantity:</strong> {selectedDeal.dealQuantity}
+                  </div>
+                  <div className="detail-row">
+                    <strong>Deal Type:</strong> {selectedDeal.dealType.toUpperCase()}
+                  </div>
+                  <div className="detail-row">
+                    <strong>Start Date:</strong> {new Date(selectedDeal.startDate).toLocaleString()}
+                  </div>
+                  <div className="detail-row">
+                    <strong>End Date:</strong> {new Date(selectedDeal.endDate).toLocaleString()}
+                  </div>
+                  <div className="detail-row">
+                    <strong>Status:</strong> 
+                    <span className={selectedDeal.isActive ? 'badge admin' : 'badge user'}>
+                      {selectedDeal.isActive ? 'Active' : 'Inactive'}
+                    </span>
+                  </div>
+                  <div className="detail-row">
+                    <strong>Created:</strong> {new Date(selectedDeal.createdAt).toLocaleString()}
+                  </div>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button className="cancel-btn" onClick={() => setShowDealViewModal(false)}>Close</button>
+                <button className="save-btn" onClick={() => {
+                  setShowDealViewModal(false);
+                  editDeal(selectedDeal);
+                }}>
+                  <FontAwesomeIcon icon={faCog} /> Edit Deal
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const renderUsers = () => (
     <div className="module-content">
@@ -1576,6 +2481,9 @@ const AdminDashboard = () => {
           </button>
           <button className="refresh-btn" onClick={fetchUsers}>
             <FontAwesomeIcon icon={faChartLine} /> Refresh
+          </button>
+          <button className="primary-btn" onClick={() => generateUsersReport()}>
+            <FontAwesomeIcon icon={faFilePdf} /> Download Report
           </button>
         </div>
         <div className="search-container">
@@ -2053,6 +2961,7 @@ const AdminDashboard = () => {
               <th>Stock</th>
               <th>Rating</th>
               <th>Featured</th>
+              <th>New Arrival</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -2078,7 +2987,7 @@ const AdminDashboard = () => {
                   <td>{product.name}</td>
                   <td><span className="badge category">{product.category}</span></td>
                   <td>{product.brand}</td>
-                  <td>{formatCurrency(product.price)}</td>
+                  <td>{formatAdminPrice(product.price)}</td>
                   <td>
                     <span className={product.stock < 10 ? 'badge low-stock' : 'badge in-stock'}>
                       {product.stock}
@@ -2097,6 +3006,15 @@ const AdminDashboard = () => {
                       <span className="badge regular">Regular</span>
                     )}
                   </td>
+                  <td>
+                    <button 
+                      onClick={() => toggleNewArrival(product._id, product.isNewArrival)}
+                      className={`new-arrival-btn ${product.isNewArrival ? 'active' : ''}`}
+                      title={product.isNewArrival ? 'Remove from New Arrivals' : 'Mark as New Arrival'}
+                    >
+                      {product.isNewArrival ? '✓ New' : '+ New'}
+                    </button>
+                  </td>
                   <td className="action-buttons">
                     <button className="view-btn" title="View Details" onClick={() => viewProduct(product)}>
                       <FontAwesomeIcon icon={faEye} />
@@ -2112,7 +3030,7 @@ const AdminDashboard = () => {
               ))
             ) : (
               <tr>
-                <td colSpan="9" className="no-data">No products found</td>
+                <td colSpan="10" className="no-data">No products found</td>
               </tr>
             )}
           </tbody>
@@ -2300,7 +3218,7 @@ const AdminDashboard = () => {
                   <strong>Brand:</strong> {selectedProduct.brand}
                 </div>
                 <div className="detail-row">
-                  <strong>Price:</strong> <span style={{color: '#2e8b57', fontWeight: 'bold'}}>{formatCurrency(selectedProduct.price)}</span>
+                  <strong>Price:</strong> <span style={{color: '#2e8b57', fontWeight: 'bold'}}>{formatAdminPrice(selectedProduct.price)}</span>
                 </div>
                 <div className="detail-row">
                   <strong>Stock:</strong> 
@@ -2486,7 +3404,7 @@ const AdminDashboard = () => {
                       <td>{o.customer?.email || '-'}</td>
                       <td>{o.customer?.phone || '-'}</td>
                       <td>{new Date(o.createdAt).toLocaleString()}</td>
-                      <td>{formatCurrency(o.totals?.total)}</td>
+                      <td>{formatAdminPrice(o.totals?.total)}</td>
                       <td className="action-buttons">
                         <button
                           className="view-btn"
@@ -2584,7 +3502,7 @@ const AdminDashboard = () => {
                     <p><strong>Order ID:</strong> {selectedOrder._id}</p>
                     <p><strong>Status:</strong> <span className={`badge ${selectedOrder.status}`}>{selectedOrder.status}</span></p>
                     <p><strong>Date:</strong> {new Date(selectedOrder.createdAt).toLocaleString()}</p>
-                    <p><strong>Total:</strong> {formatCurrency(selectedOrder.totals?.total)}</p>
+                    <p><strong>Total:</strong> {formatPrice(selectedOrder.totals?.total)}</p>
                   </div>
                 </div>
 
@@ -2634,8 +3552,8 @@ const AdminDashboard = () => {
                         <tr key={idx}>
                           <td>{it.name}</td>
                           <td>{it.quantity}</td>
-                          <td>{formatCurrency(it.price)}</td>
-                          <td>{formatCurrency(it.price * it.quantity)}</td>
+                          <td>{formatPrice(it.price)}</td>
+                          <td>{formatPrice(it.price * it.quantity)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -2900,6 +3818,9 @@ const AdminDashboard = () => {
           <button className="refresh-btn" onClick={fetchAllReviews}>
             <FontAwesomeIcon icon={faSync} /> Refresh
           </button>
+          <button className="primary-btn" onClick={() => generateReviewsReport()}>
+            <FontAwesomeIcon icon={faFilePdf} /> Download Reviews Report
+          </button>
         </div>
         <div className="filter-group">
           <select 
@@ -3163,6 +4084,9 @@ const AdminDashboard = () => {
             </li>
             <li className={activeModule === 'financial' ? 'active' : ''} onClick={() => setActiveModule('financial')}>
               <FontAwesomeIcon icon={faMoneyBillWave} /> Financial & Promotions
+            </li>
+            <li className={activeModule === 'daily-deals' ? 'active' : ''} onClick={() => setActiveModule('daily-deals')}>
+              <FontAwesomeIcon icon={faPercent} /> Daily Deals
             </li>
             <li className={activeModule === 'reviews' ? 'active' : ''} onClick={() => setActiveModule('reviews')}>
               <FontAwesomeIcon icon={faStar} /> Reviews & Ratings

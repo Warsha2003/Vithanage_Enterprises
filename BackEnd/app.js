@@ -87,6 +87,12 @@ app.use('/api/promotions', promotionRoutes);
 // Supplier routes
 const supplierRoutes = require('./Routes/supplierRoutes');
 app.use('/api/suppliers', supplierRoutes);
+// Best sellers routes
+const bestSellersRoutes = require('./Routes/bestSellersRoutes');
+app.use('/api/best-sellers', bestSellersRoutes);
+// Daily deals routes
+const dailyDealRoutes = require('./Routes/dailyDealRoutes');
+app.use('/api/deals', dailyDealRoutes);
 
 mongoose.connect("mongodb+srv://admin:V2ft5D1dbTssVJzR@cluster0.fq7u6hk.mongodb.net/test")
 .then(()=> {

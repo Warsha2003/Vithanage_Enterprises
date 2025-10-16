@@ -1,0 +1,590 @@
+/* How to Buy Page Styles */
+.how-to-buy-page {
+  min-height: 100vh;
+  font-family: var(--font-primary);
+}
+
+.htb-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+/* Hero Section */
+.htb-hero {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 6rem 0 4rem;
+  text-align: center;
+}
+
+.htb-hero h1 {
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  font-weight: 800;
+  margin-bottom: 1rem;
+  font-family: var(--font-secondary);
+}
+
+.htb-hero p {
+  font-size: 1.3rem;
+  opacity: 0.9;
+}
+
+/* Steps Section */
+.htb-steps {
+  padding: 6rem 0;
+  background: #f8f9fa;
+}
+
+.htb-steps h2 {
+  text-align: center;
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 4rem;
+  font-family: var(--font-secondary);
+}
+
+.steps-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+}
+
+.step-card {
+  background: white;
+  padding: 2.5rem 2rem;
+  border-radius: 15px;
+  text-align: center;
+  position: relative;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+}
+
+.step-card:hover {
+  transform: translateY(-5px);
+  border-color: var(--primary-color);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+}
+
+.step-number {
+  position: absolute;
+  top: -15px;
+  right: 20px;
+  background: var(--primary-color);
+  color: white;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.2rem;
+}
+
+.step-icon {
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1.5rem;
+  color: white;
+  font-size: 2rem;
+}
+
+.step-card h3 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+}
+
+.step-card p {
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+/* Payment Section */
+.htb-payment {
+  padding: 6rem 0;
+  background: white;
+}
+
+.htb-payment h2 {
+  text-align: center;
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 4rem;
+  font-family: var(--font-secondary);
+}
+
+.payment-content {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 4rem;
+  align-items: center;
+}
+
+.payment-info h3 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 2rem;
+}
+
+.payment-info ul {
+  list-style: none;
+  padding: 0;
+}
+
+.payment-info li {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.8rem 0;
+  font-size: 1.1rem;
+  color: var(--text-secondary);
+}
+
+.payment-info li svg {
+  color: #28a745;
+  font-size: 1.2rem;
+}
+
+.payment-security {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: #f8f9fa;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.payment-security svg {
+  color: #28a745;
+  font-size: 1.5rem;
+}
+
+.payment-security span {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.payment-visual {
+  text-align: center;
+}
+
+.payment-cards {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  padding: 3rem;
+  border-radius: 15px;
+}
+
+.payment-cards p {
+  margin-top: 1.5rem;
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+/* Delivery Section */
+.htb-delivery {
+  padding: 6rem 0;
+  background: #f8f9fa;
+}
+
+.htb-delivery h2 {
+  text-align: center;
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 4rem;
+  font-family: var(--font-secondary);
+}
+
+.delivery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+  margin-bottom: 3rem;
+}
+
+.delivery-card {
+  background: white;
+  padding: 2.5rem 2rem;
+  border-radius: 15px;
+  text-align: center;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.delivery-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 20px 35px rgba(0, 0, 0, 0.15);
+}
+
+.delivery-icon {
+  font-size: 3rem;
+  color: var(--primary-color);
+  margin-bottom: 1.5rem;
+}
+
+.delivery-card h3 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+}
+
+.delivery-time {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  color: var(--text-secondary);
+}
+
+.delivery-cost {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--primary-color);
+}
+
+.delivery-note {
+  text-align: center;
+  background: white;
+  padding: 2rem;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+}
+
+.delivery-note svg {
+  color: var(--primary-color);
+  font-size: 1.5rem;
+}
+
+.delivery-note p {
+  margin: 0;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* Tips Section */
+.htb-tips {
+  padding: 6rem 0;
+  background: white;
+}
+
+.htb-tips h2 {
+  text-align: center;
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 4rem;
+  font-family: var(--font-secondary);
+}
+
+.tips-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+}
+
+.tip-card {
+  background: #f8f9fa;
+  padding: 2.5rem 2rem;
+  border-radius: 15px;
+  text-align: center;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+}
+
+.tip-card:hover {
+  border-color: var(--primary-color);
+  transform: translateY(-3px);
+}
+
+.tip-icon {
+  width: 70px;
+  height: 70px;
+  background: var(--primary-color);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1.5rem;
+  color: white;
+  font-size: 1.8rem;
+}
+
+.tip-card h3 {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+}
+
+.tip-card p {
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+/* Returns Section */
+.htb-returns {
+  padding: 6rem 0;
+  background: #f8f9fa;
+}
+
+.returns-content {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 3rem;
+  align-items: center;
+}
+
+.returns-icon {
+  color: var(--primary-color);
+}
+
+.returns-info h2 {
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 1.5rem;
+  font-family: var(--font-secondary);
+}
+
+.returns-info p {
+  font-size: 1.1rem;
+  line-height: 1.7;
+  color: var(--text-secondary);
+  margin-bottom: 2rem;
+}
+
+.returns-info ul {
+  list-style: none;
+  padding: 0;
+}
+
+.returns-info li {
+  padding: 0.5rem 0;
+  font-size: 1rem;
+  color: var(--text-secondary);
+  position: relative;
+  padding-left: 1.5rem;
+}
+
+.returns-info li::before {
+  content: '✓';
+  position: absolute;
+  left: 0;
+  color: #28a745;
+  font-weight: bold;
+}
+
+/* Support Section */
+.htb-support {
+  padding: 6rem 0;
+  background: white;
+}
+
+.support-content {
+  text-align: center;
+}
+
+.support-content h2 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+  font-family: var(--font-secondary);
+}
+
+.support-content p {
+  font-size: 1.2rem;
+  color: var(--text-secondary);
+  margin-bottom: 3rem;
+}
+
+.support-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 2rem;
+}
+
+.support-card {
+  background: #f8f9fa;
+  padding: 2.5rem 2rem;
+  border-radius: 15px;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.support-card:hover {
+  background: var(--primary-color);
+  color: white;
+  transform: translateY(-5px);
+}
+
+.support-card svg {
+  font-size: 2.5rem;
+  margin-bottom: 1.5rem;
+  color: var(--primary-color);
+  transition: color 0.3s ease;
+}
+
+.support-card:hover svg {
+  color: white;
+}
+
+.support-card h3 {
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  color: var(--text-primary);
+  transition: color 0.3s ease;
+}
+
+.support-card:hover h3 {
+  color: white;
+}
+
+.support-card p {
+  color: var(--text-secondary);
+  transition: color 0.3s ease;
+}
+
+.support-card:hover p {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* CTA Section */
+.htb-cta {
+  padding: 6rem 0;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  text-align: center;
+}
+
+.htb-cta h2 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  font-family: var(--font-secondary);
+}
+
+.htb-cta p {
+  font-size: 1.2rem;
+  margin-bottom: 3rem;
+  opacity: 0.9;
+}
+
+.cta-buttons {
+  display: flex;
+  gap: 1.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.cta-primary, .cta-secondary {
+  padding: 1rem 2.5rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 150px;
+}
+
+.cta-primary {
+  background: white;
+  color: var(--primary-color);
+}
+
+.cta-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(255, 255, 255, 0.3);
+}
+
+.cta-secondary {
+  background: transparent;
+  color: white;
+  border: 2px solid white;
+}
+
+.cta-secondary:hover {
+  background: white;
+  color: var(--primary-color);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .htb-hero {
+    padding: 4rem 0 3rem;
+  }
+  
+  .payment-content {
+    grid-template-columns: 1fr;
+    gap: 3rem;
+  }
+  
+  .returns-content {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    text-align: center;
+  }
+  
+  .steps-grid,
+  .delivery-grid,
+  .tips-grid,
+  .support-options {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  
+  .htb-steps,
+  .htb-payment,
+  .htb-delivery,
+  .htb-tips,
+  .htb-returns,
+  .htb-support,
+  .htb-cta {
+    padding: 4rem 0;
+  }
+  
+  .cta-buttons {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .cta-primary, .cta-secondary {
+    width: 100%;
+    max-width: 300px;
+  }
+}
+
+@media (max-width: 480px) {
+  .htb-container {
+    padding: 0 1rem;
+  }
+  
+  .step-card,
+  .delivery-card,
+  .tip-card,
+  .support-card {
+    padding: 2rem 1.5rem;
+  }
+}

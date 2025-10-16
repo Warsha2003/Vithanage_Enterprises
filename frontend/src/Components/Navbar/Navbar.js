@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faShoppingCart, faUser, faSignOutAlt, faSignInAlt, faSearch, faBars, faTimes, faFire, faTag, faStar, faGift } from '@fortawesome/free-solid-svg-icons';
 import { useCart } from '../Cart/CartContext';
 import { useSettings } from '../../contexts/SettingsContext';
+import CurrencySelector from '../Common/CurrencySelector';
 import './Navbar.css';
 
 function Navbar() {
@@ -29,11 +30,46 @@ function Navbar() {
         console.error("Failed to parse user data", error);
         handleLogout();
       }
+    } else {
+      // Ensure user state is null if no stored data
+      setUser(null);
+      setShowUserMenu(false);
     }
     
     // Fetch categories for navigation
     fetchCategories();
   }, []);
+  
+  // Listen for storage changes and token removal
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const storedUser = localStorage.getItem('user') || sessionStorage.getItem('user');
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      
+      if (!storedUser || !token) {
+        setUser(null);
+        setShowUserMenu(false);
+        setShowMobileMenu(false);
+      }
+    };
+    
+    // Check periodically for token removal (especially for admin logout)
+    const tokenCheckInterval = setInterval(() => {
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      if (!token && user) {
+        setUser(null);
+        setShowUserMenu(false);
+        setShowMobileMenu(false);
+      }
+    }, 1000);
+    
+    window.addEventListener('storage', handleStorageChange);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(tokenCheckInterval);
+    };
+  }, [user]);
 
   // Update cart count from Cart context
   useEffect(() => {
@@ -86,6 +122,13 @@ function Navbar() {
   };
 
   const handleLogout = () => {
+    const isAdmin = user?.isAdmin;
+    
+    // Clear user state first
+    setUser(null);
+    setShowUserMenu(false);
+    setShowMobileMenu(false);
+    
     // Clear auth data
     localStorage.removeItem('token');
     localStorage.removeItem('user');
@@ -95,17 +138,19 @@ function Navbar() {
     // Clear cart count in UI
     setCartCount(0);
     
-    // Clear user state
-    setUser(null);
-    setShowUserMenu(false);
-    
     // Trigger cart update events to clear cart counts in all components
     if (window.clearCartOnLogout) {
       window.clearCartOnLogout();
     }
     
-    // Redirect to login page
-    navigate('/login');
+    // Different handling for admin vs regular user
+    if (isAdmin) {
+      // For admin, force immediate redirect to ensure clean state
+      window.location.replace('/');
+    } else {
+      // For regular users, use normal navigation
+      navigate('/');
+    }
   };
 
   return (
@@ -140,7 +185,7 @@ function Navbar() {
           {/* Right Side Actions */}
           <div className="navbar-actions">
             {/* User Menu */}
-            {user ? (
+            {user && localStorage.getItem('token') ? (
               <div 
                 className="user-wrapper"
                 onClick={() => setShowUserMenu(!showUserMenu)}
@@ -150,10 +195,22 @@ function Navbar() {
                   <span className="user-greeting">Hello, {user.name}</span>
                   <span className="user-account">Account & Lists</span>
                 </div>
-                {showUserMenu && (
+                {showUserMenu && user && localStorage.getItem('token') && (
                   <div className="user-dropdown">
-                    <Link to="/my-orders" className="dropdown-item">My Orders</Link>
-                    {user && <Link to="/my-reviews" className="dropdown-item">My Reviews</Link>}
+                    <Link to="/my-profile" className="dropdown-item">My Profile</Link>
+                    {!user.isAdmin && (
+                      <>
+                        <Link to="/my-orders" className="dropdown-item">My Orders</Link>
+                        <Link to="/my-reviews" className="dropdown-item">My Reviews</Link>
+                      </>
+                    )}
+                    <hr className="dropdown-divider" />
+                    <div className="dropdown-item currency-container">
+                      <CurrencySelector inline={true} />
+                    </div>
+                    <hr className="dropdown-divider" />
+                    <Link to="/privacy-policy" className="dropdown-item">Privacy Policy</Link>
+                    <Link to="/legal-information" className="dropdown-item">Legal Information</Link>
                     {user?.isAdmin && <Link to="/admin" className="dropdown-item admin-link">Admin Dashboard</Link>}
                     <hr className="dropdown-divider" />
                     <button onClick={handleLogout} className="dropdown-item logout-btn">
@@ -205,15 +262,15 @@ function Navbar() {
               <FontAwesomeIcon icon={faFire} />
               Home
             </Link>
-            <Link to="/products?featured=true" className="secondary-link">
+            <Link to="/best-sellers" className="secondary-link">
               <FontAwesomeIcon icon={faStar} />
               Best Sellers
             </Link>
-            <Link to="/products?sale=true" className="secondary-link sale-link">
+            <Link to="/todays-deals" className="secondary-link sale-link">
               <FontAwesomeIcon icon={faTag} />
               Today's Deals
             </Link>
-            <Link to="/products?new=true" className="secondary-link">
+            <Link to="/new-arrivals" className="secondary-link">
               <FontAwesomeIcon icon={faGift} />
               New Arrivals
             </Link>
@@ -246,11 +303,11 @@ function Navbar() {
           
           <div className="mobile-menu-content">
             <Link to="/" onClick={() => setShowMobileMenu(false)}>Home</Link>
-            <Link to="/products?featured=true" onClick={() => setShowMobileMenu(false)}>Best Sellers</Link>
-            <Link to="/products?sale=true" onClick={() => setShowMobileMenu(false)}>Today's Deals</Link>
-            <Link to="/products?new=true" onClick={() => setShowMobileMenu(false)}>New Arrivals</Link>
-            <Link to="/my-orders" onClick={() => setShowMobileMenu(false)}>My Orders</Link>
-            {user && <Link to="/my-reviews" onClick={() => setShowMobileMenu(false)}>My Reviews</Link>}
+            <Link to="/best-sellers" onClick={() => setShowMobileMenu(false)}>Best Sellers</Link>
+            <Link to="/todays-deals" onClick={() => setShowMobileMenu(false)}>Today's Deals</Link>
+            <Link to="/new-arrivals" onClick={() => setShowMobileMenu(false)}>New Arrivals</Link>
+            {user && !user.isAdmin && <Link to="/my-orders" onClick={() => setShowMobileMenu(false)}>My Orders</Link>}
+            {user && !user.isAdmin && <Link to="/my-reviews" onClick={() => setShowMobileMenu(false)}>My Reviews</Link>}
             {user?.isAdmin && <Link to="/admin" onClick={() => setShowMobileMenu(false)}>Admin</Link>}
             
             <hr />

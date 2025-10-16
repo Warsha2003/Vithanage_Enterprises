@@ -6,11 +6,13 @@ import {
   faBuilding
 } from '@fortawesome/free-solid-svg-icons';
 import { useSettings } from '../../contexts/SettingsContext';
+import { useCurrency } from '../../contexts/CurrencyContext';
 import './FinancialManagement.css';
 import SupplierManagement from './SupplierManagement';
 
 const FinancialManagement = () => {
   const { settings, formatCurrency } = useSettings();
+  const { formatPrice } = useCurrency();
   const [promotions, setPromotions] = useState([]);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -327,7 +329,7 @@ const FinancialManagement = () => {
     if (promotion.type === 'percentage') {
       return `${promotion.discountValue}%`;
     } else if (promotion.type === 'fixed_amount') {
-      return formatCurrency(promotion.discountValue);
+      return formatPrice(promotion.discountValue);
     } else if (promotion.type === 'free_shipping') {
       return 'Free Shipping';
     }
@@ -588,7 +590,7 @@ const FinancialManagement = () => {
                     {promotion.minimumOrderValue > 0 && (
                       <div className="detail-row">
                         <span className="label">Min Order:</span>
-                        <span className="value">{formatCurrency(promotion.minimumOrderValue)}</span>
+                        <span className="value">{formatPrice(promotion.minimumOrderValue)}</span>
                       </div>
                     )}
                   </div>
@@ -855,7 +857,7 @@ const FinancialManagement = () => {
                             />
                             <div className="product-info">
                               <span className="product-name">{product.name}</span>
-                              <span className="product-price">{formatCurrency(product.price)}</span>
+                              <span className="product-price">{formatPrice(product.price)}</span>
                               <span className="product-category">{product.category}</span>
                             </div>
                           </label>

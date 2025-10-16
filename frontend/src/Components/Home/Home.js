@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSettings } from '../../contexts/SettingsContext';
+import { useCurrency } from '../../contexts/CurrencyContext';
 import './Home.css';
 
 function Home() {
@@ -12,7 +13,8 @@ function Home() {
   const [loading, setLoading] = useState(true);
   const [currentCategoryPage, setCurrentCategoryPage] = useState(0);
   const navigate = useNavigate();
-  const { formatCurrency, settings } = useSettings();
+  const { settings } = useSettings();
+  const { formatPrice } = useCurrency();
   
   useEffect(() => {
     fetchHomeData();
@@ -37,8 +39,22 @@ function Home() {
       const trending = allProducts.filter(product => (product.rating || 4) >= 4.0).slice(0, 6);
       setTrendingProducts(trending);
       
-      // Get new arrivals (last 6 products added)
-      setNewArrivals(allProducts.slice(-6).reverse());
+      // Fetch new arrivals from dedicated API endpoint (products marked by admin)
+      try {
+        console.log('🆕 Fetching new arrivals from dedicated API...');
+        const newArrivalsResponse = await fetch('http://localhost:5000/api/products/new-arrivals');
+        if (newArrivalsResponse.ok) {
+          const newArrivalsData = await newArrivalsResponse.json();
+          console.log('✅ New arrivals fetched:', newArrivalsData.length);
+          setNewArrivals(newArrivalsData.slice(0, 6)); // Show only 6 on home page
+        } else {
+          console.warn('⚠️ New arrivals API failed, falling back to recent products');
+          setNewArrivals(allProducts.slice(-6).reverse());
+        }
+      } catch (error) {
+        console.error('❌ Error fetching new arrivals:', error);
+        setNewArrivals(allProducts.slice(-6).reverse()); // Fallback to recent products
+      }
       
       // Fetch promotions
       try {
@@ -256,7 +272,7 @@ function Home() {
             if (promotion.type === 'percentage') {
               return `${promotion.discountValue}% OFF`;
             } else if (promotion.type === 'fixed_amount') {
-              return `${formatCurrency(promotion.discountValue)} OFF`;
+              return `${formatPrice(promotion.discountValue)} OFF`;
             } else if (promotion.type === 'free_shipping') {
               return 'FREE SHIPPING';
             } else {
@@ -313,7 +329,7 @@ function Home() {
                 </div>
                 {promotion.minimumOrderValue > 0 && (
                   <small className="promo-min-order">
-                    Min order: {formatCurrency(promotion.minimumOrderValue)}
+                    Min order: {formatPrice(promotion.minimumOrderValue)}
                   </small>
                 )}
               </div>
@@ -358,7 +374,7 @@ function Home() {
               <div className="promo-icon">🚚</div>
               <div className="promo-content">
                 <h3>Free Shipping</h3>
-                <p>On orders over {formatCurrency(settings.freeShippingThreshold || 100)}</p>
+                <p>On orders over {formatPrice(settings.freeShippingThreshold || 100)}</p>
                 <span className="promo-discount">FREE DELIVERY</span>
                 <div className="promo-code-container">
                   <div className="promo-code">Code: FREESHIP</div>
@@ -443,7 +459,7 @@ function Home() {
               if (promotion.type === 'percentage') {
                 return `${promotion.discountValue}% OFF`;
               } else if (promotion.type === 'fixed_amount') {
-                return `${formatCurrency(promotion.discountValue)} OFF`;
+                return `${formatPrice(promotion.discountValue)} OFF`;
               } else if (promotion.type === 'free_shipping') {
                 return 'FREE SHIPPING';
               } else {
@@ -461,7 +477,7 @@ function Home() {
                   <div className="promo-code">Code: {promotion.code}</div>
                   {promotion.minimumOrderValue > 0 && (
                     <small className="promo-min-order">
-                      Min order: {formatCurrency(promotion.minimumOrderValue)}
+                      Min order: {formatPrice(promotion.minimumOrderValue)}
                     </small>
                   )}
                 </div>
@@ -487,7 +503,7 @@ function Home() {
             <div className="promo-icon">🚚</div>
             <div className="promo-content">
               <h3>Free Shipping</h3>
-              <p>On orders over {formatCurrency(settings.freeShippingThreshold || 100)}</p>
+              <p>On orders over {formatPrice(settings.freeShippingThreshold || 100)}</p>
               <span className="promo-discount">FREE DELIVERY</span>
               <div className="promo-code">Code: FREESHIP</div>
             </div>
@@ -564,32 +580,40 @@ function Home() {
           <h2>🔥 Featured Products</h2>
           <p>Hand-picked items just for you</p>
         </div>
-        <div className="products-grid">
+        <div className="home-products-grid">
           {featuredProducts.map((product) => (
             <div 
               key={product._id}
-              className="product-card featured"
+              className="home-product-card home-featured"
               onClick={() => handleProductClick(product._id)}
             >
-              <div className="product-image">
+              <div className="home-product-image">
                 <img 
                   src={product.imageUrl || product.image || 'https://via.placeholder.com/250x200/FF9F43/FFFFFF?text=No+Image'} 
                   alt={product.name}
+                  onError={(e) => {
+                    e.target.src = 'https://via.placeholder.com/200x200?text=No+Image';
+                    e.target.style.objectFit = 'contain';
+                  }}
+                  onLoad={(e) => {
+                    e.target.style.opacity = '1';
+                  }}
+                  style={{ opacity: 0, transition: 'opacity 0.3s ease' }}
                 />
-                <div className="product-badge featured">Featured</div>
-                <div className="product-overlay">
-                  <button className="quick-view">Quick View</button>
+                <div className="home-product-badge home-featured-badge">Featured</div>
+                <div className="home-product-overlay">
+                  <button className="home-quick-view">Quick View</button>
                 </div>
               </div>
-              <div className="product-info">
+              <div className="home-product-info">
                 <h3>{product.name}</h3>
-                <p className="product-category">{product.category}</p>
-                <div className="product-rating">
+                <p className="home-product-category">{product.category}</p>
+                <div className="home-product-rating">
                   {'★'.repeat(Math.floor(product.rating || 4))}
-                  <span className="rating-text">({product.rating || 4.0})</span>
+                  <span className="home-rating-text">({product.rating || 4.0})</span>
                 </div>
-                <div className="product-price">
-                  <span className="current-price">{formatCurrency(product.price)}</span>
+                <div className="home-product-price">
+                  <span className="home-current-price">{formatPrice(product.price)}</span>
                 </div>
               </div>
             </div>
@@ -608,28 +632,36 @@ function Home() {
           <h2>🚀 Trending Now</h2>
           <p>Most popular items this week</p>
         </div>
-        <div className="products-grid trending">
+        <div className="home-products-grid home-trending">
           {trendingProducts.map((product) => (
             <div 
               key={product._id}
-              className="product-card trending"
+              className="home-product-card home-trending"
               onClick={() => handleProductClick(product._id)}
             >
-              <div className="product-image">
+              <div className="home-product-image">
                 <img 
                   src={product.imageUrl || product.image || 'https://via.placeholder.com/250x200/2ECC71/FFFFFF?text=No+Image'} 
                   alt={product.name}
+                  onError={(e) => {
+                    e.target.src = 'https://via.placeholder.com/200x200?text=No+Image';
+                    e.target.style.objectFit = 'contain';
+                  }}
+                  onLoad={(e) => {
+                    e.target.style.opacity = '1';
+                  }}
+                  style={{ opacity: 0, transition: 'opacity 0.3s ease' }}
                 />
-                <div className="product-badge trending">Trending</div>
+                <div className="home-product-badge home-trending-badge">Trending</div>
               </div>
-              <div className="product-info">
+              <div className="home-product-info">
                 <h3>{product.name}</h3>
-                <div className="product-rating">
+                <div className="home-product-rating">
                   {'★'.repeat(Math.floor(product.rating || 4))}
-                  <span className="rating-text">({product.rating || 4.0})</span>
+                  <span className="home-rating-text">({product.rating || 4.0})</span>
                 </div>
-                <div className="product-price">
-                  <span className="current-price">{formatCurrency(product.price)}</span>
+                <div className="home-product-price">
+                  <span className="home-current-price">{formatPrice(product.price)}</span>
                 </div>
               </div>
             </div>
@@ -643,24 +675,37 @@ function Home() {
           <h2>✨ New Arrivals</h2>
           <p>Fresh products just added to our collection</p>
         </div>
-        <div className="products-grid new-arrivals">
+        <div className="home-products-grid home-new-arrivals">
           {newArrivals.map((product) => (
             <div 
               key={product._id}
-              className="product-card new"
+              className="home-product-card home-new"
               onClick={() => handleProductClick(product._id)}
             >
-              <div className="product-image">
+              <div className="home-product-image">
                 <img 
                   src={product.imageUrl || product.image || 'https://via.placeholder.com/250x200/9B59B6/FFFFFF?text=No+Image'} 
                   alt={product.name}
+                  onError={(e) => {
+                    e.target.src = 'https://via.placeholder.com/200x200?text=No+Image';
+                    e.target.style.objectFit = 'contain';
+                  }}
+                  onLoad={(e) => {
+                    e.target.style.opacity = '1';
+                  }}
+                  style={{ opacity: 0, transition: 'opacity 0.3s ease' }}
                 />
-                <div className="product-badge new">New</div>
+                <div className="home-product-badge home-new-badge">New</div>
               </div>
-              <div className="product-info">
+              <div className="home-product-info">
                 <h3>{product.name}</h3>
-                <div className="product-price">
-                  <span className="current-price">{formatCurrency(product.price)}</span>
+                <p className="home-product-category">{product.category}</p>
+                <div className="home-product-rating">
+                  {'★'.repeat(Math.floor(product.rating || 4))}
+                  <span className="home-rating-text">({product.rating || 4.0})</span>
+                </div>
+                <div className="home-product-price">
+                  <span className="home-current-price">{formatPrice(product.price)}</span>
                 </div>
               </div>
             </div>

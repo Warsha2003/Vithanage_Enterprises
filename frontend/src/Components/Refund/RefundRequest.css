@@ -237,6 +237,30 @@
     line-height: 1.5;
 }
 
+/* Readonly field styling */
+.readonly-field {
+    background-color: #f8f9fa !important;
+    border: 2px solid #e9ecef !important;
+    color: #495057 !important;
+    cursor: not-allowed !important;
+    opacity: 0.8;
+    font-weight: 600;
+}
+
+.readonly-field:focus {
+    box-shadow: none !important;
+    border-color: #e9ecef !important;
+}
+
+.amount-note {
+    color: #28a745;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     .refund-modal {

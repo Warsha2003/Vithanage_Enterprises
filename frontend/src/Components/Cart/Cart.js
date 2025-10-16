@@ -12,6 +12,7 @@ import {
 import './Cart.css';
 import CartItem from './CartItem';
 import { useSettings } from '../../contexts/SettingsContext';
+import { useCurrency } from '../../contexts/CurrencyContext';
 
 const Cart = () => {
   const [loading, setLoading] = useState(true);
@@ -20,7 +21,8 @@ const Cart = () => {
   const [cartTotal, setCartTotal] = useState(0);
   const navigate = useNavigate();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const { formatCurrency, settings, getShippingCost, isFreeShippingEligible } = useSettings();
+  const { settings, getShippingCost, isFreeShippingEligible } = useSettings();
+  const { formatPrice } = useCurrency();
 
   useEffect(() => {
     const token = localStorage.getItem('token') || sessionStorage.getItem('token');
@@ -337,7 +339,7 @@ const Cart = () => {
                 
                 <div className="summary-row">
                   <span>Subtotal:</span>
-                  <span>{formatCurrency(cartTotal)}</span>
+                  <span>{formatPrice(cartTotal)}</span>
                 </div>
                 
                 <div className="summary-row">
@@ -345,7 +347,7 @@ const Cart = () => {
                   <span>
                     {isFreeShippingEligible(cartTotal) ? 
                       'Free' : 
-                      formatCurrency(getShippingCost(cartTotal))
+                      formatPrice(getShippingCost(cartTotal))
                     }
                   </span>
                 </div>
@@ -361,14 +363,14 @@ const Cart = () => {
                 {!isFreeShippingEligible(cartTotal) && (
                   <div className="shipping-notice">
                     <small style={{ color: '#6c757d' }}>
-                      Add {formatCurrency(settings.freeShippingThreshold - cartTotal)} more for free shipping
+                      Add {formatPrice(settings.freeShippingThreshold - cartTotal)} more for free shipping
                     </small>
                   </div>
                 )}
                 
                 <div className="summary-row total">
                   <span>Total:</span>
-                  <span>{formatCurrency(cartTotal + getShippingCost(cartTotal))}</span>
+                  <span>{formatPrice(cartTotal + getShippingCost(cartTotal))}</span>
                 </div>
                 
                 {isLoggedIn ? (

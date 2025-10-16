@@ -33,11 +33,17 @@ const userSchema = new mongoose.Schema({
     type: String
   },
   address: {
-    street: String,
-    city: String,
-    state: String,
-    postalCode: String,
-    country: String
+    type: String
+  },
+  city: {
+    type: String
+  },
+  postalCode: {
+    type: String
+  },
+  country: {
+    type: String,
+    default: 'Sri Lanka'
   },
   cart: [CartItemSchema],
   isAdmin: {
@@ -45,6 +51,10 @@ const userSchema = new mongoose.Schema({
     default: false
   },
   createdAt: {
+    type: Date,
+    default: Date.now
+  },
+  updatedAt: {
     type: Date,
     default: Date.now
   }

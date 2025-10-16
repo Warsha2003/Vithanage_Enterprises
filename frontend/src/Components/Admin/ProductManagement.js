@@ -169,6 +169,41 @@ const ProductManagement = () => {
       }
     }
   };
+
+  // Toggle New Arrival status
+  const toggleNewArrival = async (productId, currentStatus) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setError('You must be logged in to perform this action');
+        return;
+      }
+
+      const endpoint = currentStatus ? 'remove-new-arrival' : 'mark-new-arrival';
+      const response = await fetch(`http://localhost:5000/api/products/${productId}/${endpoint}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update new arrival status');
+      }
+
+      // Refresh product list to show updated status
+      fetchProducts();
+      
+      const action = currentStatus ? 'removed from' : 'marked as';
+      alert(`Product ${action} new arrivals successfully!`);
+      
+    } catch (err) {
+      setError(err.message);
+      alert(`Error: ${err.message}`);
+    }
+  };
   
   // Reset form and exit edit mode
   const resetForm = () => {
@@ -362,6 +397,7 @@ const ProductManagement = () => {
                     <th>Brand</th>
                     <th>Price</th>
                     <th>Stock</th>
+                    <th>New Arrival</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
@@ -373,6 +409,15 @@ const ProductManagement = () => {
                       <td>{product.brand}</td>
                       <td>{formatCurrency(product.price)}</td>
                       <td>{product.stock}</td>
+                      <td>
+                        <button 
+                          onClick={() => toggleNewArrival(product._id, product.isNewArrival)}
+                          className={`new-arrival-btn ${product.isNewArrival ? 'active' : ''}`}
+                          title={product.isNewArrival ? 'Remove from New Arrivals' : 'Mark as New Arrival'}
+                        >
+                          {product.isNewArrival ? '✓ New' : '+ New'}
+                        </button>
+                      </td>
                       <td className="action-buttons">
                         <button 
                           onClick={() => handleEdit(product)}

@@ -191,4 +191,97 @@ const getCurrentUser = async (req, res) => {
   }
 };
 
-module.exports = { register, login, getCurrentUser };
+// Update user profile
+const updateProfile = async (req, res) => {
+  try {
+    console.log('Profile update attempt received:', req.body);
+    const { name, email, phone, address, city, postalCode, country } = req.body;
+
+    // Check if it's a regular user request
+    if (req.user) {
+      // Check if email is being changed and if it already exists
+      if (email) {
+        const existingUser = await User.findOne({ email, _id: { $ne: req.user.id } });
+        const existingAdmin = await Admin.findOne({ email });
+        
+        if (existingUser || existingAdmin) {
+          return res.status(400).json({ message: 'Email already in use' });
+        }
+      }
+
+      const updatedUser = await User.findByIdAndUpdate(
+        req.user.id,
+        { 
+          name, 
+          email, 
+          phone, 
+          address, 
+          city, 
+          postalCode, 
+          country,
+          updatedAt: new Date()
+        },
+        { new: true, runValidators: true }
+      ).select('-password');
+
+      if (!updatedUser) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      console.log('User profile updated successfully:', updatedUser.email);
+      return res.json({ 
+        message: 'Profile updated successfully',
+        user: {
+          ...updatedUser._doc,
+          isAdmin: false
+        }
+      });
+    }
+    
+    return res.status(401).json({ message: 'Unauthorized' });
+  } catch (error) {
+    console.error('Profile update error:', error.message);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+// Change user password
+const changePassword = async (req, res) => {
+  try {
+    console.log('Password change attempt received');
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ message: 'Current and new password are required' });
+    }
+
+    // Check if it's a regular user request
+    if (req.user) {
+      const user = await User.findById(req.user.id);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      // Verify current password
+      const isMatch = await user.comparePassword(currentPassword);
+      if (!isMatch) {
+        return res.status(400).json({ message: 'Current password is incorrect' });
+      }
+
+      // Update password (hashing will be handled by the model's pre-save hook)
+      user.password = newPassword;
+      user.updatedAt = new Date();
+      await user.save();
+
+      console.log('User password changed successfully:', user.email);
+      return res.json({ message: 'Password changed successfully' });
+    }
+    
+    return res.status(401).json({ message: 'Unauthorized' });
+  } catch (error) {
+    console.error('Password change error:', error.message);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+module.exports = { register, login, getCurrentUser, updateProfile, changePassword };

@@ -22,7 +22,7 @@ const getAllRefunds = async (req, res) => {
         // Get refunds with pagination
         const refunds = await Refund.find(query)
             .populate('userId', 'name email')
-            .populate('orderId', 'orderNumber totalAmount createdAt')
+            .populate('orderId', '_id totals.total createdAt customer.fullName')
             .populate('productId', 'name imageUrl price')
             .populate('adminId', 'name')
             .sort({ [sortBy]: sortOrder })
@@ -62,7 +62,7 @@ const getRefundByIdAdmin = async (req, res) => {
 
         const refund = await Refund.findById(id)
             .populate('userId', 'name email phone')
-            .populate('orderId', 'orderNumber totalAmount createdAt deliveredAt shippingAddress')
+            .populate('orderId', '_id totals.total createdAt customer.fullName shippingAddress')
             .populate('productId', 'name imageUrl price category brand')
             .populate('adminId', 'name email');
 

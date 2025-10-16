@@ -7,11 +7,13 @@ import './FilterStyles.css';
 import '../Cart/CartIconStyles.css';
 import { useCart } from '../Cart/CartContext';
 import { useSettings } from '../../contexts/SettingsContext';
+import { useCurrency } from '../../contexts/CurrencyContext';
 
 const Products = () => {
   // States
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
+  const [displayedProducts, setDisplayedProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [brands, setBrands] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -21,10 +23,17 @@ const Products = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [userName, setUserName] = useState('Guest');
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [cartCount, setCartCount] = useState(0);
   const [promotions, setPromotions] = useState([]);
+  
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [productsPerPage] = useState(20);
+  const [hasMore, setHasMore] = useState(false);
   const { openCart, addItem } = useCart();
-  const { formatCurrency, calculatePriceWithTax } = useSettings();
+  const { calculatePriceWithTax } = useSettings();
+  const { formatPrice } = useCurrency();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -69,9 +78,24 @@ const Products = () => {
         if (response.ok) {
           const data = await response.json();
           console.log('Successfully loaded', data.length, 'products from database');
+          
+          // Debug: Check price ranges to identify potential currency issues
+          const validPrices = data.map(p => p.price).filter(p => p > 0);
+          const minPrice = Math.min(...validPrices);
+          const maxPrice = Math.max(...validPrices);
+          console.log(`Price range: ${minPrice} - ${maxPrice} (should be LKR values)`);
+          
+          // Flag suspiciously low prices that might not be in LKR
+          const suspiciousPrices = data.filter(p => p.price > 0 && p.price < 50);
+          if (suspiciousPrices.length > 0) {
+            console.warn('Products with suspiciously low prices (might not be LKR):', 
+              suspiciousPrices.map(p => ({ name: p.name, price: p.price }))
+            );
+          }
+          
           setProducts(data);
           setFilteredProducts(data);
-          
+
           // Extract categories from products
           const allCategories = ['All', ...new Set(data.map(product => product.category))];
           setCategories(allCategories);
@@ -80,12 +104,11 @@ const Products = () => {
           const allBrands = [...new Set(data.map(product => product.brand))].sort();
           setBrands(allBrands);
           
-          // Find min and max prices from products
-          const prices = data.map(product => product.price);
-          const minPrice = Math.floor(Math.min(...prices));
-          const maxPrice = Math.ceil(Math.max(...prices));
-          setPriceRange({ min: minPrice, max: maxPrice });
-          setCurrentPriceRange({ min: minPrice, max: maxPrice });
+          // Set price range for filters using the same price data
+          const flooredMin = Math.floor(minPrice);
+          const ceiledMax = Math.ceil(maxPrice);
+          setPriceRange({ min: flooredMin, max: ceiledMax });
+          setCurrentPriceRange({ min: flooredMin, max: ceiledMax });
         } else {
           console.error('Failed to fetch products');
         }
@@ -209,7 +232,9 @@ const Products = () => {
       const response = await fetch('http://localhost:5000/api/promotions/active');
       if (response.ok) {
         const data = await response.json();
-        setPromotions(data.data || []);
+        const activePromotions = data.data || [];
+        console.log('Fetched promotions:', activePromotions);
+        setPromotions(activePromotions);
       } else {
         console.error('Failed to fetch promotions');
         setPromotions([]);
@@ -222,15 +247,34 @@ const Products = () => {
 
   // Check if a product has an active promotion
   const getProductPromotion = (product) => {
-    return promotions.find(promo => {
+    // Return null if no promotions exist
+    if (!promotions || promotions.length === 0) {
+      return null;
+    }
+
+    const matchedPromotion = promotions.find(promo => {
+      // Skip inactive promotions
+      if (!promo.isActive) {
+        return false;
+      }
+
+      // Check if promotion has expired
+      const now = new Date();
+      const endDate = new Date(promo.endDate);
+      if (endDate < now) {
+        return false;
+      }
+
       // If promotion applies to all products AND no specific products are selected
       if (promo.isApplicableToAll && (!promo.applicableProducts || promo.applicableProducts.length === 0)) {
         return true;
       }
+      
       // If promotion has specific products selected, check if this product is included
       if (promo.applicableProducts && promo.applicableProducts.length > 0) {
         return promo.applicableProducts.some(p => p._id === product._id);
       }
+      
       return false;
     });
   };
@@ -283,7 +327,19 @@ const Products = () => {
     );
     
     setFilteredProducts(result);
+    // Reset pagination when filters change
+    setCurrentPage(1);
   }, [products, selectedCategory, selectedBrands, currentPriceRange, searchTerm]);
+
+  // Handle pagination - update displayed products when filtered products or page changes
+  useEffect(() => {
+    const startIndex = 0;
+    const endIndex = currentPage * productsPerPage;
+    const productsToShow = filteredProducts.slice(startIndex, endIndex);
+    
+    setDisplayedProducts(productsToShow);
+    setHasMore(endIndex < filteredProducts.length);
+  }, [filteredProducts, currentPage, productsPerPage]);
 
   // Toggle brand selection
   const toggleBrand = (brand) => {
@@ -315,11 +371,23 @@ const Products = () => {
     // Already applied through useEffect
   };
   
+  // Load more products
+  const handleLoadMore = async () => {
+    setLoadingMore(true);
+    
+    // Simulate loading delay for better UX
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    setCurrentPage(prevPage => prevPage + 1);
+    setLoadingMore(false);
+  };
+
   // Reset all filters
   const resetFilters = () => {
     setSelectedCategory('All');
     setSelectedBrands([]);
     setCurrentPriceRange(priceRange);
+    setCurrentPage(1); // Reset pagination
   };
   
   // Handle cart icon click
@@ -395,238 +463,253 @@ const Products = () => {
   };
 
   return (
-    <div className="products-container">
-      {/* Left Side - User greeting and Categories (1/4 width) */}
-      <div className="sidebar">
-        <div className="user-greeting">
-          <FontAwesomeIcon icon={faUser} className="user-icon" />
-          <div className="greeting-text">
-            <h3>Hi, {userName}</h3>
-            <p>Welcome to Vithanage Enterprises</p>
+    <div className="ecommerce-products-page">
+      {/* Top Filter Bar */}
+      <div className="ecommerce-filters-top">
+        <div className="ecommerce-filters-container">
+          {/* User Greeting */}
+          <div className="ecommerce-user-greeting">
+            <FontAwesomeIcon icon={faUser} className="user-icon" />
+            <span>Hi, {userName}!</span>
           </div>
-        </div>
-        
-        <div className="categories-section">
-          <h3>Categories</h3>
-          <ul className="categories-list">
-            {categories.map((category, index) => (
-              <li 
-                key={index} 
-                className={selectedCategory === category ? 'active' : ''}
-                onClick={() => setSelectedCategory(category)}
+
+          {/* Filter Controls */}
+          <div className="ecommerce-filter-controls">
+            {/* Categories */}
+            <div className="ecommerce-filter-group">
+              <label>Category:</label>
+              <select 
+                value={selectedCategory} 
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="ecommerce-filter-select"
               >
-                <div className="category-checkbox">
-                  {selectedCategory === category && <FontAwesomeIcon icon={faCheck} className="check-icon" />}
-                </div>
-                <span className="category-name">{category}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-        
-        {/* Price Filter */}
-        <div className="filter-section">
-          <h3><FontAwesomeIcon icon={faSliders} /> Price Range</h3>
-          <div className="price-filter">
-            <div className="price-inputs">
-              <div className="price-input-group">
-                <label>Min (Currency)</label>
+                {categories.map((category, index) => (
+                  <option key={index} value={category}>{category}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Price Range */}
+            <div className="ecommerce-filter-group">
+              <label>Price:</label>
+              <div className="ecommerce-price-inputs">
                 <input 
                   type="number" 
+                  placeholder="Min"
                   value={currentPriceRange.min} 
                   onChange={(e) => handlePriceChange('min', e.target.value)}
-                  min={priceRange.min}
-                  max={currentPriceRange.max}
+                  className="ecommerce-price-input"
                 />
-              </div>
-              <div className="price-input-group">
-                <label>Max (Currency)</label>
+                <span>-</span>
                 <input 
                   type="number" 
+                  placeholder="Max"
                   value={currentPriceRange.max} 
                   onChange={(e) => handlePriceChange('max', e.target.value)}
-                  min={currentPriceRange.min}
-                  max={priceRange.max}
+                  className="ecommerce-price-input"
                 />
               </div>
             </div>
-            <div className="price-range">
-              <span>{formatCurrency(priceRange.min)}</span>
-              <input 
-                type="range" 
-                min={priceRange.min} 
-                max={priceRange.max} 
-                value={currentPriceRange.max}
-                onChange={(e) => handlePriceChange('max', e.target.value)}
-                className="range-slider"
-              />
-              <span>{formatCurrency(priceRange.max)}</span>
-            </div>
-          </div>
-        </div>
-        
-        {/* Brand Filter */}
-        <div className="filter-section">
-          <h3><FontAwesomeIcon icon={faTag} /> Brands</h3>
-          <ul className="brand-list">
-            {brands.map(brand => (
-              <li key={brand}>
-                <label className="brand-checkbox" onClick={() => toggleBrand(brand)}>
-                  <div className="checkbox">
-                    {selectedBrands.includes(brand) && <FontAwesomeIcon icon={faCheck} className="check-icon" />}
-                  </div>
-                  <span>
+
+            {/* Brands */}
+            <div className="ecommerce-filter-group">
+              <label>Brands:</label>
+              <div className="ecommerce-brand-chips">
+                {brands.slice(0, 5).map(brand => (
+                  <button 
+                    key={brand}
+                    className={`ecommerce-brand-chip ${selectedBrands.includes(brand) ? 'active' : ''}`}
+                    onClick={() => toggleBrand(brand)}
+                  >
                     {brand}
-                  </span>
-                </label>
-              </li>
-            ))}
-          </ul>
-        </div>
-        
-        {/* Reset Filters */}
-        <button 
-          className="reset-filters-btn" 
-          onClick={resetFilters}
-        >
-          Reset All Filters
-        </button>
-      </div>
-      
-      {/* Right Side - Products Display (3/4 width) */}
-      <div className="products-display">
-        <div className="products-header">
-          <h2>{selectedCategory} Products</h2>
-          <div className="cart-container products-display">
-            <div className="cart-icon-wrapper" onClick={handleCartClick} style={{
-              position: 'relative',
-              cursor: 'pointer',
-              padding: '12px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              borderRadius: '50%',
-              width: '50px',
-              height: '50px',
-              boxShadow: '0 8px 25px rgba(102, 126, 234, 0.3)',
-              transition: 'all 0.3s ease',
-              transform: 'scale(1)',
-              border: '2px solid rgba(255, 255, 255, 0.2)'
-            }}
-            onMouseEnter={(e) => {
-              const wrapper = e.currentTarget;
-              wrapper.style.transform = 'scale(1.1) translateY(-2px)';
-              wrapper.style.boxShadow = '0 12px 35px rgba(102, 126, 234, 0.4)';
-            }}
-            onMouseLeave={(e) => {
-              const wrapper = e.currentTarget;
-              wrapper.style.transform = 'scale(1) translateY(0)';
-              wrapper.style.boxShadow = '0 8px 25px rgba(102, 126, 234, 0.3)';
-            }}>
-              <FontAwesomeIcon icon={faShoppingCart} style={{
-                fontSize: '20px',
-                color: 'white',
-                filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))'
-              }} />
-              {cartCount > 0 && (
-                <span className="cart-count" style={{
-                  position: 'absolute',
-                  top: '-5px',
-                  right: '-5px',
-                  background: 'linear-gradient(135deg, #ff9900 0%, #ff6b35 100%)',
-                  color: 'white',
-                  fontSize: '11px',
-                  fontWeight: '700',
-                  minWidth: '22px',
-                  height: '22px',
-                  borderRadius: '11px',
-                  display: 'flex',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  padding: '0 6px',
-                  boxShadow: '0 4px 12px rgba(255, 153, 0, 0.4)',
-                  border: '2px solid white',
-                  animation: 'pulse 2s infinite'
-                }}>
-                  {cartCount}
-                </span>
-              )}
+                  </button>
+                ))}
+                {brands.length > 5 && (
+                  <span className="ecommerce-more-brands">+{brands.length - 5} more</span>
+                )}
+              </div>
+            </div>
+
+            {/* Reset & Cart */}
+            <div className="ecommerce-filter-actions">
+              <button className="ecommerce-reset-btn" onClick={resetFilters}>
+                Reset
+              </button>
+              <div className="ecommerce-cart-wrapper" onClick={handleCartClick}>
+                <FontAwesomeIcon icon={faShoppingCart} />
+                {cartCount > 0 && (
+                  <span className="ecommerce-cart-count">{cartCount}</span>
+                )}
+              </div>
             </div>
           </div>
         </div>
-        
-        <div className="products-grid">
-          {filteredProducts.length > 0 ? (
-            filteredProducts.map(product => (
-              <div key={product._id} className="product-card">
-                <div 
-                  className="product-image"
-                  onClick={() => navigate(`/products/${product._id}`)}
-                  style={{ cursor: 'pointer', position: 'relative' }}
-                >
-                  <img src={product.imageUrl || 'https://via.placeholder.com/150?text=Product'} alt={product.name} />
-                  {getProductPromotion(product) && (
-                    <div className="promotion-badge">
-                      <FontAwesomeIcon icon={faTag} />
-                      SALE
-                    </div>
-                  )}
-                </div>
-                <div className="product-info">
-                  <h4 
+      </div>
+
+      {/* Results Header */}
+      <div className="ecommerce-results-header">
+        <div className="ecommerce-results-container">
+          <div className="ecommerce-results-info">
+            <h2>{selectedCategory} Products ({filteredProducts.length} items)</h2>
+          </div>
+          <div className="ecommerce-search-container">
+            <input
+              type="text"
+              placeholder="Search products..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="ecommerce-search-input"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Products Grid */}
+      <div className="ecommerce-products-container">
+        <div className="ecommerce-products-grid">
+          {displayedProducts.length > 0 ? (
+            displayedProducts.map(product => (
+              <div key={product._id} className="ecommerce-product-card">
+                {/* Product Image */}
+                <div className="ecommerce-product-image-container">
+                  <img 
+                    src={product.imageUrl || 'https://via.placeholder.com/200x200?text=Product'} 
+                    alt={product.name}
+                    className="ecommerce-product-image"
                     onClick={() => navigate(`/products/${product._id}`)}
-                    style={{ cursor: 'pointer' }}
+                    onError={(e) => {
+                      e.target.src = 'https://via.placeholder.com/200x200?text=No+Image';
+                      e.target.style.objectFit = 'contain';
+                    }}
+                    onLoad={(e) => {
+                      e.target.style.opacity = '1';
+                    }}
+                    style={{ opacity: 0, transition: 'opacity 0.3s ease' }}
+                  />
+                  {(() => {
+                    const promotion = getProductPromotion(product);
+                    if (promotion && promotion.discountValue > 0) {
+                      // Only show sale badge for meaningful discounts
+                      let showBadge = false;
+                      let discountText = '';
+                      
+                      if (promotion.type === 'percentage') {
+                        // Only show for percentage discounts >= 5%
+                        if (promotion.discountValue >= 5) {
+                          showBadge = true;
+                          discountText = `${promotion.discountValue}%`;
+                        }
+                      } else if (promotion.type === 'fixed_amount') {
+                        // Only show for fixed discounts >= $5 or >= 10% of product price
+                        const discountPercentage = (promotion.discountValue / product.price) * 100;
+                        if (promotion.discountValue >= 5 || discountPercentage >= 10) {
+                          showBadge = true;
+                          discountText = `$${promotion.discountValue}`;
+                        }
+                      }
+                      
+                      if (showBadge) {
+                        return (
+                          <div className="ecommerce-sale-badge">
+                            <FontAwesomeIcon icon={faTag} />
+                            SALE -{discountText}
+                          </div>
+                        );
+                      }
+                    }
+                    return null;
+                  })()}
+                </div>
+
+                {/* Product Info */}
+                <div className="ecommerce-product-info">
+                  <h3 
+                    className="ecommerce-product-title"
+                    onClick={() => navigate(`/products/${product._id}`)}
                   >
                     {product.name}
-                  </h4>
-                  <div className="product-rating">
-                    {renderStars(product.averageRating || product.rating || 0)}
-                    <span className="rating-number">
-                      ({(product.averageRating || product.rating || 0).toFixed(1)}) 
-                      {product.totalReviews > 0 && ` • ${product.totalReviews} reviews`}
+                  </h3>
+                  
+                  <div className="ecommerce-product-category">{product.category}</div>
+                  
+                  <div className="ecommerce-product-rating">
+                    <div className="ecommerce-stars">
+                      {renderStars(product.averageRating || product.rating || 0)}
+                    </div>
+                    <span className="ecommerce-rating-text">
+                      ({(product.averageRating || product.rating || 0).toFixed(1)})
                     </span>
                   </div>
-                  <div className="product-price">
+
+                  <div className="ecommerce-product-price">
                     {getProductPromotion(product) ? (
-                      <div className="price-with-promotion">
-                        <span className="discounted-price">{formatCurrency(getDiscountedPrice(product))}</span>
-                        <span className="original-price">{formatCurrency(product.price)}</span>
-                        <span className="discount-percent">
-                          -{getProductPromotion(product).discountValue}
-                          {getProductPromotion(product).type === 'percentage' ? '%' : formatCurrency(0).replace('0', '')}
-                        </span>
+                      <div className="ecommerce-price-with-discount">
+                        <span className="ecommerce-discounted-price">{formatPrice(getDiscountedPrice(product))}</span>
+                        <span className="ecommerce-original-price">{formatPrice(product.price)}</span>
                       </div>
                     ) : (
-                      <span>{formatCurrency(product.price)}</span>
+                      <span className="ecommerce-current-price">{formatPrice(product.price)}</span>
                     )}
                   </div>
-                  <div className="product-actions">
+
+                  <div className="ecommerce-product-actions">
                     <button 
-                      className="view-details-btn"
-                      onClick={() => navigate(`/products/${product._id}`)}
-                    >
-                      View Details
-                    </button>
-                    <button 
-                      className="add-to-cart-btn"
+                      className="ecommerce-add-cart-btn"
                       onClick={() => handleAddToCart(product)}
                       disabled={loading}
                     >
                       {loading ? (
                         <FontAwesomeIcon icon={faSpinner} spin />
                       ) : (
-                        'Add to Cart'
+                        <FontAwesomeIcon icon={faShoppingCart} />
                       )}
+                    </button>
+                    <button 
+                      className="ecommerce-view-btn"
+                      onClick={() => navigate(`/products/${product._id}`)}
+                    >
+                      View
                     </button>
                   </div>
                 </div>
               </div>
             ))
           ) : (
-            <div className="no-products">No products found in this category.</div>
+            <div className="ecommerce-no-products">
+              <h3>No products found</h3>
+              <p>Try adjusting your filters or search terms</p>
+            </div>
           )}
         </div>
+
+        {/* Load More Button */}
+        {hasMore && displayedProducts.length > 0 && (
+          <div className="ecommerce-load-more-container">
+            <button 
+              className="ecommerce-load-more-btn"
+              onClick={handleLoadMore}
+              disabled={loadingMore}
+            >
+              {loadingMore ? (
+                <>
+                  <FontAwesomeIcon icon={faSpinner} spin />
+                  Loading more products...
+                </>
+              ) : (
+                <>
+                  Load More Products ({filteredProducts.length - displayedProducts.length} remaining)
+                </>
+              )}
+            </button>
+          </div>
+        )}
+
+        {/* Show total when all loaded */}
+        {!hasMore && displayedProducts.length > 0 && filteredProducts.length > productsPerPage && (
+          <div className="ecommerce-all-loaded">
+            <p>✅ All {filteredProducts.length} products loaded!</p>
+          </div>
+        )}
       </div>
     </div>
   );

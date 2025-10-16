@@ -1,0 +1,250 @@
+/* Simple Currency Selector for Dropdown Menu */
+.currency-selector {
+  position: relative;
+  display: inline-block;
+}
+
+.currency-selector-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.9rem;
+  backdrop-filter: blur(10px);
+}
+
+.currency-selector-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.currency-icon {
+  font-size: 1rem;
+}
+
+.currency-text {
+  font-weight: 600;
+  min-width: 60px;
+  text-align: left;
+}
+
+.dropdown-arrow.open {
+  transform: rotate(180deg);
+}
+
+.currency-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 999;
+}
+
+.currency-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  min-width: 280px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+  margin-top: 0.5rem;
+  overflow: hidden;
+  border: 1px solid #e0e0e0;
+}
+
+.currency-dropdown-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 1rem;
+  text-align: center;
+}
+
+.currency-dropdown-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.currency-list {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.currency-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border: none;
+  background: white;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.currency-item:hover {
+  background: #f8f9fa;
+}
+
+.currency-item.active {
+  background: rgba(102, 126, 234, 0.1);
+  border-left: 3px solid #667eea;
+}
+
+.currency-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+}
+
+.currency-symbol {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #667eea;
+  min-width: 30px;
+  text-align: center;
+}
+
+.currency-details {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.currency-code {
+  font-weight: 600;
+  color: #333;
+  font-size: 0.95rem;
+}
+
+.currency-name {
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.selected-icon {
+  color: #667eea;
+  font-size: 1rem;
+}
+
+/* Dropdown-style Currency Selector */
+.currency-dropdown-item {
+  position: relative;
+  width: 100%;
+}
+
+.currency-dropdown-button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  color: #333;
+  text-decoration: none;
+  transition: background-color 0.2s ease;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.currency-dropdown-button:hover {
+  background-color: #f8f9fa;
+}
+
+.currency-submenu {
+  background: #f8f9fa;
+  border-top: 1px solid #e9ecef;
+  max-height: 200px;
+  overflow-y: auto;
+  position: relative;
+  z-index: 1001;
+}
+
+.currency-option {
+  width: 100%;
+  padding: 0.6rem 1.5rem;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  color: #333;
+  font-size: 0.9rem;
+  transition: background-color 0.2s ease;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.currency-option:hover {
+  background-color: #e9ecef;
+}
+
+.currency-option.active {
+  background-color: #667eea;
+  color: white;
+}
+
+.currency-option:last-child {
+  border-bottom: none;
+}
+
+/* Simple Select Currency Selector */
+.currency-simple-selector {
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.currency-label {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #333;
+  min-width: 70px;
+}
+
+.currency-select {
+  flex: 1;
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: white;
+  font-size: 0.9rem;
+  cursor: pointer;
+  min-width: 150px;
+}
+
+.currency-select:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+}
+
+.currency-select:hover {
+  border-color: #999;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .currency-submenu {
+    max-height: 150px;
+  }
+  
+  .currency-option {
+    padding: 0.7rem 1.5rem;
+    font-size: 0.9rem;
+  }
+}

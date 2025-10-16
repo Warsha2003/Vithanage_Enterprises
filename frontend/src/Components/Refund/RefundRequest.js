@@ -7,6 +7,16 @@ const RefundRequest = ({ orderId, productId, productName, productPrice, onClose,
         description: '',
         refundAmount: productPrice || 0
     });
+
+    // Ensure refund amount is always set to product price
+    useEffect(() => {
+        if (productPrice && productPrice > 0) {
+            setFormData(prev => ({
+                ...prev,
+                refundAmount: productPrice
+            }));
+        }
+    }, [productPrice]);
     const [loading, setLoading] = useState(false);
     const [eligibility, setEligibility] = useState(null);
     const [checkingEligibility, setCheckingEligibility] = useState(true);
@@ -62,6 +72,12 @@ const RefundRequest = ({ orderId, productId, productName, productPrice, onClose,
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
+        
+        // Prevent users from changing the refund amount - it should always be the product price
+        if (name === 'refundAmount') {
+            return; // Don't allow changes to refund amount
+        }
+        
         setFormData(prev => ({
             ...prev,
             [name]: value
@@ -76,8 +92,9 @@ const RefundRequest = ({ orderId, productId, productName, productPrice, onClose,
             return;
         }
 
-        if (formData.refundAmount <= 0) {
-            alert('Refund amount must be greater than 0');
+        // Refund amount is automatically set to product price - no need to validate user input
+        if (!productPrice || productPrice <= 0) {
+            alert('Invalid product price for refund');
             return;
         }
 
@@ -212,14 +229,12 @@ const RefundRequest = ({ orderId, productId, productName, productPrice, onClose,
                             id="refundAmount"
                             name="refundAmount"
                             value={formData.refundAmount}
-                            onChange={handleInputChange}
-                            min="0.01"
-                            max={productPrice}
-                            step="0.01"
-                            required
+                            readOnly
+                            disabled
+                            className="readonly-field"
                         />
                         <span className="amount-note">
-                            Maximum refund amount: ${productPrice}
+                            ✅ Refund amount is automatically set to the product price: ${productPrice}
                         </span>
                     </div>
 

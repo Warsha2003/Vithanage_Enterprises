@@ -177,7 +177,7 @@ const Login = () => {
       }
       
       // Determine redirect destination - if coming from cart page, go back to cart
-      const redirectDestination = sessionStorage.getItem('loginRedirect') || '/products';
+      const redirectDestination = sessionStorage.getItem('loginRedirect') || '/';
       sessionStorage.removeItem('loginRedirect');
       
       // Check if user is admin and redirect accordingly

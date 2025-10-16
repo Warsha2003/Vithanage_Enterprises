@@ -236,8 +236,22 @@
 
 .dropdown-divider {
   border: 0;
-  border-top: 1px solid #eee;
+  border-top: 1px solid #f0f0f0;
   margin: 8px 0;
+}
+
+.currency-container {
+  padding: 8px 0 !important;
+}
+
+.currency-container .currency-selector-inline {
+  width: 100%;
+}
+
+.currency-container .currency-select-input {
+  width: 100%;
+  font-size: 0.85rem;
+  padding: 0.4rem 0.6rem;
 }
 
 .admin-link {

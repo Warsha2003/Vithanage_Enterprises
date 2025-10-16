@@ -2,13 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faUndo, faClock, faCheckCircle, faTimesCircle, faChartLine,
-  faSearch, faSyncAlt, faEye, faCheck, faTimes
+  faSearch, faSyncAlt, faEye, faCheck, faTimes, faFilePdf
 } from '@fortawesome/free-solid-svg-icons';
 import { useSettings } from '../../contexts/SettingsContext';
+import { useCurrency } from '../../contexts/CurrencyContext';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import './RefundManagement.css';
 
 const RefundManagement = () => {
     const { settings, formatCurrency } = useSettings();
+    const { formatPrice } = useCurrency();
     const [refunds, setRefunds] = useState([]);
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -84,7 +88,7 @@ const RefundManagement = () => {
         if (!searchTerm) return true;
         const searchLower = searchTerm.toLowerCase();
         return (
-            refund.orderId?.orderNumber?.toLowerCase().includes(searchLower) ||
+            refund.orderId?._id?.toLowerCase().includes(searchLower) ||
             refund.userId?.name?.toLowerCase().includes(searchLower) ||
             refund.userId?.email?.toLowerCase().includes(searchLower) ||
             refund.productId?.name?.toLowerCase().includes(searchLower) ||
@@ -163,6 +167,101 @@ const RefundManagement = () => {
         });
     };
 
+    // Generate Refunds PDF Report
+    const generateRefundsReport = () => {
+        try {
+            console.log('Generating refunds report...', refunds); // Debug log
+            
+            if (!refunds || refunds.length === 0) {
+                alert('No refund data available to generate report');
+                return;
+            }
+
+            const doc = new jsPDF('p', 'pt');
+            const margin = 40;
+            let y = margin;
+
+            doc.setFontSize(18);
+            doc.text('Refunds Management Report', margin, y);
+            y += 24;
+
+            // Calculate statistics
+            const totalRefunds = refunds.length;
+            const approvedRefunds = refunds.filter(r => r.status === 'Approved').length;
+            const pendingRefunds = refunds.filter(r => r.status === 'Pending').length;
+            const rejectedRefunds = refunds.filter(r => r.status === 'Rejected').length;
+            const completedRefunds = refunds.filter(r => r.status === 'Completed').length;
+            
+            // Calculate total refund amount more safely
+            const totalRefundAmount = refunds
+                .filter(r => r.status === 'Approved' || r.status === 'Completed')
+                .reduce((sum, r) => {
+                    const amount = parseFloat(r.refundAmount || r.amount || 0);
+                    return sum + (isNaN(amount) ? 0 : amount);
+                }, 0);
+            
+            doc.setFontSize(12);
+            doc.text(`Total Refunds: ${totalRefunds}`, margin, y); y += 16;
+            doc.text(`Approved: ${approvedRefunds}  Pending: ${pendingRefunds}  Rejected: ${rejectedRefunds}  Completed: ${completedRefunds}`, margin, y); y += 16;
+            doc.text(`Total Refund Amount: ${formatPrice(totalRefundAmount)}`, margin, y); y += 16;
+            doc.text(`Report Generated: ${new Date().toLocaleString()}`, margin, y); y += 24;
+
+            // Create table rows with safer data access
+            const refundRows = refunds.map(r => {
+                // Get the original order ID - try different property paths
+                const orderId = r.orderId?._id || r.orderId || r.order?._id || r.order?.orderId || 'N/A';
+                const customerName = r.userId?.name || r.user?.name || r.customerName || 'Unknown';
+                const productName = r.productId?.name || r.product?.name || 'Unknown Product';
+                const refundAmount = r.refundAmount || r.amount || 0;
+                const reason = r.reason || r.refundReason || 'No reason provided';
+                const status = r.status || 'Unknown';
+                const createdDate = r.createdAt ? new Date(r.createdAt).toLocaleDateString() : 'N/A';
+                
+                // Format order ID to show last 8 characters with prefix
+                const formattedOrderId = typeof orderId === 'string' && orderId !== 'N/A' 
+                    ? `#${orderId.slice(-8)}` 
+                    : orderId !== 'N/A' 
+                    ? `#${String(orderId).slice(-8)}` 
+                    : 'N/A';
+                
+                return [
+                    formattedOrderId,
+                    customerName,
+                    productName,
+                    formatPrice(refundAmount),
+                    reason.length > 25 ? reason.substring(0, 25) + '...' : reason,
+                    status,
+                    createdDate
+                ];
+            });
+            
+            autoTable(doc, {
+                startY: y,
+                head: [[ 'Order #', 'Customer', 'Product', 'Amount', 'Reason', 'Status', 'Date' ]],
+                body: refundRows,
+                styles: { fontSize: 9 },
+                headStyles: { fillColor: [35, 47, 62] },
+                columnStyles: {
+                    0: { cellWidth: 70 },  // Order #
+                    1: { cellWidth: 85 },  // Customer
+                    2: { cellWidth: 90 },  // Product
+                    3: { cellWidth: 65 },  // Amount
+                    4: { cellWidth: 100 }, // Reason
+                    5: { cellWidth: 55 },  // Status
+                    6: { cellWidth: 70 }   // Date
+                }
+            });
+
+            const fileName = `refunds-report-${new Date().toISOString().slice(0,10)}.pdf`;
+            doc.save(fileName);
+            console.log('Refunds report saved as:', fileName);
+            
+        } catch (e) {
+            console.error('Refunds report generation failed', e);
+            alert(`Failed to generate refunds report: ${e.message}`);
+        }
+    };
+
     const getActionButtons = (refund) => {
         switch (refund.status) {
             case 'Pending':
@@ -229,6 +328,10 @@ const RefundManagement = () => {
                         <FontAwesomeIcon icon={faSyncAlt} />
                         Refresh
                     </button>
+                    <button className="primary-btn" onClick={generateRefundsReport}>
+                        <FontAwesomeIcon icon={faFilePdf} />
+                        Download Report
+                    </button>
                 </div>
             </div>
 
@@ -280,8 +383,18 @@ const RefundManagement = () => {
                             <FontAwesomeIcon icon={faChartLine} />
                         </div>
                         <div className="stat-content">
-                            <div className="stat-value">{stats.avgProcessingTime > 0 ? stats.avgProcessingTime : (stats.processing || 0)}</div>
-                            <div className="stat-label">{stats.avgProcessingTime > 0 ? 'Avg Days' : 'Processing'}</div>
+                            <div className="stat-value">{stats.processing || 0}</div>
+                            <div className="stat-label">Processing</div>
+                        </div>
+                    </div>
+                    
+                    <div className="stat-card completed">
+                        <div className="stat-icon">
+                            <FontAwesomeIcon icon={faCheckCircle} />
+                        </div>
+                        <div className="stat-content">
+                            <div className="stat-value">{stats.completed || 0}</div>
+                            <div className="stat-label">Completed</div>
                         </div>
                     </div>
                 </div>
@@ -359,7 +472,7 @@ const RefundManagement = () => {
                                         <td className="row-number">{(currentPage - 1) * 10 + index + 1}</td>
                                         <td>
                                             <div className="order-info">
-                                                <span className="order-number">#{refund.orderId?.orderNumber}</span>
+                                                <span className="order-number">#{refund.orderId?._id?.slice(-8) || refund.orderId || 'N/A'}</span>
                                             </div>
                                         </td>
                                         <td>
@@ -374,7 +487,7 @@ const RefundManagement = () => {
                                             </div>
                                         </td>
                                         <td>
-                                            <span className="amount">{formatCurrency(refund.refundAmount)}</span>
+                                            <span className="amount">{formatPrice(refund.refundAmount)}</span>
                                         </td>
                                         <td>
                                             <span className="reason-badge">{refund.reason}</span>
@@ -442,7 +555,7 @@ const RefundManagement = () => {
                             <div className="refund-summary">
                                 <p><strong>Customer:</strong> {selectedRefund?.userId?.name}</p>
                                 <p><strong>Product:</strong> {selectedRefund?.productId?.name}</p>
-                                <p><strong>Amount:</strong> {formatCurrency(selectedRefund?.refundAmount)}</p>
+                                <p><strong>Amount:</strong> {formatPrice(selectedRefund?.refundAmount)}</p>
                                 <p><strong>Reason:</strong> {selectedRefund?.reason}</p>
                                 <p><strong>Description:</strong> {selectedRefund?.description}</p>
                             </div>

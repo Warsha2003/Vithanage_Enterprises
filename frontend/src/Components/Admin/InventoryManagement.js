@@ -5,10 +5,12 @@ import {
   faSearch, faFilter, faDownload, faWarehouse, faChartLine
 } from '@fortawesome/free-solid-svg-icons';
 import { useSettings } from '../../contexts/SettingsContext';
+import { useCurrency } from '../../contexts/CurrencyContext';
 import './InventoryManagement.css';
 
 const InventoryManagement = () => {
   const { settings, formatCurrency } = useSettings();
+  const { formatPrice } = useCurrency();
   const [inventory, setInventory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -105,6 +107,41 @@ const InventoryManagement = () => {
       notes: ''
     });
     setShowStockModal(true);
+  };
+
+  // Toggle New Arrival status
+  const toggleNewArrival = async (productId, currentStatus) => {
+    try {
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      if (!token) {
+        setError('You must be logged in to perform this action');
+        return;
+      }
+
+      const endpoint = currentStatus ? 'remove-new-arrival' : 'mark-new-arrival';
+      const response = await fetch(`http://localhost:5000/api/products/${productId}/${endpoint}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update new arrival status');
+      }
+
+      // Refresh inventory list to show updated status
+      fetchInventory();
+      
+      const action = currentStatus ? 'removed from' : 'marked as';
+      alert(`Product ${action} new arrivals successfully!`);
+      
+    } catch (err) {
+      setError(err.message);
+      alert(`Error: ${err.message}`);
+    }
   };
 
   const submitStockAction = async () => {
@@ -274,7 +311,7 @@ const InventoryManagement = () => {
             <div className="stat-icon"><FontAwesomeIcon icon={faChartLine} /></div>
             <div className="stat-info">
               <h3>Total Stock Value</h3>
-              <p>{formatCurrency(stats.totalStockValue)}</p>
+              <p>{formatPrice(stats.totalStockValue)}</p>
             </div>
           </div>
         </div>
@@ -325,6 +362,7 @@ const InventoryManagement = () => {
                 <th>Min/Max Levels</th>
                 <th>Reorder Point</th>
                 <th>Status</th>
+                <th>New Arrival</th>
                 <th>Last Updated</th>
                 <th>Actions</th>
               </tr>
@@ -358,6 +396,15 @@ const InventoryManagement = () => {
                       <FontAwesomeIcon icon={getStatusIcon(item.status)} />
                       {item.status.replace('_', ' ')}
                     </span>
+                  </td>
+                  <td>
+                    <button 
+                      onClick={() => toggleNewArrival(item.productInfo._id, item.productInfo.isNewArrival)}
+                      className={`new-arrival-btn ${item.productInfo.isNewArrival ? 'active' : ''}`}
+                      title={item.productInfo.isNewArrival ? 'Remove from New Arrivals' : 'Mark as New Arrival'}
+                    >
+                      {item.productInfo.isNewArrival ? '✓ New' : '+ New'}
+                    </button>
                   </td>
                   <td>{new Date(item.updatedAt).toLocaleDateString()}</td>
                   <td className="action-buttons">

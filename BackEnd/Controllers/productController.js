@@ -130,11 +130,77 @@ const createSampleProducts = async (req, res) => {
   }
 };
 
+// Get New Arrivals - products marked as new arrivals by admin
+const getNewArrivals = async (req, res) => {
+  try {
+    const newArrivals = await Product.find({ isNewArrival: true })
+      .sort({ newArrivalAddedAt: -1 }); // Sort by newest first
+    
+    res.json(newArrivals);
+  } catch (error) {
+    console.error('Error fetching new arrivals:', error.message);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+// Admin: Mark product as new arrival
+const markAsNewArrival = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const product = await Product.findByIdAndUpdate(
+      id,
+      { 
+        isNewArrival: true,
+        newArrivalAddedAt: new Date()
+      },
+      { new: true }
+    );
+    
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+    
+    res.json({ message: 'Product marked as new arrival', product });
+  } catch (error) {
+    console.error('Error marking product as new arrival:', error.message);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+// Admin: Remove from new arrivals
+const removeFromNewArrivals = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const product = await Product.findByIdAndUpdate(
+      id,
+      { 
+        isNewArrival: false,
+        newArrivalAddedAt: null
+      },
+      { new: true }
+    );
+    
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+    
+    res.json({ message: 'Product removed from new arrivals', product });
+  } catch (error) {
+    console.error('Error removing from new arrivals:', error.message);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
 module.exports = { 
   getAllProducts, 
   getProductById, 
   addProduct, 
   updateProduct, 
   deleteProduct, 
-  createSampleProducts 
+  createSampleProducts,
+  getNewArrivals,
+  markAsNewArrival,
+  removeFromNewArrivals
 };

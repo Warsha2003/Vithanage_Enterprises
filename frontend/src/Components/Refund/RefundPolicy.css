@@ -1,0 +1,816 @@
+/* Refund Policy Page Styles */
+.refund-policy-page {
+  min-height: 100vh;
+  font-family: var(--font-primary);
+}
+
+.refund-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+/* Hero Section */
+.refund-hero {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 6rem 0 4rem;
+  text-align: center;
+}
+
+.hero-icon {
+  font-size: 4rem;
+  margin-bottom: 2rem;
+  opacity: 0.9;
+}
+
+.refund-hero h1 {
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  font-weight: 800;
+  margin-bottom: 1rem;
+  font-family: var(--font-secondary);
+}
+
+.refund-hero p {
+  font-size: 1.3rem;
+  margin-bottom: 3rem;
+  opacity: 0.9;
+}
+
+.policy-highlights {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.highlight-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 1rem 1.5rem;
+  border-radius: 25px;
+  font-weight: 600;
+}
+
+.highlight-item svg {
+  font-size: 1.2rem;
+}
+
+/* Tab Navigation */
+.policy-tabs {
+  background: white;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.tab-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 0;
+  padding: 0;
+}
+
+.tab-btn {
+  background: transparent;
+  border: none;
+  padding: 1.5rem 2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-bottom: 3px solid transparent;
+}
+
+.tab-btn:hover {
+  color: var(--primary-color);
+  background: #f8f9fa;
+}
+
+.tab-btn.active {
+  color: var(--primary-color);
+  border-bottom-color: var(--primary-color);
+  background: #f8f9fa;
+}
+
+/* Tab Content */
+.tab-content {
+  padding: 4rem 0;
+  background: #f8f9fa;
+  min-height: 60vh;
+}
+
+/* Policy Content */
+.policy-overview {
+  text-align: center;
+  margin-bottom: 4rem;
+}
+
+.policy-overview h2 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 1.5rem;
+  font-family: var(--font-secondary);
+}
+
+.policy-overview p {
+  font-size: 1.2rem;
+  line-height: 1.7;
+  color: var(--text-secondary);
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+/* Eligibility Section */
+.eligibility-section {
+  margin-bottom: 4rem;
+}
+
+.eligibility-section h3 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 2rem;
+  text-align: center;
+  font-family: var(--font-secondary);
+}
+
+.eligibility-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3rem;
+}
+
+.eligible-title, .ineligible-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid;
+}
+
+.eligible-title {
+  color: #28a745;
+  border-bottom-color: #28a745;
+}
+
+.ineligible-title {
+  color: #dc3545;
+  border-bottom-color: #dc3545;
+}
+
+.eligibility-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  margin-bottom: 0.8rem;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+}
+
+.eligibility-item.eligible {
+  background: #d4edda;
+  border-left: 4px solid #28a745;
+}
+
+.eligibility-item.ineligible {
+  background: #f8d7da;
+  border-left: 4px solid #dc3545;
+}
+
+.eligibility-item svg {
+  font-size: 1.2rem;
+}
+
+.eligibility-item.eligible svg {
+  color: #28a745;
+}
+
+.eligibility-item.ineligible svg {
+  color: #dc3545;
+}
+
+/* Refund Methods */
+.refund-methods-section {
+  margin-bottom: 4rem;
+}
+
+.refund-methods-section h3 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 2rem;
+  text-align: center;
+  font-family: var(--font-secondary);
+}
+
+.refund-methods-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+}
+
+.refund-method-card {
+  background: white;
+  padding: 2.5rem 2rem;
+  border-radius: 15px;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.refund-method-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+}
+
+.method-icon {
+  font-size: 2.5rem;
+  color: var(--primary-color);
+  margin-bottom: 1.5rem;
+}
+
+.refund-method-card h4 {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 0.8rem;
+}
+
+.timeframe {
+  background: var(--primary-color);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  display: inline-block;
+  margin-bottom: 1rem;
+}
+
+.refund-method-card p {
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* Process Content */
+.process-content h2 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+  text-align: center;
+  font-family: var(--font-secondary);
+}
+
+.process-content p {
+  font-size: 1.2rem;
+  color: var(--text-secondary);
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.steps-timeline {
+  margin-bottom: 4rem;
+}
+
+.step-item {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  gap: 1.5rem;
+  align-items: center;
+  margin-bottom: 3rem;
+  padding: 2rem;
+  background: white;
+  border-radius: 15px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+  position: relative;
+}
+
+.step-item:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: 2.5rem;
+  bottom: -1.5rem;
+  width: 2px;
+  height: 1.5rem;
+  background: linear-gradient(to bottom, var(--primary-color), transparent);
+}
+
+.step-number {
+  width: 50px;
+  height: 50px;
+  background: var(--primary-color);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.step-icon {
+  width: 60px;
+  height: 60px;
+  background: #f8f9fa;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary-color);
+  font-size: 1.8rem;
+}
+
+.step-content h3 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.step-content p {
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Quick Return */
+.quick-return {
+  background: white;
+  padding: 3rem;
+  border-radius: 15px;
+  text-align: center;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+.quick-return h3 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 2rem;
+}
+
+.return-options {
+  display: flex;
+  gap: 1.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.return-btn {
+  padding: 1rem 2rem;
+  border: none;
+  border-radius: 10px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 180px;
+  justify-content: center;
+}
+
+.return-btn.primary {
+  background: var(--primary-color);
+  color: white;
+}
+
+.return-btn.primary:hover {
+  background: #5a6fd8;
+  transform: translateY(-2px);
+}
+
+.return-btn.secondary {
+  background: transparent;
+  color: var(--primary-color);
+  border: 2px solid var(--primary-color);
+}
+
+.return-btn.secondary:hover {
+  background: var(--primary-color);
+  color: white;
+}
+
+/* Exchange Content */
+.exchange-content h2 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 2rem;
+  text-align: center;
+  font-family: var(--font-secondary);
+}
+
+.exchange-info {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 3rem;
+  align-items: center;
+  margin-bottom: 3rem;
+  background: white;
+  padding: 3rem;
+  border-radius: 15px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+}
+
+.exchange-text p {
+  font-size: 1.1rem;
+  line-height: 1.7;
+  color: var(--text-secondary);
+  margin-bottom: 2rem;
+}
+
+.exchange-benefits h3 {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+}
+
+.exchange-benefits ul {
+  list-style: none;
+  padding: 0;
+}
+
+.exchange-benefits li {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin-bottom: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.exchange-benefits li svg {
+  color: #28a745;
+}
+
+.exchange-visual {
+  flex-shrink: 0;
+}
+
+.exchange-diagram {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  background: #f8f9fa;
+  padding: 2rem;
+  border-radius: 15px;
+}
+
+.exchange-step {
+  text-align: center;
+  color: var(--primary-color);
+}
+
+.exchange-step svg {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+.exchange-arrow {
+  font-size: 2rem;
+  color: var(--primary-color);
+  font-weight: bold;
+}
+
+.price-difference {
+  background: white;
+  padding: 3rem;
+  border-radius: 15px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+}
+
+.price-difference h3 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.price-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+
+.price-card {
+  background: #f8f9fa;
+  padding: 2rem;
+  border-radius: 15px;
+  text-align: center;
+  border: 2px solid transparent;
+  transition: all 0.3s ease;
+}
+
+.price-card:hover {
+  border-color: var(--primary-color);
+}
+
+.price-card svg {
+  font-size: 2rem;
+  color: var(--primary-color);
+  margin-bottom: 1rem;
+}
+
+.price-card h4 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 0.8rem;
+}
+
+.price-card p {
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* FAQ Content */
+.faq-content h2 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 3rem;
+  text-align: center;
+  font-family: var(--font-secondary);
+}
+
+.faq-list {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.faq-item {
+  background: white;
+  margin-bottom: 1.5rem;
+  border-radius: 15px;
+  overflow: hidden;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+}
+
+.faq-question {
+  background: #f8f9fa;
+  padding: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  border-left: 4px solid var(--primary-color);
+}
+
+.faq-question svg {
+  color: var(--primary-color);
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.faq-question h3 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.faq-answer {
+  padding: 2rem;
+}
+
+.faq-answer p {
+  color: var(--text-secondary);
+  line-height: 1.7;
+  margin: 0;
+}
+
+/* Important Notice */
+.important-notice {
+  padding: 4rem 0;
+  background: #fff3cd;
+}
+
+.notice-content {
+  display: flex;
+  gap: 2rem;
+  align-items: flex-start;
+  background: white;
+  padding: 3rem;
+  border-radius: 15px;
+  border: 2px solid #ffeaa7;
+}
+
+.notice-icon {
+  color: #856404;
+  font-size: 3rem;
+  flex-shrink: 0;
+}
+
+.notice-text h3 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #856404;
+  margin-bottom: 1rem;
+}
+
+.notice-text p {
+  color: #856404;
+  line-height: 1.7;
+  margin: 0;
+}
+
+/* Support Section */
+.support-section {
+  padding: 4rem 0;
+  background: white;
+}
+
+.support-content {
+  text-align: center;
+}
+
+.support-content h2 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+  font-family: var(--font-secondary);
+}
+
+.support-content p {
+  font-size: 1.2rem;
+  color: var(--text-secondary);
+  margin-bottom: 3rem;
+}
+
+.support-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.support-card {
+  background: #f8f9fa;
+  padding: 3rem 2rem;
+  border-radius: 15px;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.support-card:hover {
+  background: var(--primary-color);
+  color: white;
+  transform: translateY(-5px);
+}
+
+.support-card svg {
+  font-size: 2.5rem;
+  color: var(--primary-color);
+  margin-bottom: 1.5rem;
+  transition: color 0.3s ease;
+}
+
+.support-card:hover svg {
+  color: white;
+}
+
+.support-card h3 {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 0.8rem;
+  transition: color 0.3s ease;
+}
+
+.support-card:hover h3 {
+  color: white;
+}
+
+.support-card p {
+  font-size: 1.1rem;
+  color: var(--primary-color);
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  transition: color 0.3s ease;
+}
+
+.support-card:hover p {
+  color: white;
+}
+
+.support-card span {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  transition: color 0.3s ease;
+}
+
+.support-card:hover span {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .refund-hero {
+    padding: 4rem 0 3rem;
+  }
+  
+  .policy-highlights {
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+  }
+  
+  .tab-buttons {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  
+  .tab-btn {
+    padding: 1rem 1.5rem;
+    font-size: 0.9rem;
+  }
+  
+  .eligibility-grid {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+  
+  .refund-methods-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .step-item {
+    grid-template-columns: 1fr;
+    text-align: center;
+    gap: 1rem;
+  }
+  
+  .step-item:not(:last-child)::after {
+    display: none;
+  }
+  
+  .exchange-info {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+  
+  .exchange-diagram {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .exchange-arrow {
+    transform: rotate(90deg);
+  }
+  
+  .price-cards {
+    grid-template-columns: 1fr;
+  }
+  
+  .notice-content {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .support-options {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .refund-container {
+    padding: 0 1rem;
+  }
+  
+  .tab-content {
+    padding: 2rem 0;
+  }
+  
+  .step-item,
+  .refund-method-card,
+  .support-card,
+  .price-card {
+    padding: 1.5rem;
+  }
+  
+  .return-options {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .return-btn {
+    width: 100%;
+    max-width: 300px;
+  }
+}

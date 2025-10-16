@@ -53,6 +53,14 @@ const productSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
+    isNewArrival: {
+        type: Boolean,
+        default: false
+    },
+    newArrivalAddedAt: {
+        type: Date,
+        default: null
+    },
     createdAt: {
         type: Date,
         default: Date.now

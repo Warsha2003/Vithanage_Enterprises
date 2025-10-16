@@ -2,9 +2,11 @@ import React, { useEffect, useState } from 'react';
 import './MyOrders.css';
 import RefundRequest from '../Refund/RefundRequest';
 import { useSettings } from '../../contexts/SettingsContext';
+import { useCurrency } from '../../contexts/CurrencyContext';
 
 const MyOrders = () => {
-  const { settings, formatCurrency } = useSettings();
+  const { settings } = useSettings();
+  const { formatPrice } = useCurrency();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -175,7 +177,7 @@ const MyOrders = () => {
   const handleCancelOrder = async (order) => {
     // Show confirmation dialog
     const confirmCancel = window.confirm(
-      `Are you sure you want to cancel this order?\n\nOrder ID: ${order._id}\nTotal: ${formatCurrency(order.totals?.total)}\n\nThis action cannot be undone.`
+      `Are you sure you want to cancel this order?\n\nOrder ID: ${order._id}\nTotal: ${formatPrice(order.totals?.total)}\n\nThis action cannot be undone.`
     );
     
     if (!confirmCancel) return;
@@ -279,7 +281,7 @@ const MyOrders = () => {
                         <div className="item-info">
                           <span>{it.name} × {it.quantity}</span>
                           <div style={{ display: 'flex', alignItems: 'center' }}>
-                            <span>{formatCurrency(it.price * it.quantity)}</span>
+                            <span>{formatPrice(it.price * it.quantity)}</span>
                             {getRefundStatusDisplay(refundStatus?.status || localRefundStatus)}
                           </div>
                         </div>
@@ -334,15 +336,15 @@ const MyOrders = () => {
                       </div>
                     </div>
                   )}
-                  <div className="total-row"><span>Subtotal</span><span>{formatCurrency(order.totals?.subtotal)}</span></div>
+                  <div className="total-row"><span>Subtotal</span><span>{formatPrice(order.totals?.subtotal)}</span></div>
                   {order.promotion && (
                     <div className="total-row promotion-used">
                       <span>🎉 Promotion "{order.promotion.code}" Applied</span>
-                      <span>-{formatCurrency(order.totals?.discount || 0)}</span>
+                      <span>-{formatPrice(order.totals?.discount || 0)}</span>
                     </div>
                   )}
-                  <div className="total-row"><span>Shipping</span><span>{formatCurrency(order.totals?.shipping)}</span></div>
-                  <div className="total-row total"><span>Total</span><span>{formatCurrency(order.totals?.total)}</span></div>
+                  <div className="total-row"><span>Shipping</span><span>{formatPrice(order.totals?.shipping)}</span></div>
+                  <div className="total-row total"><span>Total</span><span>{formatPrice(order.totals?.total)}</span></div>
                 </div>
               </div>
             ))}

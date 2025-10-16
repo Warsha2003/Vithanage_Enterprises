@@ -93,12 +93,47 @@ refundSchema.statics.getRefundStats = async function() {
     const pendingRefunds = await this.countDocuments({ status: 'Pending' });
     const approvedRefunds = await this.countDocuments({ status: 'Approved' });
     const rejectedRefunds = await this.countDocuments({ status: 'Rejected' });
+    const processingRefunds = await this.countDocuments({ status: 'Processing' });
+    const completedRefunds = await this.countDocuments({ status: 'Completed' });
+    
+    // Calculate average processing time in days for completed refunds
+    const processingTimeStats = await this.aggregate([
+        {
+            $match: { 
+                status: 'Completed',
+                actualProcessingDate: { $exists: true }
+            }
+        },
+        {
+            $project: {
+                processingDays: {
+                    $divide: [
+                        { $subtract: ['$actualProcessingDate', '$createdAt'] },
+                        1000 * 60 * 60 * 24 // Convert milliseconds to days
+                    ]
+                }
+            }
+        },
+        {
+            $group: {
+                _id: null,
+                avgProcessingTime: { $avg: '$processingDays' }
+            }
+        }
+    ]);
+    
+    const avgProcessingTime = processingTimeStats.length > 0 
+        ? Math.round(processingTimeStats[0].avgProcessingTime) 
+        : 0;
     
     return {
         total: totalRefunds,
         pending: pendingRefunds,
         approved: approvedRefunds,
         rejected: rejectedRefunds,
+        processing: processingRefunds,
+        completed: completedRefunds,
+        avgProcessingTime,
         byStatus: stats
     };
 };

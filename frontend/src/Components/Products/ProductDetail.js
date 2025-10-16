@@ -14,6 +14,7 @@ import {
 import './ProductDetail.css';
 import { useCart } from '../Cart/CartContext';
 import { useSettings } from '../../contexts/SettingsContext';
+import { useCurrency } from '../../contexts/CurrencyContext';
 import ReviewDisplay from '../Reviews/ReviewDisplay';
 import ReviewForm from '../Reviews/ReviewForm';
 
@@ -21,7 +22,7 @@ const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addItem } = useCart();
-  const { formatCurrency } = useSettings();
+  const { formatPrice } = useCurrency();
   
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -148,7 +149,7 @@ const ProductDetail = () => {
 
           <div className="product-price">
             <FontAwesomeIcon icon={faDollarSign} />
-            <span className="price">{formatCurrency(product.price)}</span>
+            <span className="price">{formatPrice(product.price)}</span>
           </div>
 
           <div className="product-brand">
