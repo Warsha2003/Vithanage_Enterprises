@@ -30,6 +30,8 @@ const getProductById = async (req, res) => {
 
 // Add a new product
 const addProduct = async (req, res) => {
+  const Inventory = require('../Models/Inventory');
+
   try {
     const { name, description, price, category, brand, imageUrl, stock } = req.body;
     
@@ -49,6 +51,23 @@ const addProduct = async (req, res) => {
     });
     
     const savedProduct = await newProduct.save();
+    // Create inventory record immediately for the new product (if not exists)
+    try {
+      const existingInventory = await Inventory.findOne({ product: savedProduct._id });
+      if (!existingInventory) {
+        const inv = new Inventory({
+          product: savedProduct._id,
+          currentStock: savedProduct.stock || 0,
+          minStockLevel: 10,
+          maxStockLevel: 100,
+          reorderPoint: 15
+        });
+        await inv.save();
+      }
+    } catch (invErr) {
+      console.error('Failed to create inventory record for new product:', invErr.message || invErr);
+      // Don't fail product creation if inventory creation fails; just log.
+    }
     res.status(201).json(savedProduct);
   } catch (error) {
     console.error(error.message);

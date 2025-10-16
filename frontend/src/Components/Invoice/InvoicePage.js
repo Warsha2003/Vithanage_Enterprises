@@ -46,10 +46,22 @@ const InvoicePage = () => {
     });
     const finalY = doc.lastAutoTable ? doc.lastAutoTable.finalY : 125;
 
-    doc.text(`Subtotal: $${order.totals.subtotal.toFixed(2)}`, 20, finalY + 10);
-    doc.text(`Discount: $${order.totals.discount.toFixed(2)}`, 20, finalY + 20);
-    doc.text(`Shipping: $${order.totals.shipping.toFixed(2)}`, 20, finalY + 30);
-    doc.text(`Total: $${order.totals.total.toFixed(2)}`, 20, finalY + 40);
+    // Right-align the totals block near the right margin
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const rightMargin = 20; // keep 20 units margin from right edge
+
+    const lines = [
+      `Subtotal: $${order.totals.subtotal.toFixed(2)}`,
+      `Discount: $${order.totals.discount.toFixed(2)}`,
+      `Shipping: $${order.totals.shipping.toFixed(2)}`,
+      `Total: $${order.totals.total.toFixed(2)}`
+    ];
+
+    lines.forEach((line, i) => {
+      const textWidth = doc.getTextWidth ? doc.getTextWidth(line) : doc.getStringUnitWidth(line) * doc.internal.getFontSize();
+      const x = pageWidth - rightMargin - textWidth;
+      doc.text(line, x, finalY + 10 + i * 10);
+    });
     // Rubber stamp for paid
     doc.setFontSize(32);
     doc.setTextColor(220, 0, 0);

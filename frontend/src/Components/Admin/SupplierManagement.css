@@ -898,3 +898,10 @@
     padding: 6px 4px;
   }
 }
+
+/* Field error styling */
+.field-error {
+  color: #d9534f; /* bootstrap danger red */
+  font-size: 12px;
+  margin-top: 4px;
+}
