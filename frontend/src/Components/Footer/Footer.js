@@ -44,6 +44,23 @@ function Footer() {
               <i className="fab fa-youtube"></i>
             </a>
           </div>
+          
+          <h4>Payment Methods</h4>
+          <div className="payment-methods">
+            <div className="payment-icon cash-on-delivery" title="Cash on Delivery">
+              <i className="fas fa-money-bill-wave"></i>
+              <span>COD</span>
+            </div>
+            <div className="payment-icon mastercard" title="Mastercard">
+              <i className="fab fa-cc-mastercard"></i>
+            </div>
+            <div className="payment-icon visa" title="Visa">
+              <i className="fab fa-cc-visa"></i>
+            </div>
+            <div className="payment-icon google-pay" title="Google Pay">
+              <i className="fab fa-google-pay"></i>
+            </div>
+          </div>
         </div>
         
         <div className="footer-section">

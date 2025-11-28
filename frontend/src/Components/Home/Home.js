@@ -12,9 +12,35 @@ function Home() {
   const [promotions, setPromotions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentCategoryPage, setCurrentCategoryPage] = useState(0);
+  const [currentBanner, setCurrentBanner] = useState(0);
   const navigate = useNavigate();
   const { settings } = useSettings();
   const { formatPrice } = useCurrency();
+
+  // Banner slides data - Just images, no text
+  const bannerSlides = [
+    { id: 1, image: "/images/banners/banner1.jpg" },
+    { id: 2, image: "/images/banners/banner2.jpg" },
+    { id: 3, image: "/images/banners/banner3.jpg" },
+    { id: 4, image: "/images/banners/banner4.jpg" },
+    { id: 5, image: "/images/banners/banner5.jpg" },
+    { id: 6, image: "/images/banners/banner6.jpg" }
+  ];
+
+  // Auto slide banner
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentBanner((prev) => (prev + 1) % bannerSlides.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [bannerSlides.length]);
+  const nextBanner = () => {
+    setCurrentBanner((prev) => (prev + 1) % bannerSlides.length);
+  };
+
+  const prevBanner = () => {
+    setCurrentBanner((prev) => (prev - 1 + bannerSlides.length) % bannerSlides.length);
+  };
   
   useEffect(() => {
     fetchHomeData();
@@ -209,318 +235,112 @@ function Home() {
 
   return (
     <div className="home-container">
-      {/* Main Hero Banner */}
-      <section className="hero-section" style={{backgroundImage: 'url(/images/categories/background.jpg)'}}>
-        <div className="hero-banner">
-          <div className="hero-content">
-            <div className="hero-badge">✨ Vithanage Enterprises</div>
-            <h1>Premium Electronics Store</h1>
-            <p>Discover cutting-edge technology and innovative solutions for your digital lifestyle</p>
-            <div className="hero-features">
-              <div className="hero-feature">
-                <span className="feature-icon">🚚</span>
-                <span>Fast Shipping</span>
-              </div>
-              <div className="hero-feature">
-                <span className="feature-icon">🛡️</span>
-                <span>Warranty Guaranteed</span>
-              </div>
-              <div className="hero-feature">
-                <span className="feature-icon">⭐</span>
-                <span>Premium Quality</span>
+      {/* Hero Section with Banner and Promos */}
+      <section className="hero-main-section">
+        <div className="hero-content-wrapper">
+          {/* Banner Slider - 3/4 width */}
+          <div className="hero-banner-slider">
+            <div className="banner-container">
+              {bannerSlides.map((slide, index) => (
+                <div
+                  key={slide.id}
+                  className={`banner-slide ${index === currentBanner ? 'active' : ''}`}
+                  style={{
+                    backgroundImage: `url(${slide.image})`
+                  }}
+                  onClick={() => navigate('/products')}
+                />
+              ))}
+              
+              {/* Navigation Arrows */}
+              <button className="banner-arrow banner-arrow-left" onClick={prevBanner}>
+                &#8249;
+              </button>
+              <button className="banner-arrow banner-arrow-right" onClick={nextBanner}>
+                &#8250;
+              </button>
+              
+              {/* Dots Indicator */}
+              <div className="banner-dots">
+                {bannerSlides.map((_, index) => (
+                  <button
+                    key={index}
+                    className={`dot ${index === currentBanner ? 'active' : ''}`}
+                    onClick={() => setCurrentBanner(index)}
+                  />
+                ))}
               </div>
             </div>
-            <div className="hero-buttons">
-              <button className="btn-primary" onClick={() => navigate('/products')}>
-                Explore Products
-              </button>
-              <button className="btn-secondary" onClick={() => navigate('/products')}>
-                Latest Arrivals
-              </button>
+          </div>
+
+          {/* Scrollable Promotions in Banner Space - 1/4 width */}
+          <div className="scrollable-promotions">
+            <div className="promo-scroll-header">
+              <h4>Promotions</h4>
+              <span className="scroll-indicator">↕️ Scroll</span>
+            </div>
+            
+            <div className="promo-scroll-container">
+              {promotions.length > 0 ? (
+                promotions.map((promotion, index) => {
+                  const getPromotionStyle = (type) => {
+                    switch (type) {
+                      case 'percentage':
+                        return { class: 'flash-deal', icon: '⚡' };
+                      case 'fixed_amount':
+                        return { class: 'free-shipping', icon: '💰' };
+                      case 'free_shipping':
+                        return { class: 'free-shipping', icon: '🚚' };
+                      default:
+                        return { class: 'new-customer', icon: '🎁' };
+                    }
+                  };
+
+                  const style = getPromotionStyle(promotion.type);
+
+                  return (
+                    <div key={promotion._id} className="scroll-promo-card">
+                      <div className="scroll-promo-icon">{style.icon}</div>
+                      <div className="scroll-promo-content">
+                        <h5>{promotion.name}</h5>
+                        <p>{promotion.description}</p>
+                        <div className="promo-code-section">
+                          <span className="scroll-promo-code">{promotion.code}</span>
+                          <button 
+                            className="copy-code-button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigator.clipboard.writeText(promotion.code).then(() => {
+                                const btn = e.target;
+                                const originalText = btn.textContent;
+                                btn.textContent = '✓';
+                                btn.classList.add('copied');
+                                setTimeout(() => {
+                                  btn.textContent = originalText;
+                                  btn.classList.remove('copied');
+                                }, 1500);
+                              });
+                            }}
+                            title="Copy promotion code"
+                          >
+                            Copy
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="no-more-promos">
+                  <p>No promotions</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
       </section>
 
-      {/* Debug info */}
-      {console.log('Current promotions state:', promotions)}
-      {console.log('Promotions length:', promotions.length)}
-      
-      {/* Promotion Section */}
-      <section className="promo-banners">
-        
-        {/* Database promotions if available */}
-        {promotions.length > 0 && promotions.slice(0, 3).map((promotion, index) => {
-          // Determine promotion type for styling and icons
-          const getPromotionStyle = (type) => {
-            switch (type) {
-              case 'percentage':
-                return { class: 'flash-deal', icon: '⚡' };
-              case 'fixed_amount':
-                return { class: 'flash-deal', icon: '💰' };
-              case 'free_shipping':
-                return { class: 'free-shipping', icon: '🚚' };
-              default:
-                return { class: 'new-arrivals', icon: '✨' };
-            }
-          };
-
-          const style = getPromotionStyle(promotion.type);
-          
-          // Format discount display
-          const getDiscountText = () => {
-            if (promotion.type === 'percentage') {
-              return `${promotion.discountValue}% OFF`;
-            } else if (promotion.type === 'fixed_amount') {
-              return `${formatPrice(promotion.discountValue)} OFF`;
-            } else if (promotion.type === 'free_shipping') {
-              return 'FREE SHIPPING';
-            } else {
-              return 'SPECIAL OFFER';
-            }
-          };
-
-          return (
-            <div key={promotion._id} className={`promo-banner ${style.class}`}>
-              <div className="promo-icon">{style.icon}</div>
-              <div className="promo-content">
-                <h3>{promotion.name}</h3>
-                <p>{promotion.description}</p>
-                <span className="promo-discount">{getDiscountText()}</span>
-                <div className="promo-code-container">
-                  <div className="promo-code">Code: {promotion.code}</div>
-                  <button 
-                    className="copy-code-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigator.clipboard.writeText(promotion.code).then(() => {
-                        // Show success feedback
-                        const btn = e.target;
-                        const originalText = btn.textContent;
-                        btn.textContent = '✅ Copied!';
-                        btn.style.backgroundColor = '#28a745';
-                        setTimeout(() => {
-                          btn.textContent = originalText;
-                          btn.style.backgroundColor = '';
-                        }, 2000);
-                      }).catch(() => {
-                        // Fallback for older browsers
-                        const textArea = document.createElement('textarea');
-                        textArea.value = promotion.code;
-                        document.body.appendChild(textArea);
-                        textArea.select();
-                        document.execCommand('copy');
-                        document.body.removeChild(textArea);
-                        
-                        const btn = e.target;
-                        const originalText = btn.textContent;
-                        btn.textContent = '✅ Copied!';
-                        btn.style.backgroundColor = '#28a745';
-                        setTimeout(() => {
-                          btn.textContent = originalText;
-                          btn.style.backgroundColor = '';
-                        }, 2000);
-                      });
-                    }}
-                    title="Click to copy promotion code"
-                  >
-                    📋 Copy
-                  </button>
-                </div>
-                {promotion.minimumOrderValue > 0 && (
-                  <small className="promo-min-order">
-                    Min order: {formatPrice(promotion.minimumOrderValue)}
-                  </small>
-                )}
-              </div>
-            </div>
-          );
-        })}
-        
-        {/* Fallback promotions if no database promotions */}
-        {promotions.length === 0 && (
-          <>
-            <div className="promo-banner flash-deal">
-              <div className="promo-icon">⚡</div>
-              <div className="promo-content">
-                <h3>Flash Deal</h3>
-                <p>Limited Time Only!</p>
-                <span className="promo-discount">50% OFF</span>
-                <div className="promo-code-container">
-                  <div className="promo-code">Code: FLASH50</div>
-                  <button 
-                    className="copy-code-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigator.clipboard.writeText('FLASH50').then(() => {
-                        const btn = e.target;
-                        const originalText = btn.textContent;
-                        btn.textContent = '✅ Copied!';
-                        btn.style.backgroundColor = '#28a745';
-                        setTimeout(() => {
-                          btn.textContent = originalText;
-                          btn.style.backgroundColor = '';
-                        }, 2000);
-                      });
-                    }}
-                    title="Click to copy promotion code"
-                  >
-                    📋 Copy
-                  </button>
-                </div>
-              </div>
-            </div>
-            <div className="promo-banner free-shipping">
-              <div className="promo-icon">🚚</div>
-              <div className="promo-content">
-                <h3>Free Shipping</h3>
-                <p>On orders over {formatPrice(settings.freeShippingThreshold || 100)}</p>
-                <span className="promo-discount">FREE DELIVERY</span>
-                <div className="promo-code-container">
-                  <div className="promo-code">Code: FREESHIP</div>
-                  <button 
-                    className="copy-code-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigator.clipboard.writeText('FREESHIP').then(() => {
-                        const btn = e.target;
-                        const originalText = btn.textContent;
-                        btn.textContent = '✅ Copied!';
-                        btn.style.backgroundColor = '#28a745';
-                        setTimeout(() => {
-                          btn.textContent = originalText;
-                          btn.style.backgroundColor = '';
-                        }, 2000);
-                      });
-                    }}
-                    title="Click to copy promotion code"
-                  >
-                    📋 Copy
-                  </button>
-                </div>
-              </div>
-            </div>
-            <div className="promo-banner new-arrivals">
-              <div className="promo-icon">✨</div>
-              <div className="promo-content">
-                <h3>Special Offer</h3>
-                <p>Latest Collection</p>
-                <span className="promo-discount">30% OFF</span>
-                <div className="promo-code-container">
-                  <div className="promo-code">Code: SPECIAL30</div>
-                  <button 
-                    className="copy-code-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigator.clipboard.writeText('SPECIAL30').then(() => {
-                        const btn = e.target;
-                        const originalText = btn.textContent;
-                        btn.textContent = '✅ Copied!';
-                        btn.style.backgroundColor = '#28a745';
-                        setTimeout(() => {
-                          btn.textContent = originalText;
-                          btn.style.backgroundColor = '';
-                        }, 2000);
-                      });
-                    }}
-                    title="Click to copy promotion code"
-                  >
-                    📋 Copy
-                  </button>
-                </div>
-              </div>
-            </div>
-          </>
-        )}
-      </section>
-      
-      {/* Original Promotional Banners - Real Database Promotions */}
-      {false && promotions.length > 0 && (
-        <section className="promo-banners">
-          {promotions.slice(0, 3).map((promotion, index) => {
-            // Determine promotion type for styling and icons
-            const getPromotionStyle = (type) => {
-              switch (type) {
-                case 'percentage':
-                  return { class: 'flash-deal', icon: '⚡' };
-                case 'fixed_amount':
-                  return { class: 'flash-deal', icon: '💰' };
-                case 'free_shipping':
-                  return { class: 'free-shipping', icon: '🚚' };
-                default:
-                  return { class: 'new-arrivals', icon: '✨' };
-              }
-            };
-
-            const style = getPromotionStyle(promotion.type);
-            
-            // Format discount display
-            const getDiscountText = () => {
-              if (promotion.type === 'percentage') {
-                return `${promotion.discountValue}% OFF`;
-              } else if (promotion.type === 'fixed_amount') {
-                return `${formatPrice(promotion.discountValue)} OFF`;
-              } else if (promotion.type === 'free_shipping') {
-                return 'FREE SHIPPING';
-              } else {
-                return 'SPECIAL OFFER';
-              }
-            };
-
-            return (
-              <div key={promotion._id} className={`promo-banner ${style.class}`}>
-                <div className="promo-icon">{style.icon}</div>
-                <div className="promo-content">
-                  <h3>{promotion.name}</h3>
-                  <p>{promotion.description}</p>
-                  <span className="promo-discount">{getDiscountText()}</span>
-                  <div className="promo-code">Code: {promotion.code}</div>
-                  {promotion.minimumOrderValue > 0 && (
-                    <small className="promo-min-order">
-                      Min order: {formatPrice(promotion.minimumOrderValue)}
-                    </small>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </section>
-      )}
-
-      {/* Fallback Promotional Banners - If no database promotions */}
-      {false && promotions.length === 0 && (
-        <section className="promo-banners">
-          <div className="promo-banner flash-deal">
-            <div className="promo-icon">⚡</div>
-            <div className="promo-content">
-              <h3>Flash Deal</h3>
-              <p>Limited Time Only!</p>
-              <span className="promo-discount">50% OFF</span>
-              <div className="promo-code">Code: FLASH50</div>
-            </div>
-          </div>
-          <div className="promo-banner free-shipping">
-            <div className="promo-icon">🚚</div>
-            <div className="promo-content">
-              <h3>Free Shipping</h3>
-              <p>On orders over {formatPrice(settings.freeShippingThreshold || 100)}</p>
-              <span className="promo-discount">FREE DELIVERY</span>
-              <div className="promo-code">Code: FREESHIP</div>
-            </div>
-          </div>
-          <div className="promo-banner new-arrivals">
-            <div className="promo-icon">✨</div>
-            <div className="promo-content">
-              <h3>Special Offer</h3>
-              <p>Latest Collection</p>
-              <span className="promo-discount">30% OFF</span>
-              <div className="promo-code">Code: SPECIAL30</div>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* Categories Showcase - Carousel */}
+      {/* Categories Section */}
       <section className="categories-section">
         <div className="section-header">
           <h2>Shop by Categories</h2>
@@ -656,6 +476,7 @@ function Home() {
               </div>
               <div className="home-product-info">
                 <h3>{product.name}</h3>
+                <div className="home-product-category">{product.category}</div>
                 <div className="home-product-rating">
                   {'★'.repeat(Math.floor(product.rating || 4))}
                   <span className="home-rating-text">({product.rating || 4.0})</span>
@@ -699,7 +520,7 @@ function Home() {
               </div>
               <div className="home-product-info">
                 <h3>{product.name}</h3>
-                <p className="home-product-category">{product.category}</p>
+                <div className="home-product-category">{product.category}</div>
                 <div className="home-product-rating">
                   {'★'.repeat(Math.floor(product.rating || 4))}
                   <span className="home-rating-text">({product.rating || 4.0})</span>
@@ -716,8 +537,6 @@ function Home() {
       {/* Call to Action Section */}
       <section className="cta-section">
         <div className="cta-content">
-          <h2>Ready to Explore More?</h2>
-          <p>Discover thousands of amazing products with incredible deals</p>
           <button className="cta-button" onClick={() => navigate('/products')}>
             Browse All Products
           </button>

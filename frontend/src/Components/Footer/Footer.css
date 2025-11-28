@@ -115,6 +115,86 @@
   background: #e60000;
 }
 
+/* Payment Methods */
+.footer-section h4 {
+  font-size: 1rem;
+  margin: 25px 0 15px 0;
+  color: #667eea;
+  font-weight: 600;
+}
+
+.payment-methods {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.payment-icon {
+  width: 50px;
+  height: 32px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.1rem;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.payment-icon:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.payment-icon.cash-on-delivery {
+  background: #059669;
+  width: 60px;
+  font-size: 0.7rem;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.payment-icon.cash-on-delivery i {
+  font-size: 0.9rem;
+}
+
+.payment-icon.cash-on-delivery span {
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.payment-icon.cash-on-delivery:hover {
+  background: #047857;
+}
+
+.payment-icon.mastercard {
+  background: #eb001b;
+}
+
+.payment-icon.mastercard:hover {
+  background: #d10018;
+}
+
+.payment-icon.visa {
+  background: #1a1f71;
+}
+
+.payment-icon.visa:hover {
+  background: #161a5e;
+}
+
+.payment-icon.google-pay {
+  background: #4285f4;
+}
+
+.payment-icon.google-pay:hover {
+  background: #3367d6;
+}
+
 .footer-bottom {
   text-align: center;
   margin-top: 30px;
