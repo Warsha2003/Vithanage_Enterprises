@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faShoppingCart, faUser, faSignOutAlt, faSignInAlt, faSearch, faBars, faTimes, faFire, faTag, faStar, faGift } from '@fortawesome/free-solid-svg-icons';
 import { useCart } from '../Cart/CartContext';
@@ -15,6 +15,7 @@ function Navbar() {
   const [categories, setCategories] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
+  const location = useLocation();
   const { openCart, totals } = useCart();
   const { settings } = useSettings();
 
@@ -258,19 +259,19 @@ function Navbar() {
         <div className="secondary-container">
           {/* Quick Links */}
           <div className="quick-links">
-            <Link to="/" className="secondary-link">
+            <Link to="/" className={`secondary-link ${location.pathname === '/' ? 'active' : ''}`}>
               <FontAwesomeIcon icon={faFire} />
               Home
             </Link>
-            <Link to="/best-sellers" className="secondary-link">
+            <Link to="/best-sellers" className={`secondary-link ${location.pathname === '/best-sellers' ? 'active' : ''}`}>
               <FontAwesomeIcon icon={faStar} />
               Best Sellers
             </Link>
-            <Link to="/todays-deals" className="secondary-link sale-link">
+            <Link to="/todays-deals" className={`secondary-link sale-link ${location.pathname === '/todays-deals' ? 'active' : ''}`}>
               <FontAwesomeIcon icon={faTag} />
               Today's Deals
             </Link>
-            <Link to="/new-arrivals" className="secondary-link">
+            <Link to="/new-arrivals" className={`secondary-link ${location.pathname === '/new-arrivals' ? 'active' : ''}`}>
               <FontAwesomeIcon icon={faGift} />
               New Arrivals
             </Link>
@@ -302,10 +303,10 @@ function Navbar() {
           </div>
           
           <div className="mobile-menu-content">
-            <Link to="/" onClick={() => setShowMobileMenu(false)}>Home</Link>
-            <Link to="/best-sellers" onClick={() => setShowMobileMenu(false)}>Best Sellers</Link>
-            <Link to="/todays-deals" onClick={() => setShowMobileMenu(false)}>Today's Deals</Link>
-            <Link to="/new-arrivals" onClick={() => setShowMobileMenu(false)}>New Arrivals</Link>
+            <Link to="/" onClick={() => setShowMobileMenu(false)} className={location.pathname === '/' ? 'active' : ''}>Home</Link>
+            <Link to="/best-sellers" onClick={() => setShowMobileMenu(false)} className={location.pathname === '/best-sellers' ? 'active' : ''}>Best Sellers</Link>
+            <Link to="/todays-deals" onClick={() => setShowMobileMenu(false)} className={location.pathname === '/todays-deals' ? 'active' : ''}>Today's Deals</Link>
+            <Link to="/new-arrivals" onClick={() => setShowMobileMenu(false)} className={location.pathname === '/new-arrivals' ? 'active' : ''}>New Arrivals</Link>
             {user && !user.isAdmin && <Link to="/my-orders" onClick={() => setShowMobileMenu(false)}>My Orders</Link>}
             {user && !user.isAdmin && <Link to="/my-reviews" onClick={() => setShowMobileMenu(false)}>My Reviews</Link>}
             {user?.isAdmin && <Link to="/admin" onClick={() => setShowMobileMenu(false)}>Admin</Link>}

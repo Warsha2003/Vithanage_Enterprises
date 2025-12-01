@@ -20,6 +20,7 @@ import './BestSellers.css';
 import { useCart } from '../Cart/CartContext';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useCurrency } from '../../contexts/CurrencyContext';
+import SimpleLoader from '../Common/SimpleLoader';
 
 const BestSellers = () => {
   const [bestSellers, setBestSellers] = useState([]);
@@ -144,10 +145,10 @@ const BestSellers = () => {
 
   if (loading) {
     return (
-      <div className="best-sellers-loading">
-        <FontAwesomeIcon icon={faSpinner} spin size="3x" />
-        <p>Loading Best Sellers...</p>
-      </div>
+      <SimpleLoader 
+        message="Loading Best Sellers"
+        subtitle="Finding our most popular products..."
+      />
     );
   }
 

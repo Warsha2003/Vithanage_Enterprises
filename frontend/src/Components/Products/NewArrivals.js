@@ -2,13 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
-  faGift, faClock, faFire, faShoppingCart, 
+  faGift, faClock, faShoppingCart, 
   faEye, faStar, faCalendarPlus, faBox,
-  faSpinner, faFilter, faSort, faSearch
+  faSpinner, faSearch
 } from '@fortawesome/free-solid-svg-icons';
 import { useCart } from '../Cart/CartContext';
-import { useSettings } from '../../contexts/SettingsContext';
 import { useCurrency } from '../../contexts/CurrencyContext';
+import SimpleLoader from '../Common/SimpleLoader';
 import './NewArrivals.css';
 
 function NewArrivals() {
@@ -16,14 +16,12 @@ function NewArrivals() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(0);
   const [filter, setFilter] = useState('all');
   const [sortBy, setSortBy] = useState('newest');
   const [searchTerm, setSearchTerm] = useState('');
   
   const navigate = useNavigate();
   const { addItem } = useCart();
-  const { formatCurrency } = useSettings();
   const { formatPrice } = useCurrency();
   const productsPerPage = 12;
 
@@ -45,7 +43,6 @@ function NewArrivals() {
       }
       
       setNewProducts(newArrivals);
-      setTotalPages(Math.ceil(newArrivals.length / productsPerPage));
       console.log('New arrivals loaded:', newArrivals.length);
     } catch (error) {
       console.error('Error fetching new arrivals:', error);
@@ -149,14 +146,10 @@ function NewArrivals() {
 
   if (loading) {
     return (
-      <div className="newarrivals-page">
-        <div className="newarrivals-container">
-          <div className="newarrivals-loading">
-            <FontAwesomeIcon icon={faSpinner} spin className="newarrivals-loading-icon" />
-            <p>Loading fresh arrivals...</p>
-          </div>
-        </div>
-      </div>
+      <SimpleLoader 
+        message="Loading New Arrivals"
+        subtitle="Finding the latest products..."
+      />
     );
   }
 
@@ -250,10 +243,6 @@ function NewArrivals() {
           {paginatedProducts.map((product) => (
             <div key={product._id} className="newarrivals-card">
               <div className="newarrivals-badges">
-                <div className="newarrivals-new-badge">
-                  <FontAwesomeIcon icon={faGift} />
-                  NEW
-                </div>
                 <div className="newarrivals-date-badge">
                   {getDaysAgo(product)}
                 </div>

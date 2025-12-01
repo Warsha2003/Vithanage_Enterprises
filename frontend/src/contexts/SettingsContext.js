@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import ModernLoader from '../Components/Common/ModernLoader';
 
 const SettingsContext = createContext();
 
@@ -124,32 +125,10 @@ export const SettingsProvider = ({ children }) => {
 
   if (loading) {
     return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        height: '100vh',
-        backgroundColor: '#f8f9fa'
-      }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ 
-            fontSize: '18px', 
-            fontWeight: 'bold', 
-            marginBottom: '10px' 
-          }}>
-            Loading Settings...
-          </div>
-          <div style={{ 
-            width: '40px', 
-            height: '40px', 
-            border: '4px solid #e3e3e3',
-            borderTop: '4px solid #007bff',
-            borderRadius: '50%',
-            animation: 'spin 1s linear infinite',
-            margin: '0 auto'
-          }}></div>
-        </div>
-      </div>
+      <ModernLoader 
+        message="Initializing Vithanage Enterprises"
+        subtitle="Setting up your shopping experience..."
+      />
     );
   }
 

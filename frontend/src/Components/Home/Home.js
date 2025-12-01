@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useCurrency } from '../../contexts/CurrencyContext';
+import ModernLoader from '../Common/ModernLoader';
 import './Home.css';
 
 function Home() {
@@ -226,10 +227,10 @@ function Home() {
 
   if (loading) {
     return (
-      <div className="loading-container">
-        <div className="loading-spinner"></div>
-        <p>Loading amazing deals...</p>
-      </div>
+      <ModernLoader 
+        message="Welcome to Vithanage Enterprises"
+        subtitle="Loading amazing deals and products just for you..."
+      />
     );
   }
 
@@ -450,7 +451,7 @@ function Home() {
       <section className="trending-section">
         <div className="section-header">
           <h2>🚀 Trending Now</h2>
-          <p>Most popular items this week</p>
+          <p>Hand-picked items just for you</p>
         </div>
         <div className="home-products-grid home-trending">
           {trendingProducts.map((product) => (

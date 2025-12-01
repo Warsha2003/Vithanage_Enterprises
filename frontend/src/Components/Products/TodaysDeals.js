@@ -8,6 +8,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { useCart } from '../Cart/CartContext';
 import { useCurrency } from '../../contexts/CurrencyContext';
+import SimpleLoader from '../Common/SimpleLoader';
 import './TodaysDeals.css';
 
 function TodaysDeals() {
@@ -114,14 +115,10 @@ function TodaysDeals() {
 
   if (loading) {
     return (
-      <div className="todays-deals-page">
-        <div className="deals-container">
-          <div className="loading-spinner">
-            <FontAwesomeIcon icon={faSpinner} spin size="3x" />
-            <p>Loading today's hottest deals...</p>
-          </div>
-        </div>
-      </div>
+      <SimpleLoader 
+        message="Loading Today's Deals"
+        subtitle="Finding the best discounts..."
+      />
     );
   }
 

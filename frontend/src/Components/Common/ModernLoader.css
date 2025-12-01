@@ -1,0 +1,337 @@
+/* Modern Unique Loading Component */
+
+.vithanage-modern-loader {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  overflow: hidden;
+}
+
+.vithanage-loader-content {
+  text-align: center;
+  position: relative;
+}
+
+/* Animated Company Logo */
+.vithanage-logo-container {
+  margin-bottom: 2rem;
+  position: relative;
+}
+
+.vithanage-animated-logo {
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(45deg, #ff9900, #ffb84d);
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  font-weight: 900;
+  color: white;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  box-shadow: 0 8px 32px rgba(255, 153, 0, 0.4);
+  animation: vithanage-logo-pulse 2s ease-in-out infinite;
+  margin: 0 auto;
+  position: relative;
+  overflow: hidden;
+}
+
+.vithanage-animated-logo::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  animation: vithanage-logo-shine 2s ease-in-out infinite 0.5s;
+}
+
+/* Unique Spinner Design */
+.vithanage-unique-spinner {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  margin: 2rem auto;
+}
+
+.vithanage-spinner-ring {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+}
+
+.vithanage-spinner-ring:nth-child(1) {
+  border: 3px solid transparent;
+  border-top: 3px solid #ff9900;
+  animation: vithanage-ring-spin 1.5s linear infinite;
+}
+
+.vithanage-spinner-ring:nth-child(2) {
+  border: 3px solid transparent;
+  border-right: 3px solid #ffb84d;
+  animation: vithanage-ring-spin 1.5s linear infinite reverse;
+  transform: scale(0.8);
+}
+
+.vithanage-spinner-ring:nth-child(3) {
+  border: 3px solid transparent;
+  border-bottom: 3px solid #ff6b35;
+  animation: vithanage-ring-spin 2s linear infinite;
+  transform: scale(0.6);
+}
+
+/* Floating Particles */
+.vithanage-particles {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.vithanage-particle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  animation: vithanage-float 3s ease-in-out infinite;
+}
+
+.vithanage-particle:nth-child(1) {
+  left: 20%;
+  animation-delay: 0s;
+}
+
+.vithanage-particle:nth-child(2) {
+  left: 40%;
+  animation-delay: 0.5s;
+}
+
+.vithanage-particle:nth-child(3) {
+  left: 60%;
+  animation-delay: 1s;
+}
+
+.vithanage-particle:nth-child(4) {
+  left: 80%;
+  animation-delay: 1.5s;
+}
+
+/* Loading Text with Typewriter Effect */
+.vithanage-loading-text {
+  color: white;
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-top: 2rem;
+  position: relative;
+  overflow: hidden;
+  white-space: nowrap;
+  border-right: 3px solid #ff9900;
+  animation: vithanage-typewriter 2s steps(20, end) infinite;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.vithanage-loading-subtitle {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 1rem;
+  margin-top: 1rem;
+  animation: vithanage-fade-pulse 2s ease-in-out infinite;
+}
+
+/* Progress Bar */
+.vithanage-progress-container {
+  width: 300px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+  margin: 2rem auto 1rem;
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+}
+
+.vithanage-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #ff9900, #ffb84d, #ff6b35);
+  border-radius: 2px;
+  animation: vithanage-progress-flow 2s ease-in-out infinite;
+  box-shadow: 0 0 10px rgba(255, 153, 0, 0.5);
+}
+
+/* Mini Loading Spinner for Inline Use */
+.vithanage-mini-loader {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #667eea;
+}
+
+.vithanage-mini-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #e2e8f0;
+  border-top: 2px solid #667eea;
+  border-radius: 50%;
+  animation: vithanage-mini-spin 1s linear infinite;
+}
+
+/* Button Loading State */
+.vithanage-btn-loading {
+  position: relative;
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.vithanage-btn-loading::after {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: vithanage-mini-spin 1s linear infinite;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* Keyframe Animations */
+@keyframes vithanage-logo-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 8px 32px rgba(255, 153, 0, 0.4);
+  }
+  50% {
+    transform: scale(1.1);
+    box-shadow: 0 12px 48px rgba(255, 153, 0, 0.6);
+  }
+}
+
+@keyframes vithanage-logo-shine {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+@keyframes vithanage-ring-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes vithanage-float {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  50% {
+    transform: translateY(-100px) rotate(180deg);
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-200px) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+@keyframes vithanage-typewriter {
+  0% {
+    width: 0;
+  }
+  50% {
+    width: 100%;
+  }
+  100% {
+    width: 0;
+  }
+}
+
+@keyframes vithanage-fade-pulse {
+  0%, 100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes vithanage-progress-flow {
+  0% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes vithanage-mini-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .vithanage-animated-logo {
+    width: 60px;
+    height: 60px;
+    font-size: 2rem;
+  }
+  
+  .vithanage-unique-spinner {
+    width: 80px;
+    height: 80px;
+  }
+  
+  .vithanage-loading-text {
+    font-size: 1.2rem;
+  }
+  
+  .vithanage-progress-container {
+    width: 250px;
+  }
+}
+
+@media (max-width: 480px) {
+  .vithanage-animated-logo {
+    width: 50px;
+    height: 50px;
+    font-size: 1.5rem;
+  }
+  
+  .vithanage-loading-text {
+    font-size: 1rem;
+  }
+  
+  .vithanage-progress-container {
+    width: 200px;
+  }
+}

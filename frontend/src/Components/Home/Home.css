@@ -1070,6 +1070,47 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
+/* Categories Section Specific Styling */
+.categories-section .section-header {
+  text-align: center;
+  padding: 25px 20px 15px;
+  background: linear-gradient(135deg, #f8faff 0%, #ffffff 100%);
+  border-bottom: 1px solid #e2e8f0;
+  border-radius: 12px 12px 0 0;
+  margin-bottom: 0;
+}
+
+.categories-section .section-header h2 {
+  font-size: 2.4rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 12px;
+  position: relative;
+  display: inline-block;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.categories-section .section-header h2::after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 3px;
+  background: linear-gradient(90deg, #ff6b6b, #667eea);
+  border-radius: 2px;
+  box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+}
+
+.categories-section .section-header p {
+  font-size: 1.1rem;
+  color: #64748b;
+  margin: 16px auto 0;
+  font-style: italic;
+  font-weight: 500;
+}
+
 .categories-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
