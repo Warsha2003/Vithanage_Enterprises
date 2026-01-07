@@ -505,12 +505,38 @@ button.logout-btn {
 }
 
 .error-message {
-  background-color: #ffebee;
-  color: #c62828;
-  padding: 15px;
-  border-radius: 5px;
-  margin-bottom: 20px;
-  text-align: center;
+  background-color: #fff5f5 !important;
+  color: #c62828 !important;
+  padding: 20px 30px !important;
+  border: 5px solid #e53e3e !important;
+  border-left: 12px solid #c53030 !important;
+  border-radius: 10px !important;
+  margin: 20px 0 30px 0 !important;
+  text-align: left !important;
+  box-shadow: 0 6px 20px rgba(229, 62, 62, 0.25) !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  animation: errorSlideIn 0.3s ease-out !important;
+  display: block !important;
+}
+
+.error-message::before {
+  content: "⚠️ ERROR: " !important;
+  font-weight: 700 !important;
+  font-size: 18px !important;
+  display: inline-block !important;
+  margin-right: 10px !important;
+}
+
+@keyframes errorSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .module-content h2, .dashboard-content h2 {

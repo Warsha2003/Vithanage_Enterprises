@@ -96,8 +96,16 @@ const Products = () => {
           setProducts(data);
           setFilteredProducts(data);
 
-          // Extract categories from products
-          const allCategories = ['All', ...new Set(data.map(product => product.category))];
+          // Extract categories from products and normalize to proper case
+          const categorySet = new Set();
+          data.forEach(product => {
+            if (product.category) {
+              // Normalize: capitalize first letter, lowercase rest
+              const normalized = product.category.charAt(0).toUpperCase() + product.category.slice(1).toLowerCase();
+              categorySet.add(normalized);
+            }
+          });
+          const allCategories = ['All', ...Array.from(categorySet).sort()];
           setCategories(allCategories);
           
           // Extract brands from products
@@ -310,9 +318,11 @@ const Products = () => {
       );
     }
     
-    // Filter by category (only if no search term)
+    // Filter by category (only if no search term) - case insensitive
     if (selectedCategory !== 'All' && !searchTerm) {
-      result = result.filter(product => product.category === selectedCategory);
+      result = result.filter(product => 
+        product.category.toLowerCase() === selectedCategory.toLowerCase()
+      );
     }
     
     // Filter by brands

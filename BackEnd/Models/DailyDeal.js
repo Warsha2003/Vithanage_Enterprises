@@ -7,6 +7,11 @@ const dailyDealSchema = new mongoose.Schema({
     trim: true,
     maxlength: 100
   },
+  dealDescription: {
+    type: String,
+    trim: true,
+    maxlength: 500
+  },
   productId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Product',
@@ -47,8 +52,8 @@ const dailyDealSchema = new mongoose.Schema({
   },
   dealType: {
     type: String,
-    enum: ['flash', 'daily', 'weekend', 'limited'],
-    default: 'daily'
+    enum: ['flash_sale', 'weekend_deal', 'clearance', 'seasonal', 'special_offer', 'flash', 'daily', 'weekend', 'limited'],
+    default: 'flash_sale'
   },
   startDate: {
     type: Date,
@@ -64,6 +69,11 @@ const dailyDealSchema = new mongoose.Schema({
       message: 'End date must be after start date'
     }
   },
+  termsConditions: {
+    type: String,
+    trim: true,
+    maxlength: 1000
+  },
   isActive: {
     type: Boolean,
     default: true
@@ -71,7 +81,7 @@ const dailyDealSchema = new mongoose.Schema({
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Admin',
-    required: true
+    required: false  // Made optional to avoid errors when admin ID is not available
   }
 }, {
   timestamps: true

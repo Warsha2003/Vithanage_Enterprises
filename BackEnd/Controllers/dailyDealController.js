@@ -53,14 +53,14 @@ const getAllDailyDeals = async (req, res) => {
       };
       
       deals = await DailyDeal.find(titleQuery)
-        .populate('productId', 'name description images category price stock')
+        .populate('productId', 'name description imageUrl category price stock')
         .populate('createdBy', 'username email')
         .sort({ [sortBy]: sortOrder === 'desc' ? -1 : 1 });
       
       // If no results, search in populated product names
       if (deals.length === 0) {
         const allDeals = await DailyDeal.find(query)
-          .populate('productId', 'name description images category price stock')
+          .populate('productId', 'name description imageUrl category price stock')
           .populate('createdBy', 'username email');
         
         deals = allDeals.filter(deal => 
@@ -70,7 +70,7 @@ const getAllDailyDeals = async (req, res) => {
       }
     } else {
       deals = await DailyDeal.find(query)
-        .populate('productId', 'name description images category price stock')
+        .populate('productId', 'name description imageUrl category price stock')
         .populate('createdBy', 'username email')
         .sort({ [sortBy]: sortOrder === 'desc' ? -1 : 1 });
     }
@@ -121,7 +121,7 @@ const getActiveDeals = async (req, res) => {
     const skip = (page - 1) * parseInt(limit);
     
     const deals = await DailyDeal.find(query)
-      .populate('productId', 'name description images category price stock')
+      .populate('productId', 'name description imageUrl category price stock')
       .sort({ [sortBy]: -1 })
       .skip(skip)
       .limit(parseInt(limit));
@@ -163,7 +163,7 @@ const getDailyDealById = async (req, res) => {
     const { id } = req.params;
     
     const deal = await DailyDeal.findById(id)
-      .populate('productId', 'name description images category price stock')
+      .populate('productId', 'name description imageUrl category price stock')
       .populate('createdBy', 'username email');
     
     if (!deal) {
@@ -199,16 +199,19 @@ const getDailyDealById = async (req, res) => {
 const createDailyDeal = async (req, res) => {
   try {
     // The adminAuthMiddleware sets req.admin
-    const adminId = req.admin.id;
+    const adminId = req.admin ? req.admin.id : null;
     const {
       dealTitle,
+      dealDescription,
       productId,
       originalPrice,
       dealPrice,
+      discountPercentage,
       dealQuantity,
       dealType,
       startDate,
       endDate,
+      termsConditions,
       isActive = true
     } = req.body;
     
@@ -230,12 +233,15 @@ const createDailyDeal = async (req, res) => {
     }
     
     // Validate pricing
-    if (dealPrice >= originalPrice) {
+    if (parseFloat(dealPrice) >= parseFloat(originalPrice)) {
       return res.status(400).json({
         success: false,
         message: 'Deal price must be less than original price'
       });
     }
+    
+    // Calculate discount percentage if not provided
+    const discount = discountPercentage || Math.round(((originalPrice - dealPrice) / originalPrice) * 100);
     
     // Validate dates
     const start = new Date(startDate);
@@ -263,25 +269,33 @@ const createDailyDeal = async (req, res) => {
       });
     }
     
-    // Create new daily deal
-    const newDeal = new DailyDeal({
+    // Create new daily deal object
+    const dealData = {
       dealTitle,
       productId,
-      originalPrice,
-      dealPrice,
-      dealQuantity,
-      dealType: dealType || 'daily',
+      originalPrice: parseFloat(originalPrice),
+      dealPrice: parseFloat(dealPrice),
+      discountPercentage: discount,
+      dealQuantity: parseInt(dealQuantity),
+      dealType: dealType || 'flash_sale',
       startDate: start,
       endDate: end,
-      isActive,
-      createdBy: adminId
-    });
+      isActive
+    };
+    
+    // Add optional fields if provided
+    if (dealDescription) dealData.dealDescription = dealDescription;
+    if (termsConditions) dealData.termsConditions = termsConditions;
+    if (adminId) dealData.createdBy = adminId;
+    
+    // Create new daily deal
+    const newDeal = new DailyDeal(dealData);
     
     await newDeal.save();
     
     // Populate the created deal
     const populatedDeal = await DailyDeal.findById(newDeal._id)
-      .populate('productId', 'name description images category price stock')
+      .populate('productId', 'name description imageUrl category price stock')
       .populate('createdBy', 'username email');
     
     res.status(201).json({
@@ -362,7 +376,7 @@ const updateDailyDeal = async (req, res) => {
       { $set: updates },
       { new: true, runValidators: true }
     )
-    .populate('productId', 'name description images category price stock')
+    .populate('productId', 'name description imageUrl category price stock')
     .populate('createdBy', 'username email');
     
     res.status(200).json({
@@ -404,7 +418,7 @@ const toggleDealStatus = async (req, res) => {
     await deal.save();
     
     const populatedDeal = await DailyDeal.findById(id)
-      .populate('productId', 'name description images category price stock')
+      .populate('productId', 'name description imageUrl category price stock')
       .populate('createdBy', 'username email');
     
     res.status(200).json({
@@ -483,6 +497,13 @@ const getDealStatistics = async (req, res) => {
       startDate: { $lte: now },
       endDate: { $gte: now }
     });
+    const upcomingDeals = await DailyDeal.countDocuments({
+      isActive: true,
+      startDate: { $gt: now }
+    });
+    const expiredDeals = await DailyDeal.countDocuments({
+      endDate: { $lt: now }
+    });
     const monthlyDeals = await DailyDeal.countDocuments({
       createdAt: { $gte: startOfMonth }
     });
@@ -514,12 +535,21 @@ const getDealStatistics = async (req, res) => {
       }
     ]);
     
+    // Calculate total savings
+    const dealsWithSavings = await DailyDeal.find();
+    const totalSavings = dealsWithSavings.reduce((sum, deal) => {
+      return sum + (deal.savingsAmount * deal.soldQuantity);
+    }, 0);
+    
     res.status(200).json({
       success: true,
       data: {
         totalDeals,
         activeDeals,
+        upcomingDeals,
+        expiredDeals,
         monthlyDeals,
+        totalSavings,
         topDeals: topDeals.map(deal => ({
           ...deal.toJSON(),
           savingsAmount: deal.savingsAmount

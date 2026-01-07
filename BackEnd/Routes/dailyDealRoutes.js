@@ -18,35 +18,35 @@ const { adminAuthMiddleware } = require('../Controllers/authMiddleware');
 // GET /api/deals/active
 router.get('/active', getActiveDeals);
 
+// Admin routes (require admin authentication)
+
+// Get deal statistics (Admin only)
+// GET /api/deals/stats
+router.get('/stats', adminAuthMiddleware, getDealStatistics);
+
+// Get all daily deals with filtering (Admin only)
+// GET /api/deals
+// Query params: status, search, dealType, sortBy, sortOrder
+router.get('/', adminAuthMiddleware, getAllDailyDeals);
+
+// Create new daily deal (Admin only)
+// POST /api/deals
+router.post('/', adminAuthMiddleware, createDailyDeal);
+
+// Toggle deal status (Admin only)
+// PUT /api/deals/:id/toggle-status
+router.put('/:id/toggle-status', adminAuthMiddleware, toggleDealStatus);
+
+// Update daily deal (Admin only)
+// PUT /api/deals/:id
+router.put('/:id', adminAuthMiddleware, updateDailyDeal);
+
+// Delete daily deal (Admin only)
+// DELETE /api/deals/:id
+router.delete('/:id', adminAuthMiddleware, deleteDailyDeal);
+
 // Get single deal by ID (public)
 // GET /api/deals/:id
 router.get('/:id', getDailyDealById);
-
-// Admin routes (require admin authentication)
-
-// Get all daily deals with filtering (Admin only)
-// GET /api/deals/admin/all
-// Query params: status, search, dealType, sortBy, sortOrder
-router.get('/admin/all', adminAuthMiddleware, getAllDailyDeals);
-
-// Get deal statistics (Admin only)
-// GET /api/deals/admin/statistics
-router.get('/admin/statistics', adminAuthMiddleware, getDealStatistics);
-
-// Create new daily deal (Admin only)
-// POST /api/deals/admin/create
-router.post('/admin/create', adminAuthMiddleware, createDailyDeal);
-
-// Update daily deal (Admin only)
-// PUT /api/deals/admin/:id
-router.put('/admin/:id', adminAuthMiddleware, updateDailyDeal);
-
-// Toggle deal status (Admin only)
-// PATCH /api/deals/admin/:id/toggle-status
-router.patch('/admin/:id/toggle-status', adminAuthMiddleware, toggleDealStatus);
-
-// Delete daily deal (Admin only)
-// DELETE /api/deals/admin/:id
-router.delete('/admin/:id', adminAuthMiddleware, deleteDailyDeal);
 
 module.exports = router;
