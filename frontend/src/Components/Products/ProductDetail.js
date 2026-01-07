@@ -121,6 +121,31 @@ const ProductDetail = () => {
     }
   };
 
+  const handleBuyNow = async () => {
+    if (!userToken) {
+      alert('Please log in to proceed with your purchase');
+      sessionStorage.setItem('loginRedirect', window.location.pathname);
+      navigate('/login');
+      return;
+    }
+
+    setAddingToCart(true);
+    try {
+      const result = await addItem(product._id, quantity);
+      if (result?.ok) {
+        // Navigate to place order page immediately
+        navigate('/place-order');
+      } else {
+        alert('Failed to add product to cart. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+      alert('Failed to process your request. Please try again.');
+    } finally {
+      setAddingToCart(false);
+    }
+  };
+
   const increaseQuantity = () => {
     if (quantity < product.stock) {
       setQuantity(quantity + 1);
@@ -273,7 +298,13 @@ const ProductDetail = () => {
                     </>
                   )}
                 </button>
-                <button className="btn-buy-now">Buy Now</button>
+                <button 
+                  className="btn-buy-now"
+                  onClick={handleBuyNow}
+                  disabled={addingToCart || product.stock === 0}
+                >
+                  {product.stock === 0 ? 'Out of Stock' : 'Buy Now'}
+                </button>
               </div>
             </div>
           </div>

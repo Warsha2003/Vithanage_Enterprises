@@ -1,7 +1,7 @@
 /* PlaceOrder.css - Beautiful Modern E-commerce Checkout Design */
 
 .place-order-page {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #ffffff;
   min-height: 100vh;
   padding: 40px 20px;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -14,11 +14,11 @@
 
 .po-container h2 {
   text-align: center;
-  color: white;
+  color: #2c3e50;
   font-size: 2.5rem;
   font-weight: 300;
   margin-bottom: 40px;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  text-shadow: none;
 }
 
 .po-grid {
