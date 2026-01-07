@@ -43,8 +43,23 @@ const Products = () => {
     const categoryParam = searchParams.get('category');
     const searchParam = searchParams.get('search');
     
-    if (categoryParam && categories.length > 0 && categories.includes(categoryParam)) {
-      setSelectedCategory(categoryParam);
+    if (categoryParam && categories.length > 0) {
+      // Normalize the category parameter to match stored categories (case-insensitive)
+      const normalizedParam = categoryParam.charAt(0).toUpperCase() + categoryParam.slice(1).toLowerCase();
+      
+      // Find matching category (case-insensitive)
+      const matchingCategory = categories.find(cat => 
+        cat.toLowerCase() === categoryParam.toLowerCase()
+      );
+      
+      if (matchingCategory) {
+        setSelectedCategory(matchingCategory);
+      } else {
+        // If exact match not found, try normalized version
+        if (categories.includes(normalizedParam)) {
+          setSelectedCategory(normalizedParam);
+        }
+      }
     }
     
     if (searchParam) {
