@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import './App.css';
 import Navbar from './Components/Navbar/Navbar';
@@ -28,6 +28,7 @@ import HelpCenter from './Components/HelpCenter/HelpCenter';
 import PrivacyPolicy from './Components/User/PrivacyPolicy';
 import LegalInformation from './Components/User/LegalInformation';
 import MyProfile from './Components/User/MyProfile';
+import ChatWidget from './Components/Chat/ChatWidget';
 
 // Direct approach to protected routes without state management
 // eslint-disable-next-line no-unused-vars
@@ -99,6 +100,20 @@ const AdminRoute = ({ children }) => {
 function App() {
   const location = useLocation();
   const isAdminPage = location.pathname.startsWith('/admin');
+  const [currentUser, setCurrentUser] = useState(null);
+
+  useEffect(() => {
+    // Get user from localStorage or sessionStorage
+    const userStr = localStorage.getItem('user') || sessionStorage.getItem('user');
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        setCurrentUser(user);
+      } catch (error) {
+        console.error('Error parsing user data:', error);
+      }
+    }
+  }, [location]);
 
   return (
     <SettingsProvider>
@@ -144,6 +159,7 @@ function App() {
             </Routes>
           </main>
           {!isAdminPage && <Footer />}
+          {!isAdminPage && <ChatWidget user={currentUser} />}
           <CartDrawer />
           </div>
         </CartProvider>

@@ -8,6 +8,7 @@ import { useSettings } from '../../contexts/SettingsContext';
 import { useCurrency } from '../../contexts/CurrencyContext';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import './AdminLoading.css';
 import './RefundManagement.css';
 
 const RefundManagement = () => {
@@ -312,9 +313,9 @@ const RefundManagement = () => {
 
     if (loading) {
         return (
-            <div className="refund-management-loading">
-                <div className="spinner"></div>
-                <p>Loading refund management...</p>
+            <div className="admin-loading">
+                <div className="admin-loading-spinner"></div>
+                <div className="admin-loading-text">Loading refund management...</div>
             </div>
         );
     }

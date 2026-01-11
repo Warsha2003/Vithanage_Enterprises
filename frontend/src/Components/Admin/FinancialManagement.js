@@ -8,6 +8,7 @@ import {
 import { useSettings } from '../../contexts/SettingsContext';
 import { useCurrency } from '../../contexts/CurrencyContext';
 import './FinancialManagement.css';
+import './AdminLoading.css';
 import SupplierManagement from './SupplierManagement';
 
 const FinancialManagement = () => {
@@ -418,7 +419,10 @@ const FinancialManagement = () => {
   if (loading && promotions.length === 0) {
     return (
       <div className="financial-management">
-        <div className="loading-spinner">Loading...</div>
+        <div className="admin-loading">
+          <div className="admin-loading-spinner"></div>
+          <div className="admin-loading-text">Loading...</div>
+        </div>
       </div>
     );
   }
@@ -822,7 +826,10 @@ const FinancialManagement = () => {
                     
                     {productsLoading ? (
                       <div className="products-loading">
-                        <div className="loading-spinner">Loading products...</div>
+                        <div className="admin-loading">
+                          <div className="admin-loading-spinner"></div>
+                          <div className="admin-loading-text">Loading products...</div>
+                        </div>
                       </div>
                     ) : products.length === 0 ? (
                       <div className="no-products">

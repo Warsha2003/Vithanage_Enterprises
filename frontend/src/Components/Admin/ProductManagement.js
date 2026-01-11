@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSettings } from '../../contexts/SettingsContext';
 import './AdminDashboard.css';
+import './AdminLoading.css';
 
 const ProductManagement = () => {
   const { settings, formatCurrency } = useSettings();
@@ -243,7 +244,12 @@ const ProductManagement = () => {
   };
   
   if (loading) {
-    return <div className="loading">Loading products...</div>;
+    return (
+      <div className="admin-loading">
+        <div className="admin-loading-spinner"></div>
+        <div className="admin-loading-text">Loading products...</div>
+      </div>
+    );
   }
   
   return (

@@ -10,6 +10,7 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { useSettings } from '../../contexts/SettingsContext';
 import './SupplierManagement.css';
+import './AdminLoading.css';
 
 const SupplierManagement = ({ onBack }) => {
   const { formatCurrency } = useSettings();
@@ -662,7 +663,10 @@ const SupplierManagement = ({ onBack }) => {
   if (loading && suppliers.length === 0) {
     return (
       <div className="supplier-management">
-        <div className="loading-spinner">Loading suppliers...</div>
+        <div className="admin-loading">
+          <div className="admin-loading-spinner"></div>
+          <div className="admin-loading-text">Loading suppliers...</div>
+        </div>
       </div>
     );
   }

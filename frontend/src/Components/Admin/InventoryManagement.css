@@ -19,10 +19,11 @@
 
 /* Stats Cards */
 .inventory-stats {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  display: flex;
+  flex-wrap: nowrap;
   gap: 15px;
   margin-bottom: 25px;
+  overflow-x: auto;
 }
 
 .stat-card {

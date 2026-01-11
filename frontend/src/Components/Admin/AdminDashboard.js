@@ -3,18 +3,20 @@ import { Navigate } from 'react-router-dom';
 import './AdminDashboard.css';
 import './stat-detail.css';
 import './dashboard-header.css';
+import './AdminLoading.css';
 import ProductManagement from './ProductManagement';
 import RefundManagement from './RefundManagement';
 import InventoryManagement from './InventoryManagement';
 import FinancialManagement from './FinancialManagement';
 import DailyDealManagement from './DailyDealManagement';
+import ChatDashboard from './ChatDashboard';
 // Add Font Awesome for icons
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
   faUsers, faBoxOpen, faShoppingCart, faMoneyBillWave, 
   faChartLine, faStar, faExchangeAlt, faHome, faBell,
   faCog, faSignOutAlt, faClipboardList, faWarehouse, faPercent, 
-  faInfoCircle, faEye, faSearch, faFilePdf, faSync, faCalendar
+  faInfoCircle, faEye, faSearch, faFilePdf, faSync, faCalendar, faComments
 } from '@fortawesome/free-solid-svg-icons';
 import { useSettings } from '../../contexts/SettingsContext';
 import jsPDF from 'jspdf';
@@ -1896,7 +1898,12 @@ const AdminDashboard = () => {
   };
 
   if (loading) {
-    return <div className="loading">Loading...</div>;
+    return (
+      <div className="admin-loading">
+        <div className="admin-loading-spinner"></div>
+        <div className="admin-loading-text">Loading...</div>
+      </div>
+    );
   }
 
   // Redirect to login if not admin
@@ -1926,6 +1933,8 @@ const AdminDashboard = () => {
         return renderReviews();
       case 'refunds':
         return renderRefunds();
+      case 'chat':
+        return <ChatDashboard />;
       default:
         return renderDashboard();
     }
@@ -2903,6 +2912,15 @@ const AdminDashboard = () => {
   );
 
   const renderOrders = () => {
+    if (ordersLoading) {
+      return (
+        <div className="admin-loading">
+          <div className="admin-loading-spinner"></div>
+          <div className="admin-loading-text">Loading orders...</div>
+        </div>
+      );
+    }
+
     return (
       <div className="module-content">
         <h2><FontAwesomeIcon icon={faShoppingCart} /> Order Management</h2>
@@ -3009,10 +3027,7 @@ const AdminDashboard = () => {
         </div>
 
         <div className="admin-section">
-          {ordersLoading ? (
-            <div>Loading orders...</div>
-          ) : (
-            <div className="table-responsive">
+          <div className="table-responsive">
               <table className="data-table">
               <thead>
                 <tr>
@@ -3120,8 +3135,7 @@ const AdminDashboard = () => {
                 )}
               </tbody>
             </table>
-            </div>
-          )}
+          </div>
         </div>
 
         {showOrderModal && selectedOrder && (
@@ -3405,9 +3419,19 @@ const AdminDashboard = () => {
     ));
   };
 
-  const renderReviews = () => (
-    <div className="module-content">
-      <h2><FontAwesomeIcon icon={faStar} /> Review Management</h2>
+  const renderReviews = () => {
+    if (reviewsLoading) {
+      return (
+        <div className="admin-loading">
+          <div className="admin-loading-spinner"></div>
+          <div className="admin-loading-text">Loading reviews...</div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="module-content">
+        <h2><FontAwesomeIcon icon={faStar} /> Review Management</h2>
       
       {/* Review Management Message */}
       {reviewMessage.message && (
@@ -3497,10 +3521,7 @@ const AdminDashboard = () => {
       </div>
       
       <div className="admin-section">
-        {reviewsLoading ? (
-          <div>Loading reviews...</div>
-        ) : (
-          <table className="data-table">
+        <table className="data-table">
             <thead>
               <tr>
                 <th>Product</th>
@@ -3582,7 +3603,6 @@ const AdminDashboard = () => {
               )}
             </tbody>
           </table>
-        )}
       </div>
 
       {/* Review Details Modal */}
@@ -3674,7 +3694,8 @@ const AdminDashboard = () => {
         </div>
       )}
     </div>
-  );
+    );
+  };
 
   const renderRefunds = () => (
     <RefundManagement />
@@ -3729,6 +3750,9 @@ const AdminDashboard = () => {
             </li>
             <li className={activeModule === 'refunds' ? 'active' : ''} onClick={() => setActiveModule('refunds')}>
               <FontAwesomeIcon icon={faExchangeAlt} /> Refund Management
+            </li>
+            <li className={activeModule === 'chat' ? 'active' : ''} onClick={() => setActiveModule('chat')}>
+              <FontAwesomeIcon icon={faComments} /> Live Chat
             </li>
           </ul>
         </nav>

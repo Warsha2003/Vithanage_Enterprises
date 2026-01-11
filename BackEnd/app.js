@@ -3,6 +3,8 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const http = require('http');
+const { Server } = require('socket.io');
 const authRoutes = require('./Routes/authRoutes');
 const adminRoutes = require('./Routes/adminRoutes');
 const adminAuthRoutes = require('./Routes/adminAuthRoutes');
@@ -16,9 +18,20 @@ const refundRoutes = require('./Routes/refundRoutes');
 const adminRefundRoutes = require('./Routes/adminRefundRoutes');
 const inventoryRoutes = require('./Routes/inventoryRoutes');
 const promotionRoutes = require('./Routes/promotionRoutes');
+const chatRoutes = require('./Routes/chatRoutes');
 const { createInitialAdmin } = require('./Controllers/adminAuthController');
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: "http://localhost:3000",
+    methods: ["GET", "POST"]
+  }
+});
+
+// Make io accessible to routes
+app.set('io', io);
 
 // Middleware
 app.use(cors());
@@ -93,6 +106,30 @@ app.use('/api/best-sellers', bestSellersRoutes);
 // Daily deals routes
 const dailyDealRoutes = require('./Routes/dailyDealRoutes');
 app.use('/api/deals', dailyDealRoutes);
+// Chat routes
+app.use('/api/chat', chatRoutes);
+
+// Socket.IO connection handling
+io.on('connection', (socket) => {
+  console.log('User connected:', socket.id);
+
+  socket.on('join_chat', (chatId) => {
+    socket.join(chatId);
+    console.log(`User joined chat: ${chatId}`);
+  });
+
+  socket.on('send_message', (data) => {
+    io.to(data.chatId).emit('receive_message', data);
+  });
+
+  socket.on('typing', (data) => {
+    socket.to(data.chatId).emit('user_typing', data);
+  });
+
+  socket.on('disconnect', () => {
+    console.log('User disconnected:', socket.id);
+  });
+});
 
 mongoose.connect("mongodb+srv://admin:V2ft5D1dbTssVJzR@cluster0.fq7u6hk.mongodb.net/test")
 .then(()=> {
@@ -103,16 +140,9 @@ mongoose.connect("mongodb+srv://admin:V2ft5D1dbTssVJzR@cluster0.fq7u6hk.mongodb.
 })
 .then(()=>{
     const PORT = process.env.PORT || 5000;
-    const server = app.listen(PORT, () => {
+    server.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
-    });
-    
-    server.on('error', (error) => {
-      if (error.code === 'EADDRINUSE') {
-        console.log('Port 5000 is already in use. The server is probably already running.');
-      } else {
-        console.error('Server error:', error);
-      }
+      console.log(`Socket.IO ready for real-time chat`);
     });
 })
 .catch((err)=> console.log(err));

@@ -132,10 +132,11 @@
 
 /* Statistics Cards */
 .stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  display: flex;
+  flex-wrap: nowrap;
   gap: 20px;
   margin-bottom: 30px;
+  overflow-x: auto;
 }
 
 .stat-card {
@@ -147,6 +148,8 @@
   align-items: center;
   gap: 20px;
   transition: all 0.2s ease;
+  flex: 1;
+  min-width: 200px;
 }
 
 .stat-card:hover {

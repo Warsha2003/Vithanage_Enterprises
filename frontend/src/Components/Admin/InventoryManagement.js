@@ -8,6 +8,7 @@ import { useSettings } from '../../contexts/SettingsContext';
 import { useCurrency } from '../../contexts/CurrencyContext';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import './AdminLoading.css';
 import './InventoryManagement.css';
 
 const InventoryManagement = () => {
@@ -362,6 +363,15 @@ const InventoryManagement = () => {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="admin-loading">
+        <div className="admin-loading-spinner"></div>
+        <div className="admin-loading-text">Loading inventory...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="inventory-management">
       <div className="inventory-header">
@@ -457,9 +467,7 @@ const InventoryManagement = () => {
 
   {/* Inventory Table */}
       <div className="inventory-table-container">
-        {loading ? (
-          <div className="loading">Loading inventory...</div>
-          ) : error ? (
+        {error ? (
           <div className="error">{error}</div>
         ) : (
           <table className="inventory-table">

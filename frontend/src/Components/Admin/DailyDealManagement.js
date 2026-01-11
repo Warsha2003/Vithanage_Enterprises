@@ -8,6 +8,7 @@ import {
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { useSettings } from '../../contexts/SettingsContext';
+import './AdminLoading.css';
 import { useCurrency } from '../../contexts/CurrencyContext';
 import './DailyDealManagement.css';
 
@@ -418,7 +419,12 @@ const DailyDealManagement = ({ onBack }) => {
   });
 
   if (loading) {
-    return <div className="loading">Loading daily deals...</div>;
+    return (
+      <div className="admin-loading">
+        <div className="admin-loading-spinner"></div>
+        <div className="admin-loading-text">Loading daily deals...</div>
+      </div>
+    );
   }
 
   return (
