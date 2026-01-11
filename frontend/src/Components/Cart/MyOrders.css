@@ -2,7 +2,7 @@
 .orders-page {
   background: #ffffff;
   min-height: 100vh;
-  padding: 40px 20px;
+  padding: 20px 16px;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
@@ -23,7 +23,7 @@
 .orders-card {
   background: white;
   border-radius: 20px;
-  padding: 35px;
+  padding: 20px;
   box-shadow: 0 20px 60px rgba(0,0,0,0.15);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255,255,255,0.2);
@@ -44,7 +44,7 @@
 .orders-card.error {
   color: #e74c3c;
   text-align: center;
-  padding: 60px 35px;
+  padding: 32px 20px;
   font-size: 1.2rem;
 }
 
@@ -58,7 +58,7 @@
   background: linear-gradient(135deg, #f8f9fc 0%, #ffffff 100%);
   border: 2px solid rgba(102, 126, 234, 0.1);
   border-radius: 20px;
-  padding: 30px;
+  padding: 20px;
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
@@ -287,7 +287,7 @@
 /* Empty orders state */
 .no-orders {
   text-align: center;
-  padding: 80px 40px;
+  padding: 40px 20px;
   color: #667eea;
 }
 

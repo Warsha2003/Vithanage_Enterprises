@@ -451,7 +451,7 @@
   justify-content: center;
   align-items: center;
   gap: 20px;
-  padding: 40px 20px;
+  padding: 20px 16px;
   background: white;
   max-width: 1400px;
   margin: 0 auto;
@@ -535,7 +535,7 @@
 
 .no-products {
   text-align: center;
-  padding: 60px 20px;
+  padding: 32px 16px;
   color: #64748b;
   background: white;
 }
@@ -606,7 +606,7 @@
 
 @media (max-width: 480px) {
   .best-sellers-hero {
-    padding: 30px 15px;
+    padding: 20px 12px;
   }
   
   .best-sellers-hero h1 {

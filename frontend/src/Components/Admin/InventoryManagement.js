@@ -10,6 +10,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import './AdminLoading.css';
 import './InventoryManagement.css';
+import './InventoryStats.css';
 
 const InventoryManagement = () => {
   const { settings, formatCurrency } = useSettings();

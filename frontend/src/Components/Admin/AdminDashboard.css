@@ -168,7 +168,7 @@ button.logout-btn {
   display: flex;
   align-items: flex-end;
   justify-content: flex-end;
-  padding: 0 30px 15px 30px;
+  padding: 0 20px 15px 20px;
   position: sticky;
   top: 0;
   z-index: 100;

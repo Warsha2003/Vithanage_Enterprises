@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /* Modern Global Variables */
 :root {
   /* Modern Color Palette */

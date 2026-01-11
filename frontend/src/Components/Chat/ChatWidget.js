@@ -11,6 +11,8 @@ const ChatWidget = ({ user }) => {
   const [chatId, setChatId] = useState(null);
   const [isTyping, setIsTyping] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [chatStatus, setChatStatus] = useState('waiting');
+  const [closedAtIndex, setClosedAtIndex] = useState(null);
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
@@ -18,7 +20,8 @@ const ChatWidget = ({ user }) => {
       fetchUserChat();
     }
 
-    socket.on('receive_message', (data) => {
+    socket.on('new_message', (data) => {
+      console.log('Received message:', data);
       if (data.chatId === chatId) {
         setMessages(prev => [...prev, data.message]);
         if (!isOpen && data.message.sender === 'admin') {
@@ -35,25 +38,40 @@ const ChatWidget = ({ user }) => {
       }
     });
 
+    socket.on('chat_closed', (data) => {
+      if (data.chatId === chatId) {
+        setChatStatus('closed');
+        setClosedAtIndex(messages.length);
+      }
+    });
+
     return () => {
-      socket.off('receive_message');
+      socket.off('new_message');
       socket.off('user_typing');
+      socket.off('chat_closed');
     };
-  }, [user, chatId, isOpen]);
+  }, [user, chatId, isOpen, messages.length]);
 
   const fetchUserChat = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      console.log('Fetching user chat...');
       const response = await fetch('http://localhost:5000/api/chat/user/chat', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
       const data = await response.json();
+      console.log('User chat response:', data);
       if (data.success) {
         setChatId(data.chat._id);
         setMessages(data.chat.messages);
         setUnreadCount(data.chat.unreadCount?.user || 0);
+        setChatStatus(data.chat.status);
+        // If chat is closed, mark where the separator should be
+        if (data.chat.status === 'closed') {
+          setClosedAtIndex(data.chat.messages.length);
+        }
         socket.emit('join_chat', data.chat._id);
       }
     } catch (error) {
@@ -62,7 +80,18 @@ const ChatWidget = ({ user }) => {
   };
 
   const sendMessage = async () => {
-    if (!inputMessage.trim() || !user) return;
+    if (!inputMessage.trim() || !user) {
+      console.log('Cannot send - inputMessage:', inputMessage, 'user:', user);
+      return;
+    }
+
+    if (!chatId) {
+      console.log('No chatId available, fetching chat first...');
+      await fetchUserChat();
+      return;
+    }
+
+    console.log('Sending message:', inputMessage, 'chatId:', chatId);
 
     try {
       const token = localStorage.getItem('token');
@@ -72,29 +101,31 @@ const ChatWidget = ({ user }) => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ message: inputMessage })
+        body: JSON.stringify({ 
+          chatId: chatId,
+          message: inputMessage 
+        })
       });
 
       const data = await response.json();
+      console.log('Send message response:', data);
+      
       if (data.success) {
-        const newMessage = {
-          sender: 'user',
-          senderName: user.name,
-          message: inputMessage,
-          timestamp: new Date()
-        };
-        
-        socket.emit('send_message', {
-          chatId: data.chat._id,
-          message: newMessage
-        });
-
-        setMessages(prev => [...prev, newMessage]);
+        // Don't add message manually - socket will receive it and add to prevent duplicates
+        // If chat was closed, reopen it
+        if (chatStatus === 'closed') {
+          setChatStatus('waiting');
+          setClosedAtIndex(null);
+        }
         setInputMessage('');
         scrollToBottom();
+      } else {
+        console.error('Failed to send message:', data.message);
+        alert('Failed to send message: ' + data.message);
       }
     } catch (error) {
       console.error('Error sending message:', error);
+      alert('Error sending message: ' + error.message);
     }
   };
 
@@ -111,6 +142,8 @@ const ChatWidget = ({ user }) => {
   const toggleChat = () => {
     setIsOpen(!isOpen);
     if (!isOpen) {
+      // Refresh messages when opening chat
+      fetchUserChat();
       setUnreadCount(0);
       markAsRead();
     }
@@ -123,8 +156,10 @@ const ChatWidget = ({ user }) => {
       await fetch(`http://localhost:5000/api/chat/user/read/${chatId}`, {
         method: 'PUT',
         headers: {
+          'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
-        }
+        },
+        body: JSON.stringify({ userType: 'user' })
       });
     } catch (error) {
       console.error('Error marking as read:', error);
@@ -137,9 +172,13 @@ const ChatWidget = ({ user }) => {
     <div className="chat-widget">
       {!isOpen && (
         <button className="chat-button" onClick={toggleChat}>
-          <svg viewBox="0 0 24 24" fill="currentColor">
-            <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/>
-          </svg>
+          <div className="chat-button-content">
+            <img 
+              src="https://cdn-icons-png.flaticon.com/512/4712/4712109.png" 
+              alt="Support Agent"
+              className="chat-agent-avatar"
+            />
+          </div>
           {unreadCount > 0 && <span className="unread-badge">{unreadCount}</span>}
         </button>
       )}
@@ -152,18 +191,51 @@ const ChatWidget = ({ user }) => {
           </div>
 
           <div className="chat-messages">
-            {messages.map((msg, index) => (
-              <div key={index} className={`message ${msg.sender}`}>
-                <div className="message-sender">{msg.senderName}</div>
-                <div className="message-text">{msg.message}</div>
-                <div className="message-time">
-                  {new Date(msg.timestamp).toLocaleTimeString([], { 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
-                  })}
-                </div>
+            {messages.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '20px', color: '#999' }}>
+                No messages yet. Start a conversation!
               </div>
-            ))}
+            ) : (
+              messages.map((msg, index) => (
+                <React.Fragment key={index}>
+                  {closedAtIndex !== null && index === closedAtIndex && (
+                    <div style={{
+                      margin: '20px 0',
+                      textAlign: 'center',
+                      position: 'relative'
+                    }}>
+                      <div style={{
+                        borderTop: '2px solid #e0e0e0',
+                        margin: '0 20px'
+                      }}></div>
+                      <div style={{
+                        background: '#fff',
+                        color: '#999',
+                        fontSize: '12px',
+                        padding: '5px 15px',
+                        display: 'inline-block',
+                        position: 'relative',
+                        top: '-12px',
+                        borderRadius: '12px',
+                        border: '1px solid #e0e0e0'
+                      }}>
+                        Chat was closed by support team
+                      </div>
+                    </div>
+                  )}
+                  <div className={`message ${msg.sender}`}>
+                    <div className="message-sender">{msg.senderName}</div>
+                    <div className="message-text">{msg.message}</div>
+                    <div className="message-time">
+                      {new Date(msg.timestamp).toLocaleTimeString([], { 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                      })}
+                    </div>
+                  </div>
+                </React.Fragment>
+              ))
+            )}
             {isTyping && (
               <div className="typing-indicator">
                 <span></span><span></span><span></span>

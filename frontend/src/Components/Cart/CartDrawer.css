@@ -101,7 +101,7 @@
 }
 
 .cart-drawer-content {
-  padding: 20px 30px;
+  padding: 20px;
   overflow-y: auto;
   flex: 1;
   position: relative;

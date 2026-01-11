@@ -18,9 +18,20 @@ const ChatDashboard = () => {
     fetchChats();
     fetchStats();
 
-    socket.on('receive_message', (data) => {
+    socket.on('new_message', (data) => {
       if (selectedChat && data.chatId === selectedChat._id) {
-        setMessages(prev => [...prev, data.message]);
+        // Add message to the list
+        setMessages(prev => {
+          // Check if message already exists to prevent duplicates
+          const exists = prev.some(msg => 
+            msg.message === data.message.message && 
+            msg.timestamp === data.message.timestamp
+          );
+          if (!exists) {
+            return [...prev, data.message];
+          }
+          return prev;
+        });
         scrollToBottom();
       }
       fetchChats(); // Update chat list
@@ -36,7 +47,7 @@ const ChatDashboard = () => {
     const interval = setInterval(fetchChats, 30000); // Refresh every 30s
 
     return () => {
-      socket.off('receive_message');
+      socket.off('new_message');
       socket.off('user_typing');
       clearInterval(interval);
     };
@@ -44,15 +55,21 @@ const ChatDashboard = () => {
 
   const fetchChats = async () => {
     try {
-      const token = localStorage.getItem('adminToken');
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      console.log('Fetching chats with token:', token ? 'exists' : 'missing');
+      
       const response = await fetch('http://localhost:5000/api/chat/admin/chats', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
       const data = await response.json();
+      console.log('Fetch chats response:', data);
+      
       if (data.success) {
         setChats(data.chats);
+      } else {
+        console.error('Failed to fetch chats:', data.message);
       }
     } catch (error) {
       console.error('Error fetching chats:', error);
@@ -61,15 +78,19 @@ const ChatDashboard = () => {
 
   const fetchStats = async () => {
     try {
-      const token = localStorage.getItem('adminToken');
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
       const response = await fetch('http://localhost:5000/api/chat/admin/stats', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
       const data = await response.json();
+      console.log('Fetch stats response:', data);
+      
       if (data.success) {
         setStats(data.stats);
+      } else {
+        console.error('Failed to fetch stats:', data.message);
       }
     } catch (error) {
       console.error('Error fetching stats:', error);
@@ -87,8 +108,11 @@ const ChatDashboard = () => {
   const sendMessage = async () => {
     if (!inputMessage.trim() || !selectedChat) return;
 
+    const messageText = inputMessage;
+    setInputMessage(''); // Clear input immediately
+
     try {
-      const token = localStorage.getItem('adminToken');
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
       const response = await fetch('http://localhost:5000/api/chat/admin/message', {
         method: 'POST',
         headers: {
@@ -97,37 +121,29 @@ const ChatDashboard = () => {
         },
         body: JSON.stringify({
           chatId: selectedChat._id,
-          message: inputMessage
+          message: messageText
         })
       });
 
       const data = await response.json();
       if (data.success) {
-        const newMessage = {
-          sender: 'admin',
-          senderName: 'Support Team',
-          message: inputMessage,
-          timestamp: new Date()
-        };
-
-        socket.emit('send_message', {
-          chatId: selectedChat._id,
-          message: newMessage
-        });
-
-        setMessages(prev => [...prev, newMessage]);
-        setInputMessage('');
-        scrollToBottom();
+        // Message will be added via socket event, just update chat list
         fetchChats();
+        scrollToBottom();
+      } else {
+        // If failed, restore the message
+        setInputMessage(messageText);
       }
     } catch (error) {
       console.error('Error sending message:', error);
+      // Restore message on error
+      setInputMessage(messageText);
     }
   };
 
   const closeChat = async (chatId) => {
     try {
-      const token = localStorage.getItem('adminToken');
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
       const response = await fetch(`http://localhost:5000/api/chat/admin/close/${chatId}`, {
         method: 'PUT',
         headers: {
@@ -150,12 +166,14 @@ const ChatDashboard = () => {
 
   const markAsRead = async (chatId) => {
     try {
-      const token = localStorage.getItem('adminToken');
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
       await fetch(`http://localhost:5000/api/chat/admin/read/${chatId}`, {
         method: 'PUT',
         headers: {
+          'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
-        }
+        },
+        body: JSON.stringify({ userType: 'admin' })
       });
       fetchChats();
     } catch (error) {
@@ -185,11 +203,11 @@ const ChatDashboard = () => {
           <>
             <div className="stat-card">
               <h3>{stats.totalChats}</h3>
-              <p>Total Chats</p>
+              <p>Total</p>
             </div>
             <div className="stat-card">
               <h3>{stats.openChats}</h3>
-              <p>Open Chats</p>
+              <p>Open</p>
             </div>
             <div className="stat-card">
               <h3>{stats.waitingChats}</h3>
@@ -229,37 +247,32 @@ const ChatDashboard = () => {
                 onClick={() => selectChat(chat)}
               >
                 <div className="chat-item-header">
-                  <h4>{chat.userId?.name || 'Unknown User'}</h4>
-                  <span className={`status-badge ${chat.status}`}>{chat.status}</span>
+                  <span className="chat-item-user">{chat.userId?.name || 'Unknown User'}</span>
+                  <span className="chat-item-time">
+                    {new Date(chat.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
                 </div>
-                <p className="chat-preview">
+                <p className="chat-item-preview">
                   {chat.messages.length > 0
                     ? chat.messages[chat.messages.length - 1].message
                     : 'No messages yet'}
                 </p>
-                <div className="chat-item-footer">
-                  <span className="chat-time">
-                    {new Date(chat.updatedAt).toLocaleString()}
-                  </span>
-                  {chat.unreadCount?.admin > 0 && (
-                    <span className="unread-count">{chat.unreadCount.admin}</span>
-                  )}
-                </div>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="chat-conversation">
+        {/* Chat Conversation Window */}
+        <div className="conversation">
           {selectedChat ? (
             <>
+              {/* Chat Header */}
               <div className="conversation-header">
-                <div>
+                <div className="conversation-header-info">
                   <h3>{selectedChat.userId?.name}</h3>
                   <p>{selectedChat.userId?.email}</p>
                 </div>
                 <button
-                  className="close-chat-btn"
                   onClick={() => closeChat(selectedChat._id)}
                   disabled={selectedChat.status === 'closed'}
                 >
@@ -267,46 +280,65 @@ const ChatDashboard = () => {
                 </button>
               </div>
 
+              {/* Messages Area */}
               <div className="conversation-messages">
                 {messages.map((msg, index) => (
-                  <div key={index} className={`message ${msg.sender}`}>
-                    <div className="message-sender">{msg.senderName}</div>
-                    <div className="message-text">{msg.message}</div>
-                    <div className="message-time">
-                      {new Date(msg.timestamp).toLocaleString()}
+                  <div key={index} className={`message ${msg.sender === 'admin' ? 'user-message' : ''}`}>
+                    <div className="message-avatar">
+                      {msg.senderName ? msg.senderName.charAt(0).toUpperCase() : 'U'}
+                    </div>
+                    <div className="message-content">
+                      <div className="message-header">
+                        <span className="message-sender">{msg.senderName}</span>
+                        <span className="message-time">
+                          {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                      <div className="message-bubble">
+                        <span className="message-text">{msg.message}</span>
+                      </div>
                     </div>
                   </div>
                 ))}
                 {isTyping && (
                   <div className="typing-indicator">
-                    <span></span><span></span><span></span>
+                    <div className="typing-dots">
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                    </div>
                   </div>
                 )}
                 <div ref={messagesEndRef} />
               </div>
 
+              {/* Input Area */}
               {selectedChat.status !== 'closed' && (
                 <div className="conversation-input">
-                  <input
-                    type="text"
+                  <textarea
                     value={inputMessage}
                     onChange={(e) => setInputMessage(e.target.value)}
                     onKeyPress={(e) => {
                       handleTyping();
-                      if (e.key === 'Enter') sendMessage();
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        sendMessage();
+                      }
                     }}
                     placeholder="Type your message..."
+                    rows="1"
                   />
                   <button onClick={sendMessage}>Send</button>
                 </div>
               )}
             </>
           ) : (
-            <div className="no-chat-selected">
+            <div className="empty-state">
               <svg viewBox="0 0 24 24" fill="currentColor">
                 <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/>
               </svg>
-              <p>Select a chat to start messaging</p>
+              <h3>Select a chat to start messaging</h3>
+              <p>Choose a conversation from the list</p>
             </div>
           )}
         </div>

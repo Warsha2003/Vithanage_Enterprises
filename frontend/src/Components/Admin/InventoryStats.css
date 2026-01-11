@@ -1,0 +1,94 @@
+/* Inventory Management Stats - Unique Classes Only */
+.inventory-stats {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 15px;
+  margin-bottom: 30px;
+  overflow-x: auto;
+  padding-right: 10px;
+}
+
+.inventory-management .inventory-stats .stat-card {
+  background: white;
+  border-radius: 12px;
+  padding: 15px 18px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  flex: 1;
+  min-width: 180px;
+  max-width: 220px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-left: 4px solid #007bff;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.inventory-management .inventory-stats .stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.inventory-management .inventory-stats .stat-card:nth-child(1) {
+  border-left-color: #3B82F6;
+}
+
+.inventory-management .inventory-stats .stat-card:nth-child(2) {
+  border-left-color: #10B981;
+}
+
+.inventory-management .inventory-stats .stat-card:nth-child(3) {
+  border-left-color: #F59E0B;
+}
+
+.inventory-management .inventory-stats .stat-card:nth-child(4) {
+  border-left-color: #EF4444;
+}
+
+.inventory-management .inventory-stats .stat-card:nth-child(5) {
+  border-left-color: #8B5CF6;
+}
+
+.inventory-management .inventory-stats .stat-icon {
+  font-size: 1.6rem;
+  opacity: 0.7;
+  flex-shrink: 0;
+  min-width: 28px;
+}
+
+.inventory-management .inventory-stats .stat-card:nth-child(1) .stat-icon {
+  color: #3B82F6;
+}
+
+.inventory-management .inventory-stats .stat-card:nth-child(2) .stat-icon {
+  color: #10B981;
+}
+
+.inventory-management .inventory-stats .stat-card:nth-child(3) .stat-icon {
+  color: #F59E0B;
+}
+
+.inventory-management .inventory-stats .stat-card:nth-child(4) .stat-icon {
+  color: #EF4444;
+}
+
+.inventory-management .inventory-stats .stat-card:nth-child(5) .stat-icon {
+  color: #8B5CF6;
+}
+
+.inventory-management .inventory-stats .stat-info h3 {
+  font-size: 0.7rem;
+  color: #666;
+  margin: 0 0 4px 0;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  line-height: 1.2;
+}
+
+.inventory-management .inventory-stats .stat-info p {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #333;
+  margin: 0;
+  line-height: 1;
+}

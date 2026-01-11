@@ -11,19 +11,16 @@ exports.getUserChat = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Check if user has an open chat
-    let chat = await Chat.findOne({ 
-      userId, 
-      status: { $in: ['open', 'waiting'] } 
-    }).sort({ createdAt: -1 });
+    // Get the most recent chat (including closed ones)
+    let chat = await Chat.findOne({ userId }).sort({ createdAt: -1 });
 
-    // If no open chat, create a new one
+    // If no chat exists at all, create a new one
     if (!chat) {
       chat = new Chat({
         userId,
         userName: user.name,
         userEmail: user.email,
-        status: 'open',
+        status: 'waiting',
         messages: []
       });
       await chat.save();
@@ -184,6 +181,12 @@ exports.closeChat = async (req, res) => {
 
     chat.status = 'closed';
     await chat.save();
+
+    // Emit socket event to notify user
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('chat_closed', { chatId: chat._id });
+    }
 
     res.json({ success: true, message: 'Chat closed successfully', chat: chat });
   } catch (error) {

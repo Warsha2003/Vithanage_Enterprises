@@ -55,7 +55,7 @@
   grid-template-columns: 480px 1fr;
   gap: 30px;
   background: white;
-  padding: 30px;
+  padding: 20px;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.08);
   margin-bottom: 20px;
@@ -328,7 +328,7 @@
 /* Product Info Tabs */
 .product-info-tabs {
   background: white;
-  padding: 30px;
+  padding: 20px;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.08);
   margin-bottom: 20px;
@@ -383,7 +383,7 @@
 /* Reviews Section */
 .reviews-section-modern {
   background: white;
-  padding: 30px;
+  padding: 20px;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.08);
   margin-bottom: 20px;
@@ -403,7 +403,7 @@
 /* Related Products */
 .related-products-section {
   background: white;
-  padding: 30px;
+  padding: 20px;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }

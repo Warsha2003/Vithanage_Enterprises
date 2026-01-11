@@ -535,7 +535,7 @@
 
 .no-deals {
   text-align: center;
-  padding: 60px 20px;
+  padding: 32px 16px;
   color: #64748b;
   background: white;
 }
@@ -619,7 +619,7 @@
 
 @media (max-width: 480px) {
   .deals-header {
-    padding: 30px 15px;
+    padding: 20px 12px;
   }
   
   .deals-header h1 {
