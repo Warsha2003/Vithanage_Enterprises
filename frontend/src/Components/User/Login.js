@@ -27,6 +27,8 @@ const Login = () => {
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+    // Clear error when user starts typing
+    if (error) setError('');
   };
 
   const toggleAdminLogin = () => {
@@ -130,7 +132,14 @@ const Login = () => {
       console.log("Response received:", data);
 
       if (!response.ok) {
-        throw new Error(data.message || 'Authentication failed');
+        // Provide user-friendly error messages
+        if (response.status === 401) {
+          throw new Error('Incorrect email or password');
+        } else if (response.status === 404) {
+          throw new Error('Account not found');
+        } else {
+          throw new Error(data.message || 'Login failed');
+        }
       }
       
       // Ensure token exists
@@ -191,7 +200,14 @@ const Login = () => {
       }
     } catch (error) {
       console.error("Login error:", error);
-      setError(error.message || 'Login failed. Please check your credentials.');
+      // Show friendly and accurate error messages
+      if (error.message === 'Failed to fetch') {
+        setError('Cannot connect to server. Please ensure the backend is running on port 5000.');
+      } else if (error.message.includes('NetworkError') || error.message.includes('fetch')) {
+        setError('Network error. Please check if the backend server is running.');
+      } else {
+        setError(error.message || 'Login failed. Please try again.');
+      }
     }
   };
 
@@ -239,8 +255,6 @@ const Login = () => {
             </div>
           )}
           
-          {error && <div className="error-message">{error}</div>}
-          
           <form onSubmit={handleSubmit}>
             {!isLogin && !isAdminLogin && (
               <div className="form-group">
@@ -279,7 +293,9 @@ const Login = () => {
                 onChange={handleChange}
                 required
                 placeholder={isAdminLogin ? "Admin Password" : "Your Password"}
+                className={error ? 'input-error' : ''}
               />
+              {error && <div className="field-error">{error}</div>}
             </div>
             
             {!isLogin && !isAdminLogin && (

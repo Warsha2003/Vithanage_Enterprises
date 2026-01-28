@@ -1,5 +1,6 @@
 //V2ft5D1dbTssVJzR
 
+require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -19,6 +20,8 @@ const adminRefundRoutes = require('./Routes/adminRefundRoutes');
 const inventoryRoutes = require('./Routes/inventoryRoutes');
 const promotionRoutes = require('./Routes/promotionRoutes');
 const chatRoutes = require('./Routes/chatRoutes');
+const paymentRoutes = require('./Routes/paymentRoutes');
+const emailCampaignRoutes = require('./Routes/emailCampaignRoutes');
 const { createInitialAdmin } = require('./Controllers/adminAuthController');
 
 const app = express();
@@ -108,6 +111,10 @@ const dailyDealRoutes = require('./Routes/dailyDealRoutes');
 app.use('/api/deals', dailyDealRoutes);
 // Chat routes
 app.use('/api/chat', chatRoutes);
+// Payment routes
+app.use('/api/payments', paymentRoutes);
+// Email campaign routes (admin only)
+app.use('/api/email-campaigns', emailCampaignRoutes);
 
 // Socket.IO connection handling
 io.on('connection', (socket) => {

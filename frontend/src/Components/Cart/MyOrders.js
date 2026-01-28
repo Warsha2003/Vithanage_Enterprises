@@ -245,106 +245,126 @@ const MyOrders = () => {
           <div className="orders-list">
             {orders.map((order) => (
               <div className="order-item" key={order._id}>
+                {/* Order Header Section */}
                 <div className="order-header">
-                  <div>
-                    <div><strong>Order ID:</strong> {order._id}</div>
-                    <div><strong>Date:</strong> {new Date(order.createdAt).toLocaleString()}</div>
+                  <div className="order-info-section">
+                    <div className="order-id-row">
+                      <span className="order-label">Order ID:</span>
+                      <span className="order-value">{order._id}</span>
+                    </div>
+                    <div className="order-date-row">
+                      <span className="order-label">Date:</span>
+                      <span className="order-value">{new Date(order.createdAt).toLocaleString()}</span>
+                    </div>
+                    
+                    {/* Cancel Order Button */}
+                    {(order.status === 'pending' || order.status === 'approved') && (
+                      <button 
+                        className="cancel-order-btn"
+                        onClick={() => handleCancelOrder(order)}
+                        disabled={cancellingOrder === order._id}
+                      >
+                        {cancellingOrder === order._id ? 'Cancelling...' : 'Cancel Order'}
+                      </button>
+                    )}
                   </div>
-                  
-                  {/* Cancel Order Button */}
-                  {(order.status === 'pending' || order.status === 'approved') && (
-                    <button 
-                      className="cancel-order-btn"
-                      onClick={() => handleCancelOrder(order)}
-                      disabled={cancellingOrder === order._id}
-                      style={{
-                        backgroundColor: '#dc3545',
-                        color: 'white',
-                        border: 'none',
-                        padding: '8px 16px',
-                        borderRadius: '5px',
-                        cursor: 'pointer',
-                        fontSize: '0.9rem',
-                        fontWeight: '600'
-                      }}
-                    >
-                      {cancellingOrder === order._id ? 'Cancelling...' : 'Cancel Order'}
-                    </button>
-                  )}
                 </div>
-                <div className="order-items">
+
+                {/* Product Items Section */}
+                <div className="order-products-section">
+                  <h3 className="section-title">Order Items</h3>
                   {order.items.map((it, idx) => {
                     const refundStatus = getRefundStatus(order._id, it);
                     const localRefundStatus = getLocalRefundStatus(order._id, it);
                     return (
-                      <div className="order-line" key={idx}>
-                        <div className="item-info">
-                          <span>{it.name} × {it.quantity}</span>
-                          <div style={{ display: 'flex', alignItems: 'center' }}>
-                            <span>{formatPrice(it.price * it.quantity)}</span>
-                            {getRefundStatusDisplay(refundStatus?.status || localRefundStatus)}
+                      <div className="product-card" key={idx}>
+                        <div className="product-main-info">
+                          <div className="product-name-qty">
+                            <span className="product-name">{it.name}</span>
+                            <span className="product-qty">Quantity: {it.quantity}</span>
+                          </div>
+                          <div className="product-price">
+                            {formatPrice(it.price)} × {it.quantity}
                           </div>
                         </div>
-                        {/* Show order status */}
-                        <small style={{color: '#666', fontSize: '0.8rem'}}>
-                          Status: {order.status}
-                        </small>
-                      
-                      {/* Show refund button only for approved/delivered orders */}
-                      {(order.status === 'approved' || order.status === 'Delivered' || 
-                        (order.status === 'approved' && order.processing && order.processing.step === 'finished')) && (
-                        <button 
-                          className="refund-btn"
-                          onClick={() => handleRefundRequest(order, it)}
-                        >
-                          Request Refund
-                        </button>
-                      )}
-                      
-                      {/* Show appropriate message for other statuses */}
-                      {order.status === 'pending' && (
-                        <small style={{color: '#ffa500', fontSize: '0.8rem', fontStyle: 'italic'}}>
-                          Awaiting admin approval
-                        </small>
-                      )}
-                      {order.status === 'rejected' && (
-                        <small style={{color: '#ff6b6b', fontSize: '0.8rem', fontStyle: 'italic'}}>
-                          Order rejected - Refund not available
-                        </small>
-                      )}
-                      {order.status === 'cancelled' && (
-                        <small style={{color: '#ff6b6b', fontSize: '0.8rem', fontStyle: 'italic'}}>
-                          Order cancelled - Refund not available
-                        </small>
-                      )}
-                    </div>
-                  );
+                        
+                        <div className="product-status-row">
+                          <div className="status-badges">
+                            <span className={`status-badge badge-${order.status}`}>
+                              {order.status === 'pending' && '⏳ Awaiting admin approval'}
+                              {order.status === 'approved' && '✓ Approved by admin'}
+                              {order.status === 'rejected' && '✗ Rejected'}
+                              {order.status === 'cancelled' && '✗ Cancelled'}
+                              {order.status === 'Delivered' && '✓ Delivered'}
+                              {!['pending', 'approved', 'rejected', 'cancelled', 'Delivered'].includes(order.status) && order.status}
+                            </span>
+                            {getRefundStatusDisplay(refundStatus?.status || localRefundStatus)}
+                          </div>
+                          
+                          {/* Refund Button */}
+                          {(order.status === 'approved' || order.status === 'Delivered' || 
+                            (order.status === 'approved' && order.processing && order.processing.step === 'finished')) && 
+                            !refundStatus && !localRefundStatus && (
+                            <button 
+                              className="refund-btn"
+                              onClick={() => handleRefundRequest(order, it)}
+                            >
+                              Request Refund
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
                   })}
                 </div>
-                <div className="order-totals">
-                  <div className="total-row"><span>Status</span><span><span className={`badge ${order.status}`}>{order.status}</span></span></div>
-                  {order.status === 'approved' && (
-                    <div style={{ margin: '8px 0 4px', color: '#555' }}>
-                      <div>Processing</div>
-                      <div className="progress-steps">
-                        {[1,2,3,4,5].map((idx) => (
-                          <div 
-                            key={idx}
-                            className={`progress-step ${ (order.processing?.stepIndex || 0) >= idx ? 'active' : ''}`}
-                          />
-                        ))}
+
+                {/* Processing Progress (if approved) */}
+                {order.status === 'approved' && (
+                  <div className="processing-section">
+                    <div className="processing-title">Order Processing</div>
+                    <div className="progress-steps">
+                      {[1,2,3,4,5].map((idx) => (
+                        <div 
+                          key={idx}
+                          className={`progress-step ${ (order.processing?.stepIndex || 0) >= idx ? 'active' : ''}`}
+                        >
+                          <div className="step-circle"></div>
+                          <div className="step-label">
+                            {idx === 1 && 'Processing'}
+                            {idx === 2 && 'Packed'}
+                            {idx === 3 && 'Shipped'}
+                            {idx === 4 && 'In Transit'}
+                            {idx === 5 && 'Delivered'}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Price Summary Section */}
+                <div className="price-summary-section">
+                  <h3 className="section-title">Price Details</h3>
+                  <div className="price-summary-content">
+                    <div className="price-row">
+                      <span>Subtotal</span>
+                      <span>{formatPrice(order.totals?.subtotal)}</span>
+                    </div>
+                    {order.promotion && (
+                      <div className="price-row discount-row">
+                        <span>🎉 Discount ({order.promotion.code})</span>
+                        <span className="discount-amount">-{formatPrice(order.totals?.discount || 0)}</span>
                       </div>
+                    )}
+                    <div className="price-row">
+                      <span>Shipping</span>
+                      <span>{formatPrice(order.totals?.shipping)}</span>
                     </div>
-                  )}
-                  <div className="total-row"><span>Subtotal</span><span>{formatPrice(order.totals?.subtotal)}</span></div>
-                  {order.promotion && (
-                    <div className="total-row promotion-used">
-                      <span>🎉 Promotion "{order.promotion.code}" Applied</span>
-                      <span>-{formatPrice(order.totals?.discount || 0)}</span>
+                    <div className="price-row total-row">
+                      <span>Total</span>
+                      <span className="total-amount">{formatPrice(order.totals?.total)}</span>
                     </div>
-                  )}
-                  <div className="total-row"><span>Shipping</span><span>{formatPrice(order.totals?.shipping)}</span></div>
-                  <div className="total-row total"><span>Total</span><span>{formatPrice(order.totals?.total)}</span></div>
+                  </div>
                 </div>
               </div>
             ))}

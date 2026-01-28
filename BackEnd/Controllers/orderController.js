@@ -1,6 +1,7 @@
 const Order = require('../Models/Order');
 const User = require('../Models/User');
 const Product = require('../Models/Product');
+const { sendOrderConfirmationEmail, sendShippingUpdateEmail, sendReviewRequestEmail } = require('../Services/emailService');
 
 // Create order from payload and user's cart
 exports.createOrder = async (req, res) => {
@@ -87,6 +88,16 @@ exports.createOrder = async (req, res) => {
     user.cart = [];
     await user.save();
 
+    // Send order confirmation email
+    try {
+      const populatedOrder = await Order.findById(order._id).populate('items.product');
+      await sendOrderConfirmationEmail(populatedOrder, user);
+      console.log('Order confirmation email sent to:', user.email);
+    } catch (emailError) {
+      console.error('Failed to send order confirmation email:', emailError);
+      // Don't fail the order creation if email fails
+    }
+
     res.status(201).json({ message: 'Order created', order });
   } catch (error) {
     console.error('Error creating order:', error);
@@ -152,6 +163,40 @@ exports.adminUpdateProcessing = async (req, res) => {
       updatedAt: new Date()
     };
     await order.save();
+
+    // Send shipping update email
+    try {
+      const user = await User.findById(order.user);
+      const statusMap = {
+        'preparing': 'Processing',
+        'packing': 'Processing',
+        'waiting_to_delivery': 'Shipped',
+        'on_the_way': 'Out for Delivery',
+        'finished': 'Delivered'
+      };
+      
+      if (user && statusMap[step]) {
+        await sendShippingUpdateEmail(order, user, statusMap[step]);
+        console.log(`Shipping update email sent to: ${user.email}`);
+        
+        // Send review request email when order is delivered
+        if (step === 'finished') {
+          // Send review request 24 hours after delivery
+          setTimeout(async () => {
+            try {
+              const populatedOrder = await Order.findById(order._id).populate('items.product');
+              await sendReviewRequestEmail(populatedOrder, user);
+              console.log(`Review request email sent to: ${user.email}`);
+            } catch (reviewEmailError) {
+              console.error('Failed to send review request email:', reviewEmailError);
+            }
+          }, 24 * 60 * 60 * 1000); // 24 hours delay
+        }
+      }
+    } catch (emailError) {
+      console.error('Failed to send shipping update email:', emailError);
+    }
+
     res.status(200).json({ message: 'Processing updated', order });
   } catch (error) {
     console.error('Error updating processing:', error);

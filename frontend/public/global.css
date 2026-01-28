@@ -49,3 +49,13 @@ main {
 .home, .products-container, .cart-page, .login-container {
   background-color: #f7f7f7 !important;
 }
+
+/* Hide Stripe Badge Globally */
+body > iframe[name^="__privateStripeFrame"],
+body > iframe[src*="js.stripe.com"],
+.__PrivateStripeElement-overlay {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  z-index: -9999 !important;
+}

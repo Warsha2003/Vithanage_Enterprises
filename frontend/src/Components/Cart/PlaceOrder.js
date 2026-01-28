@@ -135,7 +135,27 @@ const PlaceOrder = () => {
 
   const onSubmit = async (e) => {
     e.preventDefault();
-    if (!validateForm()) return;
+    
+    // Only validate shipping and customer info (not payment for new flow)
+    const newErrors = {};
+    // Contact
+    if (!form.fullName.trim()) newErrors.fullName = 'Full Name is required';
+    if (!form.email.trim()) newErrors.email = 'Email is required';
+    else if (!/^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/.test(form.email)) newErrors.email = 'Invalid email address';
+    if (!form.phone.trim()) newErrors.phone = 'Phone is required';
+    else if (!/^\d{10}$/.test(form.phone.replace(/\D/g, ''))) newErrors.phone = 'Invalid phone number';
+
+    // Shipping
+    if (!form.addressLine1.trim()) newErrors.addressLine1 = 'Address Line 1 is required';
+    if (!form.city.trim()) newErrors.city = 'City is required';
+    if (!form.state.trim()) newErrors.state = 'State/Province is required';
+    if (!form.postalCode.trim()) newErrors.postalCode = 'Postal Code is required';
+    else if (!/^\d+$/.test(form.postalCode.replace(/\s+/g, ''))) newErrors.postalCode = 'Postal Code must be numeric';
+    if (!form.country.trim()) newErrors.country = 'Country is required';
+
+    setErrors(newErrors);
+    if (Object.keys(newErrors).length > 0) return;
+
     const payload = {
       customer: {
         fullName: form.fullName,
@@ -150,84 +170,13 @@ const PlaceOrder = () => {
         postalCode: form.postalCode,
         country: form.country
       },
-      payment: (paymentMethod === 'online') ? {
-        method: 'online',
-        cardType,
-        cardName: form.cardName,
-        cardNumber: form.cardNumber,
-        expiryMonth: form.expiryMonth,
-        expiryYear: form.expiryYear,
-        cvv: form.cvv
-      } : (paymentMethod === 'cod') ? { method: 'cod' } : { method: 'bank', bankDetails: {
-        accountNumber: '1234567890',
-        shopName: 'Vithanage Enterprises',
-        bank: 'Sample Bank',
-        branch: 'Main Branch'
-      } },
       items: items,
       totals,
       promotion: appliedPromotion
     };
-    try {
-      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-      if (!token) {
-        alert('Please log in to place your order.');
-        navigate('/login');
-        return;
-      }
-      const res = await fetch('http://localhost:5000/api/orders', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-auth-token': token
-        },
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json().catch(() => ({}));
-      if (res.ok) {
-        /*console.log('ORDER SAVED:', data);
-        alert('Successfully placed your order!');
-        // Server clears the cart; sync client cache/UI
-        localStorage.setItem('userCart', JSON.stringify([]));
-        document.dispatchEvent(new Event('cartUpdated'));
-        try { await fetchCart(); } catch (_) {}
-        navigate('/');
-      } else {
-        console.error('Order creation failed:', data);
-        alert(data?.message || 'Failed to place order. Please try again.');
-      }
-    } */
-   console.log('ORDER SAVED:', data);
-  
-  // Store order data for confirmation page
-  const orderData = {
-    ...data,
-    customer: payload.customer,
-    shippingAddress: payload.shippingAddress,
-    items: payload.items,
-    totals: payload.totals,
-    promotion: payload.promotion
-  };
-  
-  // Store in localStorage as backup
-  localStorage.setItem('lastOrder', JSON.stringify(orderData));
-  
-  // Redirect to invoice page with order data
-  navigate('/invoice', { state: { order: orderData } });
-  
-  // Clear cart after successful order
-  localStorage.setItem('userCart', JSON.stringify([]));
-  document.dispatchEvent(new Event('cartUpdated'));
-  try { await fetchCart(); } catch (_) {}
-  } else {
-  console.error('Order creation failed:', data);
-  alert(data?.message || 'Failed to place order. Please try again.');
-  }//update in 9/29
-    }
-   catch (err) {
-      console.error('Order request error:', err);
-      alert('Failed to place order. Please try again.');
-    }
+    
+    // Navigate to checkout page with order data
+    navigate('/checkout', { state: { orderData: payload } });
   };
 
   return (
@@ -290,113 +239,7 @@ const PlaceOrder = () => {
               </div>
             </fieldset>
 
-            <fieldset>
-              <legend>Payment</legend>
-              <div className="po-payment-methods">
-                <label>Payment Method</label>
-                <div className="pm-buttons">
-                  <button
-                    type="button"
-                    className={"pm-btn " + (paymentMethod === 'online' ? 'active' : '')}
-                    onClick={() => setPaymentMethod('online')}
-                  >
-                    Pay Online
-                  </button>
-                  <button
-                    type="button"
-                    className={"pm-btn " + (paymentMethod === 'cod' ? 'active' : '')}
-                    onClick={() => setPaymentMethod('cod')}
-                  >
-                    Cash on delivery
-                  </button>
-                  <button
-                    type="button"
-                    className={"pm-btn " + (paymentMethod === 'bank' ? 'active' : '')}
-                    onClick={() => setPaymentMethod('bank')}
-                  >
-                    Bank transfer
-                  </button>
-                </div>
-
-                {paymentMethod === 'online' && (
-                  <div className="po-card-section">
-                    <label>Card Type</label>
-                    <div className="card-type-buttons">
-                      <button
-                        type="button"
-                        className={"card-btn " + (cardType === 'visa' ? 'active' : '')}
-                        onClick={() => setCardType('visa')}
-                      >
-                        Visa
-                      </button>
-                      <button
-                        type="button"
-                        className={"card-btn " + (cardType === 'master' ? 'active' : '')}
-                        onClick={() => setCardType('master')}
-                      >
-                        MasterCard
-                      </button>
-                    </div>
-
-                    <div className="po-row">
-                      <label>Name on Card</label>
-                      <input name="cardName" value={form.cardName} onChange={onChange} />
-                      {errors.cardName && <span className="po-error">{errors.cardName}</span>}
-                    </div>
-                    <div className="po-row">
-                      <label>Card Number</label>
-                      <input name="cardNumber" value={form.cardNumber} onChange={onChange} />
-                      {errors.cardNumber && <span className="po-error">{errors.cardNumber}</span>}
-                    </div>
-                    <div className="po-row-3">
-                      <div>
-                        <label>Expiry Month</label>
-                        <input name="expiryMonth" value={form.expiryMonth} onChange={onChange} />
-                        {errors.expiryMonth && <span className="po-error">{errors.expiryMonth}</span>}
-                      </div>
-                      <div>
-                        <label>Expiry Year</label>
-                        <input name="expiryYear" value={form.expiryYear} onChange={onChange} />
-                        {errors.expiryYear && <span className="po-error">{errors.expiryYear}</span>}
-                      </div>
-                      <div>
-                        <label>CVV</label>
-                        <input
-                          name="cvv"
-                          value={form.cvv}
-                          onChange={onChange}
-                          maxLength={3}
-                          inputMode="numeric"
-                          pattern="\d{3}"
-                          placeholder="123"
-                        />
-                        {errors.cvv && <span className="po-error">{errors.cvv}</span>}
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {paymentMethod === 'cod' && (
-                  <div className="po-cod-message">
-                    <p>You have selected Cash on Delivery. Please have the exact amount ready when the courier arrives.</p>
-                  </div>
-                )}
-
-                {paymentMethod === 'bank' && (
-                  <div className="po-bank-details">
-                    <p>Please transfer the order total to the following bank account. Once payment is made, send the receipt to our whatsapp account.</p>
-                    <div className="bank-row"><strong>Account Number:</strong> <span>1234567890</span></div>
-                    <div className="bank-row"><strong>Shop Name:</strong> <span>Vithanage Enterprises</span></div>
-                    <div className="bank-row"><strong>Bank:</strong> <span>Sample Bank</span></div>
-                    <div className="bank-row"><strong>Branch:</strong> <span>Main Branch, Colomb</span></div>
-                  </div>
-                )}
-              </div>
-            </fieldset>
-
-            {paymentMethod === 'online' && (
-              <button className="po-submit" type="submit">Pay Now</button>
-            )}
+            <button className="po-submit" type="submit">Proceed to Payment</button>
           </form>
 
           <aside className="po-summary">

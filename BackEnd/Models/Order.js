@@ -50,9 +50,11 @@ const orderSchema = new mongoose.Schema({
     phone: String
   },
   payment: {
-    method: { type: String, default: 'card' },
+    method: { type: String, enum: ['card', 'paypal', 'bank_transfer', 'cash_on_delivery'], default: 'card' },
     last4: String,
-    status: { type: String, default: 'paid' }
+    status: { type: String, enum: ['pending', 'paid', 'failed', 'refunded'], default: 'paid' },
+    paymentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Payment' },
+    transactionId: String
   },
   // Cancellation tracking
   cancelledAt: { type: Date },

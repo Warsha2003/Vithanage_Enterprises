@@ -349,6 +349,33 @@
   border: 1px solid rgba(239, 68, 68, 0.2);
 }
 
+/* Clean inline error message below input field */
+.field-error {
+  color: #dc2626;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+}
+
+.field-error::before {
+  content: "⚠";
+  font-size: 1rem;
+}
+
+/* Add red border to input when there's an error */
+.form-group input.input-error {
+  border-color: #dc2626 !important;
+  background: rgba(239, 68, 68, 0.05);
+}
+
+.form-group input.input-error:focus {
+  border-color: #dc2626 !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
 .login-message {
   background: rgba(59, 130, 246, 0.1);
   color: #2563eb;

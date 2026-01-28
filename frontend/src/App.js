@@ -29,6 +29,8 @@ import PrivacyPolicy from './Components/User/PrivacyPolicy';
 import LegalInformation from './Components/User/LegalInformation';
 import MyProfile from './Components/User/MyProfile';
 import ChatWidget from './Components/Chat/ChatWidget';
+import Checkout from './Components/Cart/Checkout';
+import OrderConfirmation from './Components/Cart/OrderConfirmation';
 
 // Direct approach to protected routes without state management
 // eslint-disable-next-line no-unused-vars
@@ -142,6 +144,8 @@ function App() {
               {/* Make cart accessible without login, checking will happen inside */}
               <Route path="/cart" element={<Cart />} />
               <Route path="/place-order" element={<PlaceOrder />} />
+              <Route path="/checkout" element={<Checkout />} />
+              <Route path="/order-confirmation" element={<OrderConfirmation />} />
               <Route path="/invoice/" element={<InvoicePage />} />
               <Route path="/my-orders" element={<MyOrders />} />
               <Route path="/my-reviews" element={<MyReviewsPage />} />
