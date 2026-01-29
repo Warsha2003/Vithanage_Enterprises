@@ -18,6 +18,7 @@ function Navbar() {
   const location = useLocation();
   const { openCart, totals } = useCart();
   const { settings } = useSettings();
+  const userMenuRef = React.useRef(null);
 
   useEffect(() => {
     // Check if user is logged in
@@ -102,6 +103,23 @@ function Navbar() {
       window.removeEventListener('auth-change', handleAuthChange);
     };
   }, []);
+
+  // Close user menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+        setShowUserMenu(false);
+      }
+    };
+
+    if (showUserMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showUserMenu]);
 
   const fetchCategories = async () => {
     try {
@@ -188,6 +206,7 @@ function Navbar() {
             {/* User Menu */}
             {user && localStorage.getItem('token') ? (
               <div 
+                ref={userMenuRef}
                 className="user-wrapper"
                 onClick={() => setShowUserMenu(!showUserMenu)}
               >

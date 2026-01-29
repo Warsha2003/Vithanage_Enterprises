@@ -5,12 +5,14 @@ import {
   useStripe,
   useElements
 } from '@stripe/react-stripe-js';
+import { useCart } from './CartContext';
 import './PaymentForm.css';
 
 const PaymentForm = ({ clientSecret, orderData }) => {
   const stripe = useStripe();
   const elements = useElements();
   const navigate = useNavigate();
+  const { clearCart } = useCart();
 
   const [message, setMessage] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -58,6 +60,9 @@ const PaymentForm = ({ clientSecret, orderData }) => {
         const data = await response.json();
 
         if (response.ok) {
+          // Clear cart after successful payment
+          await clearCart();
+          
           // Navigate to order confirmation page
           navigate('/order-confirmation', { 
             state: { 

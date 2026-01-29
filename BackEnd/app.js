@@ -46,32 +46,9 @@ app.get('/', (req, res) => {
   res.send('Vithanage Enterprises API is working');
 });
 
-// Sample data creation endpoint (for testing)
-app.post('/api/create-sample-data', async (req, res) => {
-  try {
-    const { sampleProducts, sampleUsers } = require('./data/sampleProducts');
-    const Product = require('./Models/Product');
-    const User = require('./Models/User');
-    
-    // Clear existing data (optional - remove in production)
-    await Product.deleteMany({});
-    await User.deleteMany({ isAdmin: { $ne: true } }); // Don't delete admins
-    
-    // Create sample products
-    const createdProducts = await Product.insertMany(sampleProducts);
-    
-    // Create sample users
-    const createdUsers = await User.insertMany(sampleUsers);
-    
-    res.json({
-      message: 'Sample data created successfully',
-      products: createdProducts.length,
-      users: createdUsers.length
-    });
-  } catch (error) {
-    console.error('Error creating sample data:', error);
-    res.status(500).json({ message: 'Error creating sample data', error: error.message });
-  }
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
 // Auth routes
@@ -116,6 +93,27 @@ app.use('/api/payments', paymentRoutes);
 // Email campaign routes (admin only)
 app.use('/api/email-campaigns', emailCampaignRoutes);
 
+// 404 handler for unknown routes (must be before error handler)
+app.use((req, res, next) => {
+  res.status(404).json({
+    error: 'Route not found',
+    path: req.originalUrl
+  });
+});
+
+// Global error handling middleware (must be last)
+app.use((err, req, res, next) => {
+  console.error('❌ Error:', err.message);
+  console.error('Stack:', err.stack);
+  
+  res.status(err.status || 500).json({
+    error: {
+      message: err.message || 'Internal Server Error',
+      ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+    }
+  });
+});
+
 // Socket.IO connection handling
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
@@ -138,18 +136,90 @@ io.on('connection', (socket) => {
   });
 });
 
-mongoose.connect("mongodb+srv://admin:V2ft5D1dbTssVJzR@cluster0.fq7u6hk.mongodb.net/test")
+// Global error handlers to prevent crashes
+process.on('uncaughtException', (error) => {
+  console.error('❌ Uncaught Exception:', error.message);
+  console.error('Stack:', error.stack);
+  // Don't exit - let the app continue running
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Unhandled Rejection at:', promise);
+  console.error('Reason:', reason);
+  // Don't exit - let the app continue running
+});
+
+// Graceful shutdown handlers
+process.on('SIGTERM', gracefulShutdown);
+process.on('SIGINT', gracefulShutdown);
+
+async function gracefulShutdown() {
+  console.log('\n🔄 Shutting down gracefully...');
+  
+  server.close(async () => {
+    console.log('✅ HTTP server closed');
+    
+    try {
+      await mongoose.connection.close();
+      console.log('✅ MongoDB connection closed');
+      process.exit(0);
+    } catch (err) {
+      console.error('Error closing MongoDB:', err);
+      process.exit(1);
+    }
+  });
+  
+  // Force shutdown after 10 seconds
+  setTimeout(() => {
+    console.error('⚠️ Forcing shutdown after timeout');
+    process.exit(1);
+  }, 10000);
+}
+
+// MongoDB Connection
+const MONGODB_URI = process.env.MONGODB_URI || "mongodb+srv://admin:V2ft5D1dbTssVJzR@cluster0.fq7u6hk.mongodb.net/test";
+
+mongoose.connect(MONGODB_URI, {
+  serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
+})
 .then(()=> {
-    console.log("Connected to MongoDB");
+    console.log("✅ Connected to MongoDB");
     
     // Create initial admin if none exists
-    createInitialAdmin();
+    return createInitialAdmin();
 })
 .then(()=>{
     const PORT = process.env.PORT || 5000;
+    
     server.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
-      console.log(`Socket.IO ready for real-time chat`);
+      console.log(`✅ Server running on port ${PORT}`);
+      console.log(`✅ Socket.IO ready for real-time chat`);
+    }).on('error', (err) => {
+      if (err.code === 'EADDRINUSE') {
+        console.error(`❌ Port ${PORT} is already in use`);
+        console.log('💡 Please either:');
+        console.log(`   1. Stop the other process using port ${PORT}`);
+        console.log('   2. Or set a different PORT in your .env file');
+        console.log('\nTo find and kill the process using the port:');
+        console.log(`   netstat -ano | findstr :${PORT}`);
+        console.log('   taskkill /PID <PID_NUMBER> /F');
+        process.exit(1);
+      } else {
+        console.error('❌ Server error:', err);
+        process.exit(1);
+      }
     });
 })
-.catch((err)=> console.log(err));
+.catch((err)=> {
+    console.error("❌ MongoDB connection error:", err.message);
+    console.error("Please check:");
+    console.error("1. Your internet connection");
+    console.error("2. MongoDB Atlas cluster is running (not paused)");
+    console.error("3. Your IP address is whitelisted in MongoDB Atlas");
+    console.error("4. The connection string in .env is correct");
+    // Don't exit immediately - retry after delay
+    console.log('\n⏳ Retrying connection in 10 seconds...');
+    setTimeout(() => {
+      process.exit(1);
+    }, 10000);
+});

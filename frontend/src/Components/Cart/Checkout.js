@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
 import PaymentForm from './PaymentForm';
+import { useCart } from './CartContext';
 import './Checkout.css';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useCurrency } from '../../contexts/CurrencyContext';
@@ -23,6 +24,7 @@ const Checkout = () => {
   
   const { settings, getShippingCost } = useSettings();
   const { formatPrice } = useCurrency();
+  const { clearCart } = useCart();
 
   useEffect(() => {
     if (!orderData) {
@@ -101,6 +103,9 @@ const Checkout = () => {
       const data = await response.json();
 
       if (response.ok) {
+        // Clear cart after successful COD order
+        await clearCart();
+        
         navigate('/order-confirmation', { 
           state: { 
             order: data.order, 

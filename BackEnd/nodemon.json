@@ -1,6 +1,31 @@
 {
   "watch": ["Controllers", "Models", "Routes", "Services", "app.js"],
-  "ignore": ["node_modules", "*.log", "*.txt", ".env"],
-  "ext": "js,json",
-  "delay": "2000"
+  "ignore": [
+    "node_modules",
+    "*.log",
+    "*.txt",
+    ".env",
+    "*.md",
+    "*.json",
+    "uploads/*",
+    "build/*",
+    "dist/*"
+  ],
+  "ext": "js",
+  "delay": "2000",
+  "verbose": true,
+  "restartable": "rs",
+  "env": {
+    "NODE_ENV": "development"
+  },
+  "events": {
+    "restart": "echo 🔄 Restarting server...",
+    "crash": "echo ❌ Server crashed - waiting for changes..."
+  },
+  "execMap": {
+    "js": "node"
+  },
+  "colours": true,
+  "signal": "SIGTERM",
+  "nodeArgs": ["--trace-warnings"]
 }
