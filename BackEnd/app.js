@@ -189,26 +189,30 @@ mongoose.connect(MONGODB_URI, {
     return createInitialAdmin();
 })
 .then(()=>{
-    const PORT = process.env.PORT || 5000;
-    
-    server.listen(PORT, () => {
-      console.log(`✅ Server running on port ${PORT}`);
-      console.log(`✅ Socket.IO ready for real-time chat`);
-    }).on('error', (err) => {
-      if (err.code === 'EADDRINUSE') {
-        console.error(`❌ Port ${PORT} is already in use`);
-        console.log('💡 Please either:');
-        console.log(`   1. Stop the other process using port ${PORT}`);
-        console.log('   2. Or set a different PORT in your .env file');
-        console.log('\nTo find and kill the process using the port:');
-        console.log(`   netstat -ano | findstr :${PORT}`);
-        console.log('   taskkill /PID <PID_NUMBER> /F');
-        process.exit(1);
-      } else {
-        console.error('❌ Server error:', err);
+    const BASE_PORT = parseInt(process.env.PORT, 10) || 5000;
+    const MAX_PORT_ATTEMPTS = 10;
+
+    function startServer(port, attempts) {
+      if (attempts >= MAX_PORT_ATTEMPTS) {
+        console.error(`❌ Could not find an available port after ${MAX_PORT_ATTEMPTS} attempts (tried ports ${BASE_PORT}–${port - 1}).`);
         process.exit(1);
       }
-    });
+
+      server.listen(port, () => {
+        console.log(`✅ Server running on port ${port}`);
+        console.log(`✅ Socket.IO ready for real-time chat`);
+      }).on('error', (err) => {
+        if (err.code === 'EADDRINUSE') {
+          console.warn(`⚠️  Port ${port} is already in use. Trying port ${port + 1}...`);
+          server.close(() => startServer(port + 1, attempts + 1));
+        } else {
+          console.error('❌ Server error:', err);
+          process.exit(1);
+        }
+      });
+    }
+
+    startServer(BASE_PORT, 0);
 })
 .catch((err)=> {
     console.error("❌ MongoDB connection error:", err.message);
