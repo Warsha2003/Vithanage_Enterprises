@@ -53,6 +53,9 @@ app.get('/api/health', (req, res) => {
 
 // Auth routes
 app.use('/api/auth', authRoutes);
+// Social auth routes (Google/Facebook)
+const socialAuthRoutes = require('./Routes/socialAuthRoutes');
+app.use('/api/auth/social', socialAuthRoutes);
 // Admin routes
 app.use('/api/admin', adminRoutes);
 // Admin Auth routes
@@ -70,6 +73,12 @@ app.use('/api/stock-alerts', stockAlertRoutes);
 // Product Q&A routes
 const questionRoutes = require('./Routes/questionRoutes');
 app.use('/api/questions', questionRoutes);
+// Product Bundles routes
+const bundleRoutes = require('./Routes/bundleRoutes');
+app.use('/api/bundles', bundleRoutes);
+// Analytics routes
+const analyticsRoutes = require('./Routes/analyticsRoutes');
+app.use('/api/analytics', analyticsRoutes);
 // Order routes
 app.use('/api/orders', orderRoutes);
 // User management routes
@@ -101,6 +110,15 @@ app.use('/api/chat', chatRoutes);
 app.use('/api/payments', paymentRoutes);
 // Email campaign routes (admin only)
 app.use('/api/email-campaigns', emailCampaignRoutes);
+// Loyalty Points routes
+const loyaltyRoutes = require('./Routes/loyaltyRoutes');
+app.use('/api/loyalty', loyaltyRoutes);
+// Warranty routes
+const warrantyRoutes = require('./Routes/warrantyRoutes');
+app.use('/api/warranties', warrantyRoutes);
+// Push Notification routes
+const pushRoutes = require('./Routes/pushRoutes');
+app.use('/api/push', pushRoutes);
 
 // 404 handler for unknown routes (must be before error handler)
 app.use((req, res, next) => {

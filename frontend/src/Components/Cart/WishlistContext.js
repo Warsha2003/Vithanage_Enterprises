@@ -2,30 +2,34 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
 
 const WishlistContext = createContext(null);
 
-const readAuth = () => {
-  const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-  const userStr = localStorage.getItem('user') || sessionStorage.getItem('user');
-  return { token, userStr };
-};
-
 export const WishlistProvider = ({ children }) => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const { token } = readAuth();
+  // Get fresh token each time
+  const getToken = () => {
+    return localStorage.getItem('token') || sessionStorage.getItem('token');
+  };
+
+  const getAuthHeaders = () => {
+    const token = getToken();
+    return {
+      'Content-Type': 'application/json',
+      'x-auth-token': token,
+      'Authorization': `Bearer ${token}`
+    };
+  };
 
   const fetchWishlist = useCallback(async () => {
+    const token = getToken();
+    if (!token) {
+      setItems([]);
+      return;
+    }
+    
     try {
-      if (!token) {
-        setItems([]);
-        return;
-      }
       const res = await fetch('http://localhost:5000/api/wishlist', {
-        headers: { 
-          'x-auth-token': token, 
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json' 
-        }
+        headers: getAuthHeaders()
       });
       if (res.ok) {
         const data = await res.json();
@@ -33,13 +37,14 @@ export const WishlistProvider = ({ children }) => {
         localStorage.setItem('userWishlist', JSON.stringify(data.wishlist || []));
         document.dispatchEvent(new Event('wishlistUpdated'));
       }
-    } catch (_) {
-      // ignore
+    } catch (err) {
+      console.error('Error fetching wishlist:', err);
     }
-  }, [token]);
+  }, []);
 
+  // Listen for auth changes and fetch wishlist
   useEffect(() => {
-    // bootstrap from localStorage for instant UI
+    // Bootstrap from localStorage for instant UI
     const saved = localStorage.getItem('userWishlist');
     if (saved) {
       try {
@@ -47,49 +52,77 @@ export const WishlistProvider = ({ children }) => {
         if (Array.isArray(parsed)) setItems(parsed);
       } catch (_) {}
     }
+    
+    // Initial fetch
     fetchWishlist();
+
+    // Listen for auth changes
+    const handleAuthChange = () => {
+      const token = getToken();
+      if (token) {
+        fetchWishlist();
+      } else {
+        setItems([]);
+        localStorage.removeItem('userWishlist');
+      }
+    };
+
+    window.addEventListener('auth-change', handleAuthChange);
+    window.addEventListener('storage', handleAuthChange);
+    
+    return () => {
+      window.removeEventListener('auth-change', handleAuthChange);
+      window.removeEventListener('storage', handleAuthChange);
+    };
   }, [fetchWishlist]);
 
   const addToWishlist = useCallback(async (productId) => {
-    if (!token) return { ok: false, message: 'NOT_AUTHENTICATED' };
+    const token = getToken();
+    console.log('🛒 Adding to wishlist:', productId, 'Token exists:', !!token);
+    
+    if (!token) {
+      console.warn('❌ No token found for wishlist add');
+      return { ok: false, message: 'NOT_AUTHENTICATED' };
+    }
+    
     setLoading(true);
     try {
       const res = await fetch('http://localhost:5000/api/wishlist/add', {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json', 
-          'x-auth-token': token,
-          'Authorization': `Bearer ${token}`
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ productId })
       });
+      
+      const data = await res.json();
+      console.log('📦 Wishlist API response:', res.status, data);
+      
       if (res.ok) {
-        const data = await res.json();
         setItems(data.wishlist || []);
         localStorage.setItem('userWishlist', JSON.stringify(data.wishlist || []));
         document.dispatchEvent(new Event('wishlistUpdated'));
         return { ok: true, message: 'Added to wishlist' };
       }
-      const errorData = await res.json();
-      return { ok: false, message: errorData.message || 'Failed to add' };
+      console.warn('❌ Wishlist add failed:', data.message);
+      return { ok: false, message: data.message || 'Failed to add' };
     } catch (e) {
+      console.error('Error adding to wishlist:', e);
       return { ok: false, message: 'Error adding to wishlist' };
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, []);
 
   const removeFromWishlist = useCallback(async (productId) => {
+    const token = getToken();
     if (!token) return { ok: false };
+    
     setLoading(true);
     try {
       const res = await fetch(`http://localhost:5000/api/wishlist/remove/${productId}`, {
         method: 'DELETE',
-        headers: { 
-          'x-auth-token': token,
-          'Authorization': `Bearer ${token}`
-        }
+        headers: getAuthHeaders()
       });
+      
       if (res.ok) {
         const data = await res.json();
         setItems(data.wishlist || []);
@@ -99,11 +132,12 @@ export const WishlistProvider = ({ children }) => {
       }
       return { ok: false };
     } catch (e) {
+      console.error('Error removing from wishlist:', e);
       return { ok: false };
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, []);
 
   const toggleWishlist = useCallback(async (productId) => {
     const isInList = items.some(item => item._id === productId);
@@ -119,18 +153,17 @@ export const WishlistProvider = ({ children }) => {
   }, [items]);
 
   const moveToCart = useCallback(async (productId) => {
+    const token = getToken();
     if (!token) return { ok: false, message: 'NOT_AUTHENTICATED' };
+    
     setLoading(true);
     try {
       const res = await fetch('http://localhost:5000/api/wishlist/move-to-cart', {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json', 
-          'x-auth-token': token,
-          'Authorization': `Bearer ${token}`
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ productId })
       });
+      
       if (res.ok) {
         const data = await res.json();
         setItems(data.wishlist || []);
@@ -141,23 +174,24 @@ export const WishlistProvider = ({ children }) => {
       }
       return { ok: false };
     } catch (e) {
+      console.error('Error moving to cart:', e);
       return { ok: false };
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, []);
 
   const clearWishlist = useCallback(async () => {
+    const token = getToken();
     if (!token) return { ok: false };
+    
     setLoading(true);
     try {
       const res = await fetch('http://localhost:5000/api/wishlist/clear', {
         method: 'DELETE',
-        headers: { 
-          'x-auth-token': token,
-          'Authorization': `Bearer ${token}`
-        }
+        headers: getAuthHeaders()
       });
+      
       if (res.ok) {
         setItems([]);
         localStorage.setItem('userWishlist', JSON.stringify([]));
@@ -166,11 +200,12 @@ export const WishlistProvider = ({ children }) => {
       }
       return { ok: false };
     } catch (e) {
+      console.error('Error clearing wishlist:', e);
       return { ok: false };
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, []);
 
   const count = useMemo(() => items.length, [items]);
 

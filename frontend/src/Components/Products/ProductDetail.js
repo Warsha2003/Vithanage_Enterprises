@@ -40,6 +40,7 @@ const ProductDetail = () => {
   
   const [product, setProduct] = useState(null);
   const [relatedProducts, setRelatedProducts] = useState([]);
+  const [suggestedBundles, setSuggestedBundles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [addingToCart, setAddingToCart] = useState(false);
   const [userToken, setUserToken] = useState(null);
@@ -68,6 +69,8 @@ const ProductDetail = () => {
         addToRecentlyViewed(data);
         // Fetch related products from same category
         fetchRelatedProducts(data.category, data._id);
+        // Fetch suggested bundles
+        fetchSuggestedBundles(data._id);
       } else {
         console.error('Failed to fetch product');
       }
@@ -104,6 +107,38 @@ const ProductDetail = () => {
       }
     } catch (error) {
       console.error('Error fetching related products:', error);
+    }
+  };
+
+  const fetchSuggestedBundles = async (productId) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/bundles/suggested/${productId}`);
+      if (response.ok) {
+        const bundles = await response.json();
+        setSuggestedBundles(bundles);
+      }
+    } catch (error) {
+      console.error('Error fetching suggested bundles:', error);
+    }
+  };
+
+  const handleAddBundleToCart = async (bundle) => {
+    if (!userToken) {
+      alert('Please log in to add products to your cart');
+      sessionStorage.setItem('loginRedirect', window.location.pathname);
+      navigate('/login');
+      return;
+    }
+
+    try {
+      // Add all bundle products to cart
+      for (const item of bundle.products) {
+        await addItem(item.product._id, item.quantity);
+      }
+      alert(`Bundle "${bundle.name}" added to cart! You save ${formatPrice(bundle.totalSavings)}!`);
+    } catch (error) {
+      console.error('Error adding bundle to cart:', error);
+      alert('Failed to add bundle to cart');
     }
   };
 
@@ -410,6 +445,58 @@ const ProductDetail = () => {
 
         {/* Product Q&A Section */}
         <ProductQA productId={product._id} />
+
+        {/* Suggested Bundles Section */}
+        {suggestedBundles.length > 0 && (
+          <div className="bundles-section">
+            <h2 className="section-title">
+              <FontAwesomeIcon icon={faTag} /> Buy Together & Save
+            </h2>
+            <div className="bundles-grid">
+              {suggestedBundles.map(bundle => (
+                <div key={bundle._id} className="bundle-card">
+                  <div className="bundle-header">
+                    <h3>{bundle.name}</h3>
+                    <span className="bundle-discount">Save {bundle.discountPercentage}%</span>
+                  </div>
+                  <p className="bundle-description">{bundle.description}</p>
+                  <div className="bundle-products">
+                    {bundle.products.map((item, index) => (
+                      <div key={item.product._id} className="bundle-product-item">
+                        <img 
+                          src={item.product.imageUrl} 
+                          alt={item.product.name}
+                          onError={(e) => { e.target.src = '/placeholder-product.png'; }}
+                        />
+                        <span className="bundle-product-name">
+                          {item.product.name} {item.quantity > 1 && `(x${item.quantity})`}
+                        </span>
+                        {index < bundle.products.length - 1 && <span className="bundle-plus">+</span>}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="bundle-pricing">
+                    <span className="bundle-original-price">
+                      {formatPrice(bundle.totalOriginalPrice)}
+                    </span>
+                    <span className="bundle-final-price">
+                      {formatPrice(bundle.bundlePrice)}
+                    </span>
+                    <span className="bundle-savings">
+                      You save {formatPrice(bundle.totalSavings)}!
+                    </span>
+                  </div>
+                  <button 
+                    className="bundle-add-btn"
+                    onClick={() => handleAddBundleToCart(bundle)}
+                  >
+                    <FontAwesomeIcon icon={faShoppingCart} /> Add Bundle to Cart
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Related Products */}
         {relatedProducts.length > 0 && (

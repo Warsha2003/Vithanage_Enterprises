@@ -47,10 +47,21 @@ const Products = () => {
     e.stopPropagation();
     const token = localStorage.getItem('token') || sessionStorage.getItem('token');
     if (!token) {
+      alert('Please login to add items to your wishlist');
       navigate('/login');
       return;
     }
-    await toggleWishlist(productId);
+    const result = await toggleWishlist(productId);
+    if (result.ok) {
+      // Visual feedback - the heart icon will change automatically via isInWishlist
+      console.log('Wishlist updated:', result.message);
+    } else {
+      console.error('Wishlist error:', result.message);
+      if (result.message === 'NOT_AUTHENTICATED') {
+        alert('Session expired. Please login again.');
+        navigate('/login');
+      }
+    }
   };
 
   // Handle compare toggle

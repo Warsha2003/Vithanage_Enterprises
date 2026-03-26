@@ -18,6 +18,7 @@ import { RecentlyViewedProvider } from './Components/Products/RecentlyViewedCont
 import { StockAlertProvider } from './Components/Products/StockAlertContext';
 import { SettingsProvider } from './contexts/SettingsContext';
 import { CurrencyProvider } from './contexts/CurrencyContext';
+import { LanguageProvider } from './contexts/LanguageContext';
 import CartDrawer from './Components/Cart/CartDrawer';
 import PlaceOrder from './Components/Cart/PlaceOrder';
 import MyOrders from './Components/Cart/MyOrders';
@@ -37,6 +38,10 @@ import MyProfile from './Components/User/MyProfile';
 import ChatWidget from './Components/Chat/ChatWidget';
 import Checkout from './Components/Cart/Checkout';
 import OrderConfirmation from './Components/Cart/OrderConfirmation';
+import AdvancedAnalytics from './Components/Admin/AdvancedAnalytics';
+import LoyaltyPoints from './Components/User/LoyaltyPoints';
+import MyWarranties from './Components/User/MyWarranties';
+import { LoyaltyProvider } from './contexts/LoyaltyContext';
 
 // Direct approach to protected routes without state management
 // eslint-disable-next-line no-unused-vars
@@ -124,9 +129,11 @@ function App() {
   }, [location]);
 
   return (
+    <LanguageProvider>
     <SettingsProvider>
       <CurrencyProvider>
         <CartProvider>
+          <LoyaltyProvider>
           <WishlistProvider>
           <CompareProvider>
           <RecentlyViewedProvider>
@@ -142,6 +149,14 @@ function App() {
                 element={
                   <AdminRoute>
                     <AdminDashboard />
+                  </AdminRoute>
+                }
+              />
+              <Route 
+                path="/admin/analytics"
+                element={
+                  <AdminRoute>
+                    <AdvancedAnalytics />
                   </AdminRoute>
                 }
               />
@@ -162,6 +177,8 @@ function App() {
               <Route path="/my-orders" element={<MyOrders />} />
               <Route path="/my-reviews" element={<MyReviewsPage />} />
               <Route path="/my-profile" element={<MyProfile />} />
+              <Route path="/my-points" element={<LoyaltyPoints />} />
+              <Route path="/my-warranties" element={<MyWarranties />} />
               {/* New footer pages - accessible to all users */}
               <Route path="/about-us" element={<AboutUs />} />
               <Route path="/how-to-buy" element={<HowToBuy />} />
@@ -182,9 +199,11 @@ function App() {
           </RecentlyViewedProvider>
           </CompareProvider>
           </WishlistProvider>
+          </LoyaltyProvider>
         </CartProvider>
       </CurrencyProvider>
     </SettingsProvider>
+    </LanguageProvider>
   );
 }
 

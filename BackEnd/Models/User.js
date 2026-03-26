@@ -50,9 +50,49 @@ const userSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Product'
   }],
+  // Loyalty Points
+  loyaltyPoints: {
+    type: Number,
+    default: 0
+  },
+  totalPointsEarned: {
+    type: Number,
+    default: 0
+  },
+  // Social login fields
+  googleId: {
+    type: String,
+    sparse: true
+  },
+  facebookId: {
+    type: String,
+    sparse: true
+  },
+  profilePicture: {
+    type: String
+  },
+  isVerified: {
+    type: Boolean,
+    default: false
+  },
+  // SMS preferences
+  smsNotifications: {
+    type: Boolean,
+    default: true
+  },
+  // Push notification preferences
+  pushNotifications: {
+    type: Boolean,
+    default: true
+  },
   isAdmin: {
     type: Boolean,
     default: false
+  },
+  role: {
+    type: String,
+    enum: ['user', 'admin'],
+    default: 'user'
   },
   resetPasswordToken: {
     type: String

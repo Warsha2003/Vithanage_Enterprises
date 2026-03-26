@@ -1,0 +1,243 @@
+/* Product Bundles Styles */
+
+.bundles-section {
+  background: white;
+  padding: 30px;
+  border-radius: 16px;
+  margin: 30px 0;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.bundles-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.bundles-header h3 {
+  font-size: 24px;
+  color: #333;
+  margin: 0 0 8px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.bundles-header .header-icon {
+  color: #667eea;
+}
+
+.bundles-subtitle {
+  color: #666;
+  font-size: 15px;
+  margin: 0;
+}
+
+.bundles-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 25px;
+}
+
+/* Bundle Card */
+.bundle-card {
+  position: relative;
+  background: linear-gradient(135deg, #f8f9ff 0%, #fff 100%);
+  border: 2px solid #e8e8ff;
+  border-radius: 16px;
+  padding: 25px;
+  transition: all 0.3s ease;
+}
+
+.bundle-card:hover {
+  border-color: #667eea;
+  box-shadow: 0 8px 30px rgba(102, 126, 234, 0.15);
+  transform: translateY(-3px);
+}
+
+.bundle-discount-badge {
+  position: absolute;
+  top: -12px;
+  right: 20px;
+  background: linear-gradient(135deg, #ff6b6b 0%, #ff4757 100%);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 4px 12px rgba(255, 71, 87, 0.3);
+}
+
+/* Bundle Products Display */
+.bundle-products {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding: 15px;
+  background: white;
+  border-radius: 12px;
+  flex-wrap: wrap;
+}
+
+.bundle-product-item {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 2px solid #f0f0f0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.bundle-product-item:hover {
+  border-color: #667eea;
+  transform: scale(1.05);
+}
+
+.bundle-product-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #fff;
+  padding: 5px;
+}
+
+.product-quantity {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  background: #667eea;
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.plus-icon {
+  color: #667eea;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.more-products {
+  background: #f0f0f0;
+  color: #666;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* Bundle Info */
+.bundle-info {
+  text-align: center;
+}
+
+.bundle-name {
+  font-size: 18px;
+  font-weight: 700;
+  color: #333;
+  margin: 0 0 8px 0;
+}
+
+.bundle-description {
+  color: #666;
+  font-size: 14px;
+  margin: 0 0 15px 0;
+  line-height: 1.5;
+}
+
+/* Bundle Pricing */
+.bundle-pricing {
+  background: #f8f9ff;
+  padding: 15px;
+  border-radius: 10px;
+  margin-bottom: 15px;
+}
+
+.original-price, .bundle-price {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.original-price .label, .bundle-price .label {
+  color: #666;
+  font-size: 14px;
+}
+
+.original-price .price {
+  color: #999;
+  text-decoration: line-through;
+  font-size: 16px;
+}
+
+.bundle-price .price {
+  color: #28a745;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.savings {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #ff4757;
+  font-weight: 600;
+  font-size: 14px;
+  padding-top: 10px;
+  border-top: 1px dashed #ddd;
+  margin-top: 8px;
+}
+
+/* Add Bundle Button */
+.add-bundle-btn {
+  width: 100%;
+  padding: 14px 24px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: all 0.3s ease;
+}
+
+.add-bundle-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .bundles-section {
+    padding: 20px;
+  }
+
+  .bundles-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .bundle-product-item {
+    width: 60px;
+    height: 60px;
+  }
+
+  .bundles-header h3 {
+    font-size: 20px;
+  }
+}

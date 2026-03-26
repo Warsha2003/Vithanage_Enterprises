@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import SocialLogin from './SocialLogin';
 import './Login.css';
+import './SocialLogin.css';
 
 const Login = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -317,6 +319,21 @@ const Login = () => {
               {isAdminLogin ? 'Login as Admin' : (isLogin ? 'Login' : 'Create Account')}
             </button>
           </form>
+          
+          {/* Social Login - only show for regular user login */}
+          {!isAdminLogin && isLogin && (
+            <SocialLogin 
+              onSuccess={(data) => {
+                // Trigger auth change event
+                window.dispatchEvent(new Event('auth-change'));
+                // Redirect
+                const redirectDestination = sessionStorage.getItem('loginRedirect') || '/';
+                sessionStorage.removeItem('loginRedirect');
+                navigate(redirectDestination);
+              }}
+              onError={(message) => setError(message)}
+            />
+          )}
           
           {!isAdminLogin && (
             <div className="toggle-form">

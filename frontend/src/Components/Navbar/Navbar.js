@@ -5,7 +5,9 @@ import { faShoppingCart, faUser, faSignOutAlt, faSignInAlt, faSearch, faBars, fa
 import { useCart } from '../Cart/CartContext';
 import { useWishlist } from '../Cart/WishlistContext';
 import { useSettings } from '../../contexts/SettingsContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 import CurrencySelector from '../Common/CurrencySelector';
+import LanguageSwitcher from '../Common/LanguageSwitcher';
 import './Navbar.css';
 
 function Navbar() {
@@ -20,6 +22,7 @@ function Navbar() {
   const { openCart, totals } = useCart();
   const { count: wishlistCount } = useWishlist();
   const { settings } = useSettings();
+  const { t } = useLanguage();
   const userMenuRef = React.useRef(null);
 
   useEffect(() => {
@@ -192,7 +195,7 @@ function Navbar() {
             <form onSubmit={handleSearch} className="search-container">
               <input 
                 type="text" 
-                placeholder="Search for products, brands and more..." 
+                placeholder={t('nav.search', 'Search for products, brands and more...')}
                 className="search-input"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -215,20 +218,23 @@ function Navbar() {
                 <FontAwesomeIcon icon={faUser} className="user-icon" />
                 <div className="user-info">
                   <span className="user-greeting">Hello, {user.name}</span>
-                  <span className="user-account">Account & Lists</span>
+                  <span className="user-account">{t('nav.myProfile', 'Account & Lists')}</span>
                 </div>
                 {showUserMenu && user && localStorage.getItem('token') && (
                   <div className="user-dropdown">
-                    <Link to="/my-profile" className="dropdown-item">My Profile</Link>
+                    <Link to="/my-profile" className="dropdown-item">{t('nav.myProfile', 'My Profile')}</Link>
                     {!user.isAdmin && (
                       <>
-                        <Link to="/my-orders" className="dropdown-item">My Orders</Link>
-                        <Link to="/my-reviews" className="dropdown-item">My Reviews</Link>
+                        <Link to="/my-orders" className="dropdown-item">{t('nav.myOrders', 'My Orders')}</Link>
+                        <Link to="/my-reviews" className="dropdown-item">{t('auth.myReviews', 'My Reviews')}</Link>
                       </>
                     )}
                     <hr className="dropdown-divider" />
                     <div className="dropdown-item currency-container">
                       <CurrencySelector inline={true} />
+                    </div>
+                    <div className="dropdown-item language-container">
+                      <LanguageSwitcher />
                     </div>
                     <hr className="dropdown-divider" />
                     <Link to="/privacy-policy" className="dropdown-item">Privacy Policy</Link>
@@ -256,7 +262,7 @@ function Navbar() {
             <div 
               className="wishlist-wrapper" 
               onClick={() => navigate('/wishlist')}
-              title="My Wishlist"
+              title={t('nav.wishlist', 'My Wishlist')}
             >
               <FontAwesomeIcon icon={faHeart} className="wishlist-icon" />
               {user && wishlistCount > 0 && (
@@ -273,7 +279,7 @@ function Navbar() {
               {user && cartCount > 0 && (
                 <span className="cart-badge">{cartCount}</span>
               )}
-              <span className="cart-text">Cart</span>
+              <span className="cart-text">{t('nav.cart', 'Cart')}</span>
             </div>
             
             {/* Mobile Menu Toggle */}
@@ -294,19 +300,19 @@ function Navbar() {
           <div className="quick-links">
             <Link to="/" className={`secondary-link ${location.pathname === '/' ? 'active' : ''}`}>
               <FontAwesomeIcon icon={faFire} />
-              Home
+              {t('nav.home', 'Home')}
             </Link>
             <Link to="/best-sellers" className={`secondary-link ${location.pathname === '/best-sellers' ? 'active' : ''}`}>
               <FontAwesomeIcon icon={faStar} />
-              Best Sellers
+              {t('nav.bestSellers', 'Best Sellers')}
             </Link>
             <Link to="/todays-deals" className={`secondary-link sale-link ${location.pathname === '/todays-deals' ? 'active' : ''}`}>
               <FontAwesomeIcon icon={faTag} />
-              Today's Deals
+              {t('nav.todaysDeals', "Today's Deals")}
             </Link>
             <Link to="/new-arrivals" className={`secondary-link ${location.pathname === '/new-arrivals' ? 'active' : ''}`}>
               <FontAwesomeIcon icon={faGift} />
-              New Arrivals
+              {t('nav.newArrivals', 'New Arrivals')}
             </Link>
           </div>
           

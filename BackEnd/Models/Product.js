@@ -61,6 +61,15 @@ const productSchema = new mongoose.Schema({
         type: Date,
         default: null
     },
+    // Warranty information
+    warrantyMonths: {
+        type: Number,
+        default: 12  // Default 12 months warranty
+    },
+    warrantyTerms: {
+        type: String,
+        default: ''
+    },
     createdAt: {
         type: Date,
         default: Date.now

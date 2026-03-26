@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useCurrency } from '../../contexts/CurrencyContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 import ModernLoader from '../Common/ModernLoader';
 import RecentlyViewed from '../Products/RecentlyViewed';
 import './Home.css';
@@ -18,6 +19,7 @@ function Home() {
   const navigate = useNavigate();
   const { settings } = useSettings();
   const { formatPrice } = useCurrency();
+  const { t } = useLanguage();
 
   // Banner slides data - Just images, no text
   const bannerSlides = [
@@ -345,8 +347,8 @@ function Home() {
       {/* Categories Section */}
       <section className="categories-section">
         <div className="section-header">
-          <h2>Shop by Categories</h2>
-          <p>Explore our wide range of products</p>
+          <h2>{t('home.shopByCategory', 'Shop by Categories')}</h2>
+          <p>{t('home.exploreProducts', 'Explore our wide range of products')}</p>
         </div>
         
         <div className="category-carousel-wrapper">
@@ -402,8 +404,8 @@ function Home() {
       {/* Featured Products */}
       <section className="featured-section">
         <div className="section-header">
-          <h2>🔥 Featured Products</h2>
-          <p>Hand-picked items just for you</p>
+          <h2>🔥 {t('home.featuredProducts', 'Featured Products')}</h2>
+          <p>{t('home.handPicked', 'Hand-picked items just for you')}</p>
         </div>
         <div className="home-products-grid">
           {featuredProducts.map((product) => (
@@ -454,8 +456,8 @@ function Home() {
       {/* Trending Products */}
       <section className="trending-section">
         <div className="section-header">
-          <h2>🚀 Trending Now</h2>
-          <p>Hand-picked items just for you</p>
+          <h2>🚀 {t('home.trendingNow', 'Trending Now')}</h2>
+          <p>{t('home.popularItems', 'Most popular items this week')}</p>
         </div>
         <div className="home-products-grid home-trending">
           {trendingProducts.map((product) => (
@@ -498,8 +500,8 @@ function Home() {
       {/* New Arrivals */}
       <section className="new-arrivals-section">
         <div className="section-header">
-          <h2>✨ New Arrivals</h2>
-          <p>Fresh products just added to our collection</p>
+          <h2>✨ {t('home.newArrivals', 'New Arrivals')}</h2>
+          <p>{t('home.latestAdditions', 'Fresh products just added to our collection')}</p>
         </div>
         <div className="home-products-grid home-new-arrivals">
           {newArrivals.map((product) => (
