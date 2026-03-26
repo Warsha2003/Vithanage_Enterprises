@@ -1,10 +1,14 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './MyOrders.css';
 import RefundRequest from '../Refund/RefundRequest';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useCurrency } from '../../contexts/CurrencyContext';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const MyOrders = () => {
+  const navigate = useNavigate();
   const { settings } = useSettings();
   const { formatPrice } = useCurrency();
   const [orders, setOrders] = useState([]);
@@ -227,6 +231,125 @@ const MyOrders = () => {
     }
   };
 
+  // Download Invoice as PDF
+  const handleDownloadInvoice = (order) => {
+    const doc = new jsPDF();
+    
+    // Header
+    doc.setFontSize(22);
+    doc.setTextColor(102, 126, 234);
+    doc.text('Vithanage Enterprises', 20, 25);
+    
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100);
+    doc.text('123 Main St, Colombo, Sri Lanka', 20, 32);
+    doc.text('Phone: +94 77 123 4567 | Email: info@vithanage.com', 20, 37);
+    
+    // Invoice title and details
+    doc.setFontSize(18);
+    doc.setTextColor(0, 0, 0);
+    doc.text('INVOICE', 150, 25);
+    
+    doc.setFontSize(10);
+    doc.text(`Invoice #: ${order._id?.slice(-8) || 'N/A'}`, 150, 32);
+    doc.text(`Date: ${new Date(order.createdAt).toLocaleDateString()}`, 150, 37);
+    
+    // Line separator
+    doc.setDrawColor(200, 200, 200);
+    doc.line(20, 45, 190, 45);
+    
+    // Bill To section
+    doc.setFontSize(12);
+    doc.setTextColor(0, 0, 0);
+    doc.text('Bill To:', 20, 55);
+    doc.setFontSize(10);
+    doc.text(order.customer?.fullName || 'Customer', 20, 62);
+    doc.text(order.customer?.email || '', 20, 67);
+    doc.text(order.customer?.phone || '', 20, 72);
+    
+    // Ship To section
+    doc.setFontSize(12);
+    doc.text('Ship To:', 110, 55);
+    doc.setFontSize(10);
+    const addr = order.shippingAddress || {};
+    doc.text(addr.addressLine1 || '', 110, 62);
+    doc.text(`${addr.city || ''}, ${addr.state || ''}`, 110, 67);
+    doc.text(`${addr.postalCode || ''}, ${addr.country || ''}`, 110, 72);
+    
+    // Order items table
+    const itemRows = order.items?.map((item, idx) => [
+      idx + 1,
+      item.product?.name || item.name || 'Product',
+      item.quantity || 1,
+      (item.price || item.product?.price || 0).toFixed(2),
+      ((item.price || item.product?.price || 0) * (item.quantity || 1)).toFixed(2)
+    ]) || [];
+    
+    autoTable(doc, {
+      head: [['#', 'Product', 'Qty', 'Unit Price (LKR)', 'Total (LKR)']],
+      body: itemRows,
+      startY: 85,
+      theme: 'striped',
+      headStyles: { 
+        fillColor: [102, 126, 234],
+        textColor: 255,
+        fontStyle: 'bold'
+      },
+      styles: { fontSize: 9 },
+      columnStyles: {
+        0: { cellWidth: 15 },
+        1: { cellWidth: 80 },
+        2: { cellWidth: 20, halign: 'center' },
+        3: { cellWidth: 35, halign: 'right' },
+        4: { cellWidth: 35, halign: 'right' }
+      }
+    });
+    
+    const finalY = doc.lastAutoTable?.finalY || 120;
+    
+    // Totals section
+    const totals = order.totals || {};
+    const rightX = 140;
+    doc.setFontSize(10);
+    doc.text('Subtotal:', rightX, finalY + 15);
+    doc.text(`LKR ${(totals.subtotal || 0).toFixed(2)}`, 175, finalY + 15, { align: 'right' });
+    
+    if (totals.discount > 0) {
+      doc.text('Discount:', rightX, finalY + 22);
+      doc.text(`- LKR ${(totals.discount || 0).toFixed(2)}`, 175, finalY + 22, { align: 'right' });
+    }
+    
+    doc.text('Shipping:', rightX, finalY + (totals.discount > 0 ? 29 : 22));
+    doc.text(`LKR ${(totals.shipping || 0).toFixed(2)}`, 175, finalY + (totals.discount > 0 ? 29 : 22), { align: 'right' });
+    
+    // Total line
+    doc.setDrawColor(102, 126, 234);
+    const totalY = finalY + (totals.discount > 0 ? 34 : 27);
+    doc.line(rightX, totalY, 190, totalY);
+    
+    doc.setFontSize(12);
+    doc.setFont(undefined, 'bold');
+    doc.text('Total:', rightX, totalY + 8);
+    doc.text(`LKR ${(totals.total || 0).toFixed(2)}`, 175, totalY + 8, { align: 'right' });
+    
+    // Payment status stamp
+    if (order.status === 'approved' || order.status === 'delivered' || order.paymentStatus === 'paid') {
+      doc.setFontSize(28);
+      doc.setTextColor(34, 139, 34);
+      doc.text('PAID', 30, finalY + 35, { angle: -15 });
+    }
+    
+    // Footer
+    doc.setFontSize(8);
+    doc.setTextColor(128, 128, 128);
+    doc.setFont(undefined, 'normal');
+    doc.text('Thank you for shopping with Vithanage Enterprises!', 105, 280, { align: 'center' });
+    doc.text('For inquiries, contact us at support@vithanage.com', 105, 285, { align: 'center' });
+    
+    // Save
+    doc.save(`Invoice_${order._id?.slice(-8) || 'order'}.pdf`);
+  };
+
   if (loading) {
     return <div className="orders-page"><div className="orders-card">Loading your orders...</div></div>;
   }
@@ -267,6 +390,14 @@ const MyOrders = () => {
                         {cancellingOrder === order._id ? 'Cancelling...' : 'Cancel Order'}
                       </button>
                     )}
+                    
+                    {/* Download Invoice Button */}
+                    <button 
+                      className="download-invoice-btn"
+                      onClick={() => handleDownloadInvoice(order)}
+                    >
+                      📄 Download Invoice
+                    </button>
                   </div>
                 </div>
 

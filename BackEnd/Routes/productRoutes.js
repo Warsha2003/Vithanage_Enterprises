@@ -9,12 +9,20 @@ const {
   createSampleProducts,
   getNewArrivals,
   markAsNewArrival,
-  removeFromNewArrivals
+  removeFromNewArrivals,
+  getCategories,
+  getBrands,
+  getPriceRange,
+  compareProducts
 } = require('../Controllers/productController');
 const { adminAuthMiddleware } = require('../Controllers/authMiddleware');
 
 // Public routes
 router.get('/', getAllProducts);
+router.get('/categories', getCategories);
+router.get('/brands', getBrands);
+router.get('/price-range', getPriceRange);
+router.get('/compare', compareProducts);
 router.get('/new-arrivals', getNewArrivals);
 router.get('/setup/create-samples', createSampleProducts);
 router.get('/:id', getProductById);

@@ -1,0 +1,264 @@
+/* Product Q&A Section Styles */
+
+.product-qa-section {
+  background: white;
+  padding: 25px;
+  border-radius: 12px;
+  margin-top: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.qa-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 20px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.qa-title svg {
+  color: #667eea;
+}
+
+/* Ask Question Form */
+.ask-question-form {
+  margin-bottom: 25px;
+}
+
+.question-input-wrapper {
+  display: flex;
+  gap: 10px;
+}
+
+.question-input-wrapper input {
+  flex: 1;
+  padding: 14px 18px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 15px;
+  transition: border-color 0.3s ease;
+}
+
+.question-input-wrapper input:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.question-input-wrapper input::placeholder {
+  color: #999;
+}
+
+.submit-question-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 24px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.submit-question-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.submit-question-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.qa-error {
+  color: #e74c3c;
+  font-size: 13px;
+  margin-top: 8px;
+}
+
+/* Questions List */
+.questions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.qa-loading {
+  text-align: center;
+  padding: 40px;
+  color: #666;
+}
+
+.qa-loading svg {
+  margin-right: 10px;
+  color: #667eea;
+}
+
+.no-questions {
+  text-align: center;
+  padding: 40px;
+  color: #888;
+  background: #f9f9f9;
+  border-radius: 8px;
+}
+
+/* Question Item */
+.question-item {
+  padding: 20px;
+  background: #f9f9f9;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+}
+
+.question-item:hover {
+  background: #f5f5f5;
+}
+
+.question-header {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.question-label {
+  font-weight: 700;
+  font-size: 16px;
+  color: #667eea;
+  min-width: 20px;
+}
+
+.question-text {
+  flex: 1;
+  font-size: 15px;
+  color: #333;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.question-meta {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  font-size: 13px;
+  color: #888;
+  margin-left: 32px;
+}
+
+.asker, .answerer {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.delete-btn {
+  background: none;
+  border: none;
+  color: #999;
+  cursor: pointer;
+  padding: 4px 8px;
+  font-size: 12px;
+  transition: color 0.3s ease;
+}
+
+.delete-btn:hover {
+  color: #e74c3c;
+}
+
+/* Answer Section */
+.answer-section {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid #e0e0e0;
+  margin-left: 32px;
+}
+
+.answer-header {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.answer-label {
+  font-weight: 700;
+  font-size: 16px;
+  color: #28a745;
+  min-width: 20px;
+}
+
+.answer-text {
+  flex: 1;
+  font-size: 15px;
+  color: #333;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.answer-meta {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  font-size: 13px;
+  color: #888;
+}
+
+.verified-icon {
+  color: #28a745;
+  margin-right: 3px;
+}
+
+/* Question Actions */
+.question-actions {
+  margin-top: 12px;
+  margin-left: 32px;
+}
+
+.helpful-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 20px;
+  font-size: 13px;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.helpful-btn:hover {
+  border-color: #667eea;
+  color: #667eea;
+}
+
+.helpful-btn.active {
+  background: #667eea;
+  border-color: #667eea;
+  color: white;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .product-qa-section {
+    padding: 15px;
+  }
+
+  .question-input-wrapper {
+    flex-direction: column;
+  }
+
+  .submit-question-btn {
+    justify-content: center;
+  }
+
+  .question-meta, .answer-meta {
+    flex-wrap: wrap;
+  }
+}

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useCurrency } from '../../contexts/CurrencyContext';
 import ModernLoader from '../Common/ModernLoader';
+import RecentlyViewed from '../Products/RecentlyViewed';
 import './Home.css';
 
 function Home() {
@@ -394,6 +395,9 @@ function Home() {
           </div>
         </div>
       </section>
+
+      {/* Recently Viewed Products */}
+      <RecentlyViewed />
 
       {/* Featured Products */}
       <section className="featured-section">

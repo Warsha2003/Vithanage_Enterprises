@@ -10,6 +10,12 @@ import Products from './Components/Products/Products';
 import ProductDetail from './Components/Products/ProductDetail';
 import Cart from './Components/Cart/Cart';
 import { CartProvider } from './Components/Cart/CartContext';
+import { WishlistProvider } from './Components/Cart/WishlistContext';
+import Wishlist from './Components/Cart/Wishlist';
+import { CompareProvider } from './Components/Products/CompareContext';
+import Compare from './Components/Products/Compare';
+import { RecentlyViewedProvider } from './Components/Products/RecentlyViewedContext';
+import { StockAlertProvider } from './Components/Products/StockAlertContext';
 import { SettingsProvider } from './contexts/SettingsContext';
 import { CurrencyProvider } from './contexts/CurrencyContext';
 import CartDrawer from './Components/Cart/CartDrawer';
@@ -121,6 +127,10 @@ function App() {
     <SettingsProvider>
       <CurrencyProvider>
         <CartProvider>
+          <WishlistProvider>
+          <CompareProvider>
+          <RecentlyViewedProvider>
+          <StockAlertProvider>
           <div className="App" style={{ backgroundColor: '#f7f7f7', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
           {!isAdminPage && <Navbar />}
           <main style={{ flex: 1, backgroundColor: '#f7f7f7', padding: '20px 0' }}>
@@ -133,16 +143,18 @@ function App() {
                   <AdminRoute>
                     <AdminDashboard />
                   </AdminRoute>
-                } 
+                }
               />
               {/* Make products page accessible without login */}
               <Route path="/products" element={<Products />} />
               <Route path="/products/:id" element={<ProductDetail />} />
+              <Route path="/compare" element={<Compare />} />
               <Route path="/best-sellers" element={<BestSellers />} />
               <Route path="/todays-deals" element={<TodaysDeals />} />
               <Route path="/new-arrivals" element={<NewArrivals />} />
               {/* Make cart accessible without login, checking will happen inside */}
               <Route path="/cart" element={<Cart />} />
+              <Route path="/wishlist" element={<Wishlist />} />
               <Route path="/place-order" element={<PlaceOrder />} />
               <Route path="/checkout" element={<Checkout />} />
               <Route path="/order-confirmation" element={<OrderConfirmation />} />
@@ -166,6 +178,10 @@ function App() {
           {!isAdminPage && <ChatWidget user={currentUser} />}
           <CartDrawer />
           </div>
+          </StockAlertProvider>
+          </RecentlyViewedProvider>
+          </CompareProvider>
+          </WishlistProvider>
         </CartProvider>
       </CurrencyProvider>
     </SettingsProvider>

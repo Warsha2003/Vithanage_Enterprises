@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faShoppingCart, faUser, faSignOutAlt, faSignInAlt, faSearch, faBars, faTimes, faFire, faTag, faStar, faGift } from '@fortawesome/free-solid-svg-icons';
+import { faShoppingCart, faUser, faSignOutAlt, faSignInAlt, faSearch, faBars, faTimes, faFire, faTag, faStar, faGift, faHeart } from '@fortawesome/free-solid-svg-icons';
 import { useCart } from '../Cart/CartContext';
+import { useWishlist } from '../Cart/WishlistContext';
 import { useSettings } from '../../contexts/SettingsContext';
 import CurrencySelector from '../Common/CurrencySelector';
 import './Navbar.css';
@@ -17,6 +18,7 @@ function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
   const { openCart, totals } = useCart();
+  const { count: wishlistCount } = useWishlist();
   const { settings } = useSettings();
   const userMenuRef = React.useRef(null);
 
@@ -249,6 +251,18 @@ function Navbar() {
                 </div>
               </Link>
             )}
+            
+            {/* Wishlist Icon */}
+            <div 
+              className="wishlist-wrapper" 
+              onClick={() => navigate('/wishlist')}
+              title="My Wishlist"
+            >
+              <FontAwesomeIcon icon={faHeart} className="wishlist-icon" />
+              {user && wishlistCount > 0 && (
+                <span className="wishlist-badge">{wishlistCount}</span>
+              )}
+            </div>
             
             {/* Cart Icon */}
             <div 

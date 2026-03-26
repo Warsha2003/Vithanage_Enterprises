@@ -947,6 +947,40 @@
   gap: 0.2rem;
 }
 
+/* Wishlist Heart Button */
+.wishlist-heart-btn {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: rgba(255, 255, 255, 0.95);
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #999;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  z-index: 10;
+}
+
+.wishlist-heart-btn:hover {
+  color: #e74c3c;
+  transform: scale(1.1);
+}
+
+.wishlist-heart-btn.active {
+  color: #e74c3c;
+}
+
+.wishlist-heart-btn.active:hover {
+  color: #c0392b;
+}
+
 .ecommerce-product-info {
   padding: 1rem;
   flex: 1;
@@ -1042,6 +1076,30 @@
   margin-top: 0.5rem;
 }
 
+.ecommerce-compare-btn {
+  flex: 0 0 40px;
+  height: 32px;
+  background: #f0f0f0;
+  color: #666;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.ecommerce-compare-btn:hover {
+  background: #667eea;
+  color: white;
+}
+
+.ecommerce-compare-btn.active {
+  background: #667eea;
+  color: white;
+}
+
 .ecommerce-add-cart-btn {
   flex: 0 0 40px;
   height: 32px;
@@ -1077,6 +1135,57 @@
 .ecommerce-view-btn:hover {
   background: #667eea;
   color: white;
+}
+
+/* Compare Floating Bar */
+.compare-floating-bar {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 50px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+  z-index: 1000;
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.compare-floating-bar span {
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.compare-now-btn {
+  background: white;
+  color: #667eea;
+  border: none;
+  padding: 8px 20px;
+  border-radius: 25px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.compare-now-btn:hover {
+  background: #f0f0f0;
+  transform: scale(1.05);
 }
 
 /* Load More Button */

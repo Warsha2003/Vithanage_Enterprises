@@ -61,6 +61,15 @@ app.use('/api/admin-auth', adminAuthRoutes);
 app.use('/api/products', productRoutes);
 // Cart routes
 app.use('/api/cart', cartRoutes);
+// Wishlist routes
+const wishlistRoutes = require('./Routes/wishlistRoutes');
+app.use('/api/wishlist', wishlistRoutes);
+// Stock alert routes
+const stockAlertRoutes = require('./Routes/stockAlertRoutes');
+app.use('/api/stock-alerts', stockAlertRoutes);
+// Product Q&A routes
+const questionRoutes = require('./Routes/questionRoutes');
+app.use('/api/questions', questionRoutes);
 // Order routes
 app.use('/api/orders', orderRoutes);
 // User management routes
@@ -116,11 +125,8 @@ app.use((err, req, res, next) => {
 
 // Socket.IO connection handling
 io.on('connection', (socket) => {
-  console.log('User connected:', socket.id);
-
   socket.on('join_chat', (chatId) => {
     socket.join(chatId);
-    console.log(`User joined chat: ${chatId}`);
   });
 
   socket.on('send_message', (data) => {
@@ -132,7 +138,6 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnect', () => {
-    console.log('User disconnected:', socket.id);
   });
 });
 

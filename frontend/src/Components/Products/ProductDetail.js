@@ -18,18 +18,25 @@ import {
   faPlus,
   faStore
 } from '@fortawesome/free-solid-svg-icons';
+import { faBell as faBellSolid } from '@fortawesome/free-solid-svg-icons';
+import { faBell as faBellRegular } from '@fortawesome/free-regular-svg-icons';
 import './ProductDetail.css';
 import { useCart } from '../Cart/CartContext';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useCurrency } from '../../contexts/CurrencyContext';
+import { useRecentlyViewed } from './RecentlyViewedContext';
+import { useStockAlert } from './StockAlertContext';
 import ReviewDisplay from '../Reviews/ReviewDisplay';
 import ReviewForm from '../Reviews/ReviewForm';
+import ProductQA from './ProductQA';
 
 const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addItem } = useCart();
   const { formatPrice } = useCurrency();
+  const { addToRecentlyViewed } = useRecentlyViewed();
+  const { hasAlert, createAlert, removeAlert } = useStockAlert();
   
   const [product, setProduct] = useState(null);
   const [relatedProducts, setRelatedProducts] = useState([]);
@@ -38,6 +45,7 @@ const ProductDetail = () => {
   const [userToken, setUserToken] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(null);
+  const [alertLoading, setAlertLoading] = useState(false);
 
   useEffect(() => {
     // Get user token
@@ -56,6 +64,8 @@ const ProductDetail = () => {
         const data = await response.json();
         setProduct(data);
         setSelectedImage(data.imageUrl);
+        // Add to recently viewed
+        addToRecentlyViewed(data);
         // Fetch related products from same category
         fetchRelatedProducts(data.category, data._id);
       } else {
@@ -143,6 +153,30 @@ const ProductDetail = () => {
       alert('Failed to process your request. Please try again.');
     } finally {
       setAddingToCart(false);
+    }
+  };
+
+  const handleNotifyMe = async () => {
+    if (!userToken) {
+      alert('Please log in to set stock alerts');
+      sessionStorage.setItem('loginRedirect', window.location.pathname);
+      navigate('/login');
+      return;
+    }
+
+    setAlertLoading(true);
+    try {
+      if (hasAlert(product._id)) {
+        await removeAlert(product._id);
+        alert('Stock alert removed');
+      } else {
+        await createAlert(product._id);
+        alert('You will be notified when this product is back in stock!');
+      }
+    } catch (error) {
+      alert(error.message || 'Failed to set stock alert');
+    } finally {
+      setAlertLoading(false);
     }
   };
 
@@ -305,6 +339,16 @@ const ProductDetail = () => {
                 >
                   {product.stock === 0 ? 'Out of Stock' : 'Buy Now'}
                 </button>
+                {product.stock === 0 && (
+                  <button 
+                    className={`btn-notify-me ${hasAlert(product._id) ? 'has-alert' : ''}`}
+                    onClick={handleNotifyMe}
+                    disabled={alertLoading}
+                  >
+                    <FontAwesomeIcon icon={hasAlert(product._id) ? faBellSolid : faBellRegular} />
+                    {alertLoading ? 'Processing...' : hasAlert(product._id) ? 'Alert Set' : 'Notify Me'}
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -363,6 +407,9 @@ const ProductDetail = () => {
             />
           </div>
         </div>
+
+        {/* Product Q&A Section */}
+        <ProductQA productId={product._id} />
 
         {/* Related Products */}
         {relatedProducts.length > 0 && (

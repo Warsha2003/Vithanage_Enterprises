@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faUser, faShoppingCart, faStar, faCheck, faSliders, faTag, faSpinner } from '@fortawesome/free-solid-svg-icons';
+import { faUser, faShoppingCart, faStar, faCheck, faSliders, faTag, faSpinner, faHeart, faCodeCompare } from '@fortawesome/free-solid-svg-icons';
+import { faHeart as faHeartOutline } from '@fortawesome/free-regular-svg-icons';
 import './Products.css';
 import './FilterStyles.css';
 import '../Cart/CartIconStyles.css';
 import { useCart } from '../Cart/CartContext';
+import { useWishlist } from '../Cart/WishlistContext';
+import { useCompare } from './CompareContext';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useCurrency } from '../../contexts/CurrencyContext';
 
@@ -32,10 +35,33 @@ const Products = () => {
   const [productsPerPage] = useState(20);
   const [hasMore, setHasMore] = useState(false);
   const { openCart, addItem } = useCart();
+  const { toggleWishlist, isInWishlist } = useWishlist();
+  const { toggleCompare, isInCompare, count: compareCount, canAddMore } = useCompare();
   const { calculatePriceWithTax } = useSettings();
   const { formatPrice } = useCurrency();
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Handle wishlist toggle
+  const handleWishlistToggle = async (e, productId) => {
+    e.stopPropagation();
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+    if (!token) {
+      navigate('/login');
+      return;
+    }
+    await toggleWishlist(productId);
+  };
+
+  // Handle compare toggle
+  const handleCompareToggle = (e, product) => {
+    e.stopPropagation();
+    if (!isInCompare(product._id) && !canAddMore) {
+      alert('You can compare up to 4 products. Remove one to add another.');
+      return;
+    }
+    toggleCompare(product);
+  };
 
   // Handle URL parameters for filtering
   useEffect(() => {
@@ -611,6 +637,14 @@ const Products = () => {
                     }}
                     style={{ opacity: 0, transition: 'opacity 0.3s ease' }}
                   />
+                  {/* Wishlist Heart Button */}
+                  <button 
+                    className={`wishlist-heart-btn ${isInWishlist(product._id) ? 'active' : ''}`}
+                    onClick={(e) => handleWishlistToggle(e, product._id)}
+                    title={isInWishlist(product._id) ? 'Remove from wishlist' : 'Add to wishlist'}
+                  >
+                    <FontAwesomeIcon icon={isInWishlist(product._id) ? faHeart : faHeartOutline} />
+                  </button>
                   {(() => {
                     const promotion = getProductPromotion(product);
                     if (promotion && promotion.discountValue > 0) {
@@ -679,6 +713,13 @@ const Products = () => {
 
                   <div className="ecommerce-product-actions">
                     <button 
+                      className={`ecommerce-compare-btn ${isInCompare(product._id) ? 'active' : ''}`}
+                      onClick={(e) => handleCompareToggle(e, product)}
+                      title={isInCompare(product._id) ? 'Remove from compare' : 'Add to compare'}
+                    >
+                      <FontAwesomeIcon icon={faCodeCompare} />
+                    </button>
+                    <button 
                       className="ecommerce-add-cart-btn"
                       onClick={() => handleAddToCart(product)}
                       disabled={loading}
@@ -706,6 +747,16 @@ const Products = () => {
             </div>
           )}
         </div>
+
+        {/* Compare Bar - Show when items are in compare */}
+        {compareCount > 0 && (
+          <div className="compare-floating-bar">
+            <span>{compareCount} product{compareCount !== 1 ? 's' : ''} selected for comparison</span>
+            <button onClick={() => navigate('/compare')} className="compare-now-btn">
+              Compare Now
+            </button>
+          </div>
+        )}
 
         {/* Load More Button */}
         {hasMore && displayedProducts.length > 0 && (

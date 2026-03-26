@@ -140,6 +140,27 @@
   cursor: not-allowed;
 }
 
+.orders-page .download-invoice-btn {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  margin-top: 15px;
+  margin-left: 10px;
+  align-self: flex-start;
+}
+
+.orders-page .download-invoice-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(102, 126, 234, 0.4);
+}
+
 /* Product Items Section */
 .orders-page .order-products-section {
   padding: 25px 30px;

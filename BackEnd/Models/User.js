@@ -46,6 +46,10 @@ const userSchema = new mongoose.Schema({
     default: 'Sri Lanka'
   },
   cart: [CartItemSchema],
+  wishlist: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Product'
+  }],
   isAdmin: {
     type: Boolean,
     default: false

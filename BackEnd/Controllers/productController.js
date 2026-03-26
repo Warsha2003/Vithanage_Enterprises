@@ -1,10 +1,161 @@
 const Product = require('../Models/Product');
 
-// Get all products
+// Get all products with search, filter, and sort
 const getAllProducts = async (req, res) => {
   try {
-    const products = await Product.find();
+    const {
+      search,
+      category,
+      brand,
+      minPrice,
+      maxPrice,
+      minRating,
+      inStock,
+      sortBy,
+      sortOrder,
+      page,
+      limit,
+      paginated  // New flag to request paginated response
+    } = req.query;
+
+    // Build query object
+    let query = {};
+
+    // Text search on name and description
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    // Category filter (case-insensitive)
+    if (category && category !== 'All') {
+      query.category = { $regex: new RegExp(`^${category}$`, 'i') };
+    }
+
+    // Brand filter (can be multiple, comma-separated)
+    if (brand) {
+      const brands = brand.split(',').map(b => b.trim());
+      query.brand = { $in: brands.map(b => new RegExp(`^${b}$`, 'i')) };
+    }
+
+    // Price range filter
+    if (minPrice || maxPrice) {
+      query.price = {};
+      if (minPrice) query.price.$gte = parseFloat(minPrice);
+      if (maxPrice) query.price.$lte = parseFloat(maxPrice);
+    }
+
+    // Rating filter
+    if (minRating) {
+      query.$or = query.$or || [];
+      query.averageRating = { $gte: parseFloat(minRating) };
+    }
+
+    // Stock filter
+    if (inStock === 'true') {
+      query.stock = { $gt: 0 };
+    }
+
+    // Build sort object
+    let sort = {};
+    if (sortBy) {
+      const order = sortOrder === 'desc' ? -1 : 1;
+      switch (sortBy) {
+        case 'price':
+          sort.price = order;
+          break;
+        case 'rating':
+          sort.averageRating = order === 1 ? -1 : 1; // Default high to low for rating
+          break;
+        case 'newest':
+          sort.createdAt = -1;
+          break;
+        case 'name':
+          sort.name = order;
+          break;
+        default:
+          sort.createdAt = -1;
+      }
+    }
+
+    // Pagination
+    const pageNum = parseInt(page) || 1;
+    const limitNum = parseInt(limit) || 100;
+    const skip = (pageNum - 1) * limitNum;
+
+    // Execute query
+    const products = await Product.find(query)
+      .sort(sort)
+      .skip(skip)
+      .limit(limitNum);
+
+    // Return paginated response only if explicitly requested
+    if (paginated === 'true') {
+      const total = await Product.countDocuments(query);
+      return res.json({
+        products,
+        pagination: {
+          total,
+          page: pageNum,
+          limit: limitNum,
+          pages: Math.ceil(total / limitNum)
+        }
+      });
+    }
+
+    // Default: return just the array for backward compatibility
     res.json(products);
+  } catch (error) {
+    console.error(error.message);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+// Get all unique categories
+const getCategories = async (req, res) => {
+  try {
+    const categories = await Product.distinct('category');
+    res.json(categories.filter(c => c).sort());
+  } catch (error) {
+    console.error(error.message);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+// Get all unique brands
+const getBrands = async (req, res) => {
+  try {
+    const brands = await Product.distinct('brand');
+    res.json(brands.filter(b => b).sort());
+  } catch (error) {
+    console.error(error.message);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+// Get price range
+const getPriceRange = async (req, res) => {
+  try {
+    const result = await Product.aggregate([
+      {
+        $group: {
+          _id: null,
+          minPrice: { $min: '$price' },
+          maxPrice: { $max: '$price' }
+        }
+      }
+    ]);
+    
+    if (result.length > 0) {
+      res.json({
+        min: result[0].minPrice || 0,
+        max: result[0].maxPrice || 0
+      });
+    } else {
+      res.json({ min: 0, max: 0 });
+    }
   } catch (error) {
     console.error(error.message);
     res.status(500).json({ message: 'Server Error' });
@@ -212,7 +363,37 @@ const removeFromNewArrivals = async (req, res) => {
   }
 };
 
-module.exports = { 
+// Compare products - get multiple products by IDs
+const compareProducts = async (req, res) => {
+  try {
+    const { ids } = req.query;
+    
+    if (!ids) {
+      return res.status(400).json({ message: 'Please provide product IDs' });
+    }
+
+    const productIds = ids.split(',').slice(0, 4); // Max 4 products
+    
+    const products = await Product.find({
+      _id: { $in: productIds }
+    });
+
+    if (products.length === 0) {
+      return res.status(404).json({ message: 'No products found' });
+    }
+
+    res.json({
+      success: true,
+      count: products.length,
+      products
+    });
+  } catch (error) {
+    console.error('Error comparing products:', error.message);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+module.exports = {
   getAllProducts, 
   getProductById, 
   addProduct, 
@@ -221,5 +402,9 @@ module.exports = {
   createSampleProducts,
   getNewArrivals,
   markAsNewArrival,
-  removeFromNewArrivals
+  removeFromNewArrivals,
+  getCategories,
+  getBrands,
+  getPriceRange,
+  compareProducts
 };

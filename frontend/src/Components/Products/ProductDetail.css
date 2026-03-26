@@ -325,6 +325,47 @@
   box-shadow: 0 6px 16px rgba(245, 87, 108, 0.4);
 }
 
+/* Notify Me Button */
+.btn-notify-me {
+  flex: 1;
+  padding: 15px 25px;
+  border: 2px solid #667eea;
+  background: white;
+  color: #667eea;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: all 0.3s ease;
+}
+
+.btn-notify-me:hover {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+}
+
+.btn-notify-me.has-alert {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-color: transparent;
+}
+
+.btn-notify-me.has-alert:hover {
+  background: linear-gradient(135deg, #5a6fd1 0%, #653d8a 100%);
+}
+
+.btn-notify-me:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
 /* Product Info Tabs */
 .product-info-tabs {
   background: white;
