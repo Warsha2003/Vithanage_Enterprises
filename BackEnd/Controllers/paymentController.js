@@ -2,6 +2,8 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY || 'sk_test_your_
 const Payment = require('../Models/Payment');
 const Order = require('../Models/Order');
 const User = require('../Models/User');
+const { sendOrderStatusWhatsApp, sendOrderStatusSMS } = require('../Services/smsService');
+const { sendOrderConfirmationEmail } = require('../Services/emailService');
 
 // Create payment intent for checkout
 exports.createPaymentIntent = async (req, res) => {
@@ -130,6 +132,7 @@ exports.processPayment = async (req, res) => {
     }
 
     // Create order in database
+    console.log('📦 Creating order for user:', userId);
     const order = await Order.create({
       user: userId,
       items: orderItems,
@@ -152,6 +155,7 @@ exports.processPayment = async (req, res) => {
       status: 'pending',
       promotion: orderData?.promotion || null
     });
+    console.log('✅ Order created:', order._id);
 
     // Create payment record
     const payment = await Payment.create({
@@ -180,6 +184,56 @@ exports.processPayment = async (req, res) => {
     // Clear user's cart
     user.cart = [];
     await user.save();
+
+    // Send order confirmation email
+    try {
+      const populatedOrder = await Order.findById(order._id).populate('items.product');
+      await sendOrderConfirmationEmail(populatedOrder, user);
+      console.log('📧 Order confirmation email sent to:', user.email);
+    } catch (emailError) {
+      console.error('Failed to send order confirmation email:', emailError);
+    }
+
+    // Send WhatsApp notification
+    try {
+      // Use customer phone from checkout form OR user profile phone
+      const phoneNumber = orderData?.customer?.phone || user.phone;
+      
+      if (phoneNumber) {
+        console.log('📱 Attempting to send WhatsApp to:', phoneNumber);
+        
+        const whatsappResult = await sendOrderStatusWhatsApp(
+          phoneNumber, 
+          'confirmed', 
+          order._id.toString().substring(0, 8).toUpperCase()
+        );
+        
+        if (whatsappResult.success) {
+          console.log('✅ WhatsApp notification sent to:', phoneNumber);
+        } else {
+          console.log('⚠️ WhatsApp notification failed:', whatsappResult.reason || whatsappResult.error);
+          
+          // Fallback to SMS if WhatsApp fails
+          const smsResult = await sendOrderStatusSMS(
+            phoneNumber, 
+            'confirmed', 
+            order._id.toString().substring(0, 8).toUpperCase()
+          );
+          
+          if (smsResult.success) {
+            console.log('✅ SMS notification sent to:', phoneNumber);
+          } else {
+            console.log('SMS notification not sent:', smsResult.reason || smsResult.error);
+          }
+        }
+      } else {
+        console.log('⚠️ No phone number provided - skipping WhatsApp/SMS notification');
+        console.log('   Customer phone:', orderData?.customer?.phone);
+        console.log('   User phone:', user.phone);
+      }
+    } catch (notificationError) {
+      console.error('Failed to send WhatsApp/SMS notification:', notificationError.message);
+    }
 
     res.status(201).json({
       message: 'Payment processed successfully',

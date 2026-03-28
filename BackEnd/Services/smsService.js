@@ -118,10 +118,62 @@ const sendOTPSMS = async (phone, otp) => {
   return sendSMS(phone, message);
 };
 
+// Send WhatsApp Message
+const sendWhatsApp = async (to, message) => {
+  if (!client) {
+    console.log('WhatsApp not sent (service not configured):', message.substring(0, 50));
+    return { success: false, reason: 'WhatsApp service not configured' };
+  }
+
+  const whatsappFrom = process.env.TWILIO_WHATSAPP_FROM;
+  if (!whatsappFrom) {
+    console.log('WhatsApp notification not sent: TWILIO_WHATSAPP_FROM missing in environment');
+    return { success: false, reason: 'TWILIO_WHATSAPP_FROM not configured' };
+  }
+
+  try {
+    const formattedNumber = formatPhoneNumber(to);
+    
+    const result = await client.messages.create({
+      body: message,
+      from: whatsappFrom,
+      to: `whatsapp:${formattedNumber}`
+    });
+
+    console.log(`✅ WhatsApp sent to ${formattedNumber}: ${result.sid}`);
+    return { success: true, messageId: result.sid };
+  } catch (error) {
+    console.error('Error sending WhatsApp:', error.message);
+    return { success: false, error: error.message };
+  }
+};
+
+// Send order status via WhatsApp
+const sendOrderStatusWhatsApp = async (phone, status, orderNumber, extra = {}) => {
+  const template = orderStatusMessages[status];
+  if (!template) {
+    console.log(`No WhatsApp template for status: ${status}`);
+    return { success: false, reason: 'Unknown status' };
+  }
+
+  let message;
+  if (status === 'shipped') {
+    message = template(orderNumber, extra.trackingNumber);
+  } else if (status === 'refundProcessed') {
+    message = template(orderNumber, extra.amount);
+  } else {
+    message = template(orderNumber);
+  }
+
+  return sendWhatsApp(phone, message);
+};
+
 module.exports = {
   initTwilio,
   sendSMS,
   sendOrderStatusSMS,
   sendPromotionalSMS,
-  sendOTPSMS
+  sendOTPSMS,
+  sendWhatsApp,
+  sendOrderStatusWhatsApp
 };

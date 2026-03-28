@@ -83,7 +83,7 @@ const sendOrderConfirmationEmail = async (order, user) => {
             `).join('')}
             
             <div class="total">
-              Total Amount: Rs. ${order.totalAmount.toLocaleString()}
+              Total Amount: Rs. ${(order.totalAmount || order.totals?.total || 0).toLocaleString()}
             </div>
           </div>
           

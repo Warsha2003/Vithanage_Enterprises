@@ -120,6 +120,10 @@ app.use('/api/warranties', warrantyRoutes);
 const pushRoutes = require('./Routes/pushRoutes');
 app.use('/api/push', pushRoutes);
 
+// Initialize Twilio SMS/WhatsApp service
+const { initTwilio } = require('./Services/smsService');
+initTwilio();
+
 // 404 handler for unknown routes (must be before error handler)
 app.use((req, res, next) => {
   res.status(404).json({
