@@ -2,6 +2,7 @@ const Order = require('../Models/Order');
 const User = require('../Models/User');
 const Product = require('../Models/Product');
 const { sendOrderConfirmationEmail, sendShippingUpdateEmail, sendReviewRequestEmail } = require('../Services/emailService');
+const { sendOrderConfirmationWhatsApp, sendOrderStatusWhatsApp } = require('../Services/smsService');
 
 // Create order from payload and user's cart
 exports.createOrder = async (req, res) => {
@@ -98,6 +99,24 @@ exports.createOrder = async (req, res) => {
       // Don't fail the order creation if email fails
     }
 
+    // Send WhatsApp notification to customer
+    try {
+      const phone = (customer && customer.phone) || user.phone;
+      if (phone) {
+        await sendOrderConfirmationWhatsApp(
+          phone,
+          order._id.toString().slice(-8).toUpperCase(),
+          orderItems,
+          order.totals.total
+        );
+      } else {
+        console.log('WhatsApp notification skipped: no phone number available for order', order._id);
+      }
+    } catch (waError) {
+      console.error('Failed to send WhatsApp order confirmation:', waError);
+      // Don't fail the order creation if WhatsApp fails
+    }
+
     res.status(201).json({ message: 'Order created', order });
   } catch (error) {
     console.error('Error creating order:', error);
@@ -178,6 +197,30 @@ exports.adminUpdateProcessing = async (req, res) => {
       if (user && statusMap[step]) {
         await sendShippingUpdateEmail(order, user, statusMap[step]);
         console.log(`Shipping update email sent to: ${user.email}`);
+
+        // Send WhatsApp shipping update
+        try {
+          const phone = (order.customer && order.customer.phone) || user.phone;
+          if (phone) {
+            const waStatusMap = {
+              'preparing':           'processing',
+              'packing':             'processing',
+              'waiting_to_delivery': 'shipped',
+              'on_the_way':          'shipped',
+              'finished':            'delivered'
+            };
+            const waStatus = waStatusMap[step];
+            if (waStatus) {
+              await sendOrderStatusWhatsApp(
+                phone,
+                order._id.toString().slice(-8).toUpperCase(),
+                waStatus
+              );
+            }
+          }
+        } catch (waError) {
+          console.error('Failed to send WhatsApp shipping update:', waError);
+        }
         
         // Send review request email when order is delivered
         if (step === 'finished') {
