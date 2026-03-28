@@ -2,6 +2,7 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY || 'sk_test_your_
 const Payment = require('../Models/Payment');
 const Order = require('../Models/Order');
 const User = require('../Models/User');
+const { sendSMS, sendWhatsApp } = require('../Services/smsService');
 
 // Create payment intent for checkout
 exports.createPaymentIntent = async (req, res) => {
@@ -180,6 +181,31 @@ exports.processPayment = async (req, res) => {
     // Clear user's cart
     user.cart = [];
     await user.save();
+
+    // Send order notifications (non-blocking for checkout success)
+    try {
+      const notificationPhone = orderData?.customer?.phone || user.phone;
+      const orderNumber = order._id.toString().slice(-6).toUpperCase();
+
+      if (notificationPhone && user.smsNotifications !== false) {
+        const amountText = Number(total).toFixed(2);
+        const notificationMessage = `Vithanage Enterprises: Order #${orderNumber} confirmed. Payment ${paymentIntentId ? 'successful' : 'pending (Cash on Delivery)'} for $${amountText}. Thank you for your purchase.`;
+
+        const smsResult = await sendSMS(notificationPhone, notificationMessage);
+        if (!smsResult.success) {
+          console.log('SMS notification not sent:', smsResult.reason || smsResult.error);
+        }
+
+        const whatsappResult = await sendWhatsApp(notificationPhone, notificationMessage);
+        if (!whatsappResult.success) {
+          console.log('WhatsApp notification not sent:', whatsappResult.reason || whatsappResult.error);
+        }
+      } else {
+        console.log('Skipping notifications: user phone not found or SMS preference disabled');
+      }
+    } catch (notificationError) {
+      console.error('Notification send error:', notificationError.message);
+    }
 
     res.status(201).json({
       message: 'Payment processed successfully',

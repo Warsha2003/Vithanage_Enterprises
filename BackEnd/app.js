@@ -21,6 +21,7 @@ const inventoryRoutes = require('./Routes/inventoryRoutes');
 const promotionRoutes = require('./Routes/promotionRoutes');
 const chatRoutes = require('./Routes/chatRoutes');
 const paymentRoutes = require('./Routes/paymentRoutes');
+const notificationRoutes = require('./Routes/notificationRoutes');
 const emailCampaignRoutes = require('./Routes/emailCampaignRoutes');
 const { createInitialAdmin } = require('./Controllers/adminAuthController');
 
@@ -108,6 +109,8 @@ app.use('/api/deals', dailyDealRoutes);
 app.use('/api/chat', chatRoutes);
 // Payment routes
 app.use('/api/payments', paymentRoutes);
+// Notification diagnostics routes
+app.use('/api/notifications', notificationRoutes);
 // Email campaign routes (admin only)
 app.use('/api/email-campaigns', emailCampaignRoutes);
 // Loyalty Points routes
@@ -176,27 +179,37 @@ process.on('unhandledRejection', (reason, promise) => {
 process.on('SIGTERM', gracefulShutdown);
 process.on('SIGINT', gracefulShutdown);
 
+let isShuttingDown = false;
+let shutdownTimer = null;
+
 async function gracefulShutdown() {
+  if (isShuttingDown) return;
+  isShuttingDown = true;
+
   console.log('\n🔄 Shutting down gracefully...');
-  
-  server.close(async () => {
-    console.log('✅ HTTP server closed');
-    
-    try {
-      await mongoose.connection.close();
-      console.log('✅ MongoDB connection closed');
-      process.exit(0);
-    } catch (err) {
-      console.error('Error closing MongoDB:', err);
-      process.exit(1);
-    }
-  });
-  
-  // Force shutdown after 10 seconds
-  setTimeout(() => {
+
+  // Force-shutdown fallback if connections refuse to close
+  shutdownTimer = setTimeout(() => {
     console.error('⚠️ Forcing shutdown after timeout');
     process.exit(1);
   }, 10000);
+  
+  io.close(() => {
+    server.close(async () => {
+      console.log('✅ HTTP server closed');
+
+      try {
+        await mongoose.connection.close();
+        console.log('✅ MongoDB connection closed');
+        if (shutdownTimer) clearTimeout(shutdownTimer);
+        process.exit(0);
+      } catch (err) {
+        console.error('Error closing MongoDB:', err);
+        if (shutdownTimer) clearTimeout(shutdownTimer);
+        process.exit(1);
+      }
+    });
+  });
 }
 
 // MongoDB Connection
