@@ -72,6 +72,17 @@ const formatPhoneNumber = (phone) => {
   return '+' + cleaned;
 };
 
+// Log descriptive hints for common Twilio error codes
+const logTwilioError = (error) => {
+  if (error.code === 20003) {
+    console.error('Twilio authentication failed. Please check TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN in your .env file.');
+  } else if (error.code === 21608) {
+    console.error('Twilio trial account: recipient phone number is not a verified number. Verify it at https://www.twilio.com/console/phone-numbers/verified');
+  } else if (error.code === 63007 || error.code === 63038) {
+    console.error('WhatsApp sandbox: recipient must first send the join keyword to the sandbox number.');
+  }
+};
+
 // Send SMS
 const sendSMS = async (to, message) => {
   if (!ensureTwilioClient()) {
@@ -92,6 +103,7 @@ const sendSMS = async (to, message) => {
     return { success: true, messageId: result.sid };
   } catch (error) {
     console.error('Error sending SMS:', error.message);
+    logTwilioError(error);
     return {
       success: false,
       error: error.message,
@@ -109,10 +121,17 @@ const sendWhatsApp = async (to, message) => {
     return { success: false, reason: 'WhatsApp service not configured' };
   }
 
-  const whatsappFrom = process.env.TWILIO_WHATSAPP_FROM;
-  if (!whatsappFrom) {
+  const whatsappFromRaw = process.env.TWILIO_WHATSAPP_FROM;
+  if (!whatsappFromRaw) {
+    console.log('WhatsApp not sent: TWILIO_WHATSAPP_FROM missing in environment');
+    console.log('Add TWILIO_WHATSAPP_FROM=whatsapp:+14155238886 (sandbox) to your .env file');
     return { success: false, reason: 'TWILIO_WHATSAPP_FROM missing in environment' };
   }
+
+  // Ensure the from number has the whatsapp: prefix
+  const whatsappFrom = whatsappFromRaw.startsWith('whatsapp:')
+    ? whatsappFromRaw
+    : `whatsapp:${whatsappFromRaw}`;
 
   try {
     const formattedNumber = formatPhoneNumber(to);
@@ -130,6 +149,7 @@ const sendWhatsApp = async (to, message) => {
     return { success: true, messageId: result.sid };
   } catch (error) {
     console.error('Error sending WhatsApp:', error.message);
+    logTwilioError(error);
     return {
       success: false,
       error: error.message,

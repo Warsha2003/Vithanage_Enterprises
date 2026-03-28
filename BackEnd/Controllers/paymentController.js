@@ -189,7 +189,7 @@ exports.processPayment = async (req, res) => {
 
       if (notificationPhone && user.smsNotifications !== false) {
         const amountText = Number(total).toFixed(2);
-        const notificationMessage = `Vithanage Enterprises: Order #${orderNumber} confirmed. Payment ${paymentIntentId ? 'successful' : 'pending (Cash on Delivery)'} for $${amountText}. Thank you for your purchase.`;
+        const notificationMessage = `Vithanage Enterprises: Order #${orderNumber} confirmed. Payment ${paymentIntentId ? 'successful' : 'pending (Cash on Delivery)'} for LKR ${amountText}. Thank you for your purchase.`;
 
         const smsResult = await sendSMS(notificationPhone, notificationMessage);
         if (!smsResult.success) {

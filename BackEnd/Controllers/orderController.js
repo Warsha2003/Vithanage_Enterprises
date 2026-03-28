@@ -2,6 +2,7 @@ const Order = require('../Models/Order');
 const User = require('../Models/User');
 const Product = require('../Models/Product');
 const { sendOrderConfirmationEmail, sendShippingUpdateEmail, sendReviewRequestEmail } = require('../Services/emailService');
+const { sendSMS, sendWhatsApp } = require('../Services/smsService');
 
 // Create order from payload and user's cart
 exports.createOrder = async (req, res) => {
@@ -96,6 +97,36 @@ exports.createOrder = async (req, res) => {
     } catch (emailError) {
       console.error('Failed to send order confirmation email:', emailError);
       // Don't fail the order creation if email fails
+    }
+
+    // Send order confirmation WhatsApp and SMS notification
+    try {
+      const notificationPhone = (customer && customer.phone) || user.phone;
+      const orderNumber = order._id.toString().slice(-6).toUpperCase();
+
+      if (notificationPhone && user.smsNotifications !== false) {
+        const amountText = Number(order.totals.total).toFixed(2);
+        const notificationMessage = `Vithanage Enterprises: Your order #${orderNumber} has been confirmed! Total: LKR ${amountText}. We will notify you when it ships. Thank you for shopping with us!`;
+
+        const whatsappResult = await sendWhatsApp(notificationPhone, notificationMessage);
+        if (!whatsappResult.success) {
+          console.log('WhatsApp order notification not sent:', whatsappResult.reason || whatsappResult.error);
+        } else {
+          console.log('WhatsApp order notification sent to:', notificationPhone);
+        }
+
+        const smsResult = await sendSMS(notificationPhone, notificationMessage);
+        if (!smsResult.success) {
+          console.log('SMS order notification not sent:', smsResult.reason || smsResult.error);
+        } else {
+          console.log('SMS order notification sent to:', notificationPhone);
+        }
+      } else {
+        console.log('Skipping order notifications: phone not found or SMS preference disabled');
+      }
+    } catch (notificationError) {
+      console.error('Order notification send error:', notificationError.message);
+      // Don't fail the order creation if notifications fail
     }
 
     res.status(201).json({ message: 'Order created', order });
