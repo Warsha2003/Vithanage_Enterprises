@@ -10,6 +10,11 @@ const twilio = require('twilio');
 // Initialize Twilio client (will be null if credentials not set)
 let client = null;
 
+const ensureTwilioClient = () => {
+  if (client) return true;
+  return initTwilio();
+};
+
 const initTwilio = () => {
   const accountSid = process.env.TWILIO_ACCOUNT_SID;
   const authToken = process.env.TWILIO_AUTH_TOKEN;
@@ -22,6 +27,32 @@ const initTwilio = () => {
   
   console.log('ℹ️ SMS service not configured (Twilio credentials missing)');
   return false;
+};
+
+// Check whether current credentials can access Twilio account APIs
+const validateTwilioAuth = async () => {
+  if (!ensureTwilioClient()) {
+    return { success: false, reason: 'Twilio client not initialized' };
+  }
+
+  try {
+    const accountSid = process.env.TWILIO_ACCOUNT_SID;
+    const account = await client.api.v2010.accounts(accountSid).fetch();
+    return {
+      success: true,
+      accountSid: account.sid,
+      status: account.status,
+      type: account.type
+    };
+  } catch (error) {
+    return {
+      success: false,
+      reason: error.message,
+      code: error.code,
+      status: error.status,
+      moreInfo: error.moreInfo
+    };
+  }
 };
 
 // Format phone number for Sri Lanka
@@ -41,9 +72,20 @@ const formatPhoneNumber = (phone) => {
   return '+' + cleaned;
 };
 
+// Log descriptive hints for common Twilio error codes
+const logTwilioError = (error) => {
+  if (error.code === 20003) {
+    console.error('Twilio authentication failed. Please check TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN in your .env file.');
+  } else if (error.code === 21608) {
+    console.error('Twilio trial account: recipient phone number is not a verified number. Verify it at https://www.twilio.com/console/phone-numbers/verified');
+  } else if (error.code === 63007 || error.code === 63038) {
+    console.error('WhatsApp sandbox: recipient must first send the join keyword to the sandbox number.');
+  }
+};
+
 // Send SMS
 const sendSMS = async (to, message) => {
-  if (!client) {
+  if (!ensureTwilioClient()) {
     console.log('SMS not sent (service not configured):', message.substring(0, 50));
     return { success: false, reason: 'SMS service not configured' };
   }
@@ -61,7 +103,60 @@ const sendSMS = async (to, message) => {
     return { success: true, messageId: result.sid };
   } catch (error) {
     console.error('Error sending SMS:', error.message);
-    return { success: false, error: error.message };
+    logTwilioError(error);
+    return {
+      success: false,
+      error: error.message,
+      code: error.code,
+      status: error.status,
+      moreInfo: error.moreInfo
+    };
+  }
+};
+
+// Send WhatsApp message (requires Twilio WhatsApp sandbox or approved sender)
+const sendWhatsApp = async (to, message) => {
+  if (!ensureTwilioClient()) {
+    console.log('WhatsApp not sent (service not configured):', message.substring(0, 50));
+    return { success: false, reason: 'WhatsApp service not configured' };
+  }
+
+  const whatsappFromRaw = process.env.TWILIO_WHATSAPP_FROM;
+  if (!whatsappFromRaw) {
+    console.log('WhatsApp not sent: TWILIO_WHATSAPP_FROM missing in environment');
+    console.log('Add TWILIO_WHATSAPP_FROM=whatsapp:+14155238886 (sandbox) to your .env file');
+    return { success: false, reason: 'TWILIO_WHATSAPP_FROM missing in environment' };
+  }
+
+  // Ensure the from number has the whatsapp: prefix
+  const whatsappFrom = whatsappFromRaw.startsWith('whatsapp:')
+    ? whatsappFromRaw
+    : `whatsapp:${whatsappFromRaw}`;
+
+  try {
+    const formattedNumber = formatPhoneNumber(to);
+    const whatsappTo = formattedNumber.startsWith('whatsapp:')
+      ? formattedNumber
+      : `whatsapp:${formattedNumber}`;
+
+    const result = await client.messages.create({
+      body: message,
+      from: whatsappFrom,
+      to: whatsappTo
+    });
+
+    console.log(`WhatsApp sent to ${whatsappTo}: ${result.sid}`);
+    return { success: true, messageId: result.sid };
+  } catch (error) {
+    console.error('Error sending WhatsApp:', error.message);
+    logTwilioError(error);
+    return {
+      success: false,
+      error: error.message,
+      code: error.code,
+      status: error.status,
+      moreInfo: error.moreInfo
+    };
   }
 };
 
@@ -120,7 +215,9 @@ const sendOTPSMS = async (phone, otp) => {
 
 module.exports = {
   initTwilio,
+  validateTwilioAuth,
   sendSMS,
+  sendWhatsApp,
   sendOrderStatusSMS,
   sendPromotionalSMS,
   sendOTPSMS
