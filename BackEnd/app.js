@@ -23,6 +23,7 @@ const chatRoutes = require('./Routes/chatRoutes');
 const paymentRoutes = require('./Routes/paymentRoutes');
 const emailCampaignRoutes = require('./Routes/emailCampaignRoutes');
 const { createInitialAdmin } = require('./Controllers/adminAuthController');
+const { initTwilio } = require('./Services/smsService');
 
 const app = express();
 const server = http.createServer(app);
@@ -212,6 +213,9 @@ mongoose.connect(MONGODB_URI, {
     return createInitialAdmin();
 })
 .then(()=>{
+    // Initialize Twilio SMS/WhatsApp service
+    initTwilio();
+
     const PORT = process.env.PORT || 5000;
     
     server.listen(PORT, () => {
