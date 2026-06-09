@@ -4,13 +4,57 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const { sendPasswordResetEmail } = require('../Services/emailService');
 
-// JWT Secret
-const JWT_SECRET = 'vithanage_enterprises_secret'; // In production, use environment variables
+// JWT configuration
+const JWT_SECRET = process.env.JWT_SECRET || 'vithanage_enterprises_secret'; // In production, use environment variables
+const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET || `${JWT_SECRET}_refresh`;
+const ACCESS_TOKEN_EXPIRES = process.env.ACCESS_TOKEN_EXPIRES || '24h';
+const REFRESH_TOKEN_EXPIRES = process.env.REFRESH_TOKEN_EXPIRES || '7d';
+
+const hashToken = (token) => crypto.createHash('sha256').update(token).digest('hex');
+
+const buildAuthPayload = (account, isAdmin = false) => ({
+  ...(isAdmin
+    ? { admin: { id: account.id, role: account.role } }
+    : { user: { id: account.id, isAdmin: false } })
+});
+
+const buildPublicUser = (account, isAdmin = false) => ({
+  id: account.id,
+  name: account.name,
+  email: account.email,
+  isAdmin,
+  ...(isAdmin && { role: account.role })
+});
+
+const normalizeDefaultSelection = (items, selectedId) => items.map(item => ({
+  ...item,
+  isDefault: String(item._id) === String(selectedId)
+}));
+
+const issueTokens = (account, isAdmin = false) => {
+  const accessToken = jwt.sign(buildAuthPayload(account, isAdmin), JWT_SECRET, { expiresIn: ACCESS_TOKEN_EXPIRES });
+  const refreshToken = jwt.sign(
+    {
+      type: isAdmin ? 'admin' : 'user',
+      id: account.id,
+      role: isAdmin ? account.role : 'user'
+    },
+    REFRESH_TOKEN_SECRET,
+    { expiresIn: REFRESH_TOKEN_EXPIRES }
+  );
+
+  return { accessToken, refreshToken };
+};
+
+const persistRefreshToken = async (account, refreshToken) => {
+  account.refreshTokenHash = hashToken(refreshToken);
+  account.refreshTokenExpiresAt = jwt.decode(refreshToken)?.exp ? new Date(jwt.decode(refreshToken).exp * 1000) : undefined;
+  await account.save();
+};
 
 // Register user
 const register = async (req, res) => {
   try {
-    console.log('Registration attempt received:', req.body);
     const { name, email, password, phone, address } = req.body;
 
     // Check if user already exists (in both User and Admin collections)
@@ -31,28 +75,16 @@ const register = async (req, res) => {
     });
 
     await user.save();
-    console.log('User saved successfully:', user.email);
+    console.log('User registered successfully');
 
-    // Create JWT token
-    const payload = {
-      user: {
-        id: user.id,
-        isAdmin: false
-      }
-    };
+    const { accessToken, refreshToken } = issueTokens(user, false);
+    await persistRefreshToken(user, refreshToken);
 
-    jwt.sign(payload, JWT_SECRET, { expiresIn: '24h' }, (err, token) => {
-      if (err) throw err;
-      console.log('Registration successful, sending response');
-      res.status(201).json({ 
-        token,
-        user: {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          isAdmin: false
-        }
-      });
+    console.log('Registration successful, sending response');
+    res.status(201).json({ 
+      token: accessToken,
+      refreshToken,
+      user: buildPublicUser(user, false)
     });
   } catch (error) {
     console.error(error.message);
@@ -63,45 +95,24 @@ const register = async (req, res) => {
 // Login user
 const login = async (req, res) => {
   try {
-    console.log("Login attempt received:", req.body);
     const { email, password } = req.body;
 
     // First check if it's a regular user
     const user = await User.findOne({ email });
     if (user) {
-      console.log(`Regular user found: ${user.email}`);
-      
       // Check password
       const isMatch = await user.comparePassword(password);
       if (!isMatch) {
-        console.log("Password does not match for regular user");
         return res.status(400).json({ message: 'Invalid credentials' });
       }
-      console.log("Password matches for regular user");
       
-      // Create JWT token
-      const payload = {
-        user: {
-          id: user.id,
-          isAdmin: false
-        }
-      };
-      
-      jwt.sign(payload, JWT_SECRET, { expiresIn: '24h' }, (err, token) => {
-        if (err) {
-          console.error("JWT Sign error:", err);
-          throw err;
-        }
-        console.log("Regular user login successful, sending response");
-        res.json({ 
-          token,
-          user: {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            isAdmin: false
-          }
-        });
+      const { accessToken, refreshToken } = issueTokens(user, false);
+      await persistRefreshToken(user, refreshToken);
+
+      res.json({ 
+        token: accessToken,
+        refreshToken,
+        user: buildPublicUser(user, false)
       });
       
       return;
@@ -110,40 +121,19 @@ const login = async (req, res) => {
     // If not a regular user, check if it's an admin
     const admin = await Admin.findOne({ email });
     if (admin) {
-      console.log(`Admin found: ${admin.email}, role: ${admin.role}`);
-      
       // Check password
       const isMatch = await admin.comparePassword(password);
       if (!isMatch) {
-        console.log("Password does not match for admin");
         return res.status(400).json({ message: 'Invalid credentials' });
       }
-      console.log("Password matches for admin");
       
-      // Create JWT token for admin
-      const payload = {
-        admin: {
-          id: admin.id,
-          role: admin.role
-        }
-      };
-      
-      jwt.sign(payload, JWT_SECRET, { expiresIn: '24h' }, (err, token) => {
-        if (err) {
-          console.error("JWT Sign error:", err);
-          throw err;
-        }
-        console.log("Admin login successful, sending response");
-        res.json({ 
-          token,
-          user: {
-            id: admin.id,
-            name: admin.name,
-            email: admin.email,
-            isAdmin: true,
-            role: admin.role
-          }
-        });
+      const { accessToken, refreshToken } = issueTokens(admin, true);
+      await persistRefreshToken(admin, refreshToken);
+
+      res.json({ 
+        token: accessToken,
+        refreshToken,
+        user: buildPublicUser(admin, true)
       });
       
       return;
@@ -196,7 +186,6 @@ const getCurrentUser = async (req, res) => {
 // Update user profile
 const updateProfile = async (req, res) => {
   try {
-    console.log('Profile update attempt received:', req.body);
     const { name, email, phone, address, city, postalCode, country } = req.body;
 
     // Check if it's a regular user request
@@ -230,7 +219,6 @@ const updateProfile = async (req, res) => {
         return res.status(404).json({ message: 'User not found' });
       }
 
-      console.log('User profile updated successfully:', updatedUser.email);
       return res.json({ 
         message: 'Profile updated successfully',
         user: {
@@ -250,7 +238,6 @@ const updateProfile = async (req, res) => {
 // Change user password
 const changePassword = async (req, res) => {
   try {
-    console.log('Password change attempt received');
     const { currentPassword, newPassword } = req.body;
 
     if (!currentPassword || !newPassword) {
@@ -275,13 +262,365 @@ const changePassword = async (req, res) => {
       user.updatedAt = new Date();
       await user.save();
 
-      console.log('User password changed successfully:', user.email);
       return res.json({ message: 'Password changed successfully' });
     }
     
     return res.status(401).json({ message: 'Unauthorized' });
   } catch (error) {
     console.error('Password change error:', error.message);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+const getSavedAddresses = async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const user = await User.findById(req.user.id).select('addresses defaultAddressId');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json({ addresses: user.addresses || [], defaultAddressId: user.defaultAddressId || null });
+  } catch (error) {
+    console.error('Get saved addresses error:', error.message);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+const saveAddress = async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const { label, recipientName, phone, addressLine1, addressLine2, city, state, postalCode, country, isDefault } = req.body;
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const address = {
+      label: label || 'Home',
+      recipientName: recipientName || user.name,
+      phone: phone || user.phone || '',
+      addressLine1,
+      addressLine2: addressLine2 || '',
+      city,
+      state: state || '',
+      postalCode,
+      country: country || user.country || 'Sri Lanka',
+      isDefault: Boolean(isDefault)
+    };
+
+    if (!address.addressLine1 || !address.city || !address.postalCode) {
+      return res.status(400).json({ message: 'Address line 1, city, and postal code are required' });
+    }
+
+    if (address.isDefault) {
+      user.addresses = (user.addresses || []).map(item => ({ ...item.toObject?.() || item, isDefault: false }));
+      user.defaultAddressId = undefined;
+    }
+
+    user.addresses = user.addresses || [];
+    user.addresses.push(address);
+    const savedAddress = user.addresses[user.addresses.length - 1];
+
+    if (address.isDefault || user.addresses.length === 1) {
+      user.addresses = normalizeDefaultSelection(user.addresses.map(item => item.toObject ? item.toObject() : item), savedAddress._id);
+      user.defaultAddressId = savedAddress._id;
+    }
+
+    await user.save();
+    res.status(201).json({ message: 'Address saved', address: user.addresses[user.addresses.length - 1], addresses: user.addresses, defaultAddressId: user.defaultAddressId || null });
+  } catch (error) {
+    console.error('Save address error:', error.message);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+const updateSavedAddress = async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const address = user.addresses.id(req.params.addressId);
+    if (!address) {
+      return res.status(404).json({ message: 'Address not found' });
+    }
+
+    const { label, recipientName, phone, addressLine1, addressLine2, city, state, postalCode, country, isDefault } = req.body;
+
+    if (label !== undefined) address.label = label;
+    if (recipientName !== undefined) address.recipientName = recipientName;
+    if (phone !== undefined) address.phone = phone;
+    if (addressLine1 !== undefined) address.addressLine1 = addressLine1;
+    if (addressLine2 !== undefined) address.addressLine2 = addressLine2;
+    if (city !== undefined) address.city = city;
+    if (state !== undefined) address.state = state;
+    if (postalCode !== undefined) address.postalCode = postalCode;
+    if (country !== undefined) address.country = country;
+
+    if (typeof isDefault === 'boolean') {
+      user.addresses.forEach(item => {
+        item.isDefault = false;
+      });
+      address.isDefault = true;
+      user.defaultAddressId = address._id;
+    }
+
+    await user.save();
+    res.json({ message: 'Address updated', address, addresses: user.addresses, defaultAddressId: user.defaultAddressId || null });
+  } catch (error) {
+    console.error('Update address error:', error.message);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+const deleteSavedAddress = async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const address = user.addresses.id(req.params.addressId);
+    if (!address) {
+      return res.status(404).json({ message: 'Address not found' });
+    }
+
+    const wasDefault = user.defaultAddressId && String(user.defaultAddressId) === String(address._id);
+    address.deleteOne();
+    if (wasDefault) {
+      const nextDefault = user.addresses[0] || null;
+      user.defaultAddressId = nextDefault ? nextDefault._id : null;
+      if (nextDefault) {
+        user.addresses.forEach(item => {
+          item.isDefault = String(item._id) === String(nextDefault._id);
+        });
+      }
+    }
+
+    await user.save();
+    res.json({ message: 'Address deleted', addresses: user.addresses, defaultAddressId: user.defaultAddressId || null });
+  } catch (error) {
+    console.error('Delete address error:', error.message);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+const setDefaultAddress = async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const address = user.addresses.id(req.params.addressId);
+    if (!address) {
+      return res.status(404).json({ message: 'Address not found' });
+    }
+
+    user.addresses.forEach(item => {
+      item.isDefault = String(item._id) === String(address._id);
+    });
+    user.defaultAddressId = address._id;
+    await user.save();
+
+    res.json({ message: 'Default address updated', addresses: user.addresses, defaultAddressId: user.defaultAddressId });
+  } catch (error) {
+    console.error('Default address error:', error.message);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+const getSavedPaymentMethods = async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const user = await User.findById(req.user.id).select('savedPaymentMethods defaultPaymentMethodId');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json({ paymentMethods: user.savedPaymentMethods || [], defaultPaymentMethodId: user.defaultPaymentMethodId || null });
+  } catch (error) {
+    console.error('Get saved payment methods error:', error.message);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+const savePaymentMethod = async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const { label, provider, type, providerPaymentMethodId, brand, last4, expMonth, expYear, billingAddress, isDefault } = req.body;
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const paymentMethod = {
+      label: label || 'Card',
+      provider: provider || 'stripe',
+      type: type || 'card',
+      providerPaymentMethodId: providerPaymentMethodId || '',
+      brand: brand || '',
+      last4: last4 || '',
+      expMonth: expMonth || undefined,
+      expYear: expYear || undefined,
+      billingAddress: billingAddress || {},
+      isDefault: Boolean(isDefault)
+    };
+
+    if (paymentMethod.isDefault) {
+      user.savedPaymentMethods = (user.savedPaymentMethods || []).map(item => ({ ...item.toObject?.() || item, isDefault: false }));
+      user.defaultPaymentMethodId = undefined;
+    }
+
+    user.savedPaymentMethods = user.savedPaymentMethods || [];
+    user.savedPaymentMethods.push(paymentMethod);
+    const savedMethod = user.savedPaymentMethods[user.savedPaymentMethods.length - 1];
+
+    if (paymentMethod.isDefault || user.savedPaymentMethods.length === 1) {
+      user.savedPaymentMethods = normalizeDefaultSelection(user.savedPaymentMethods.map(item => item.toObject ? item.toObject() : item), savedMethod._id);
+      user.defaultPaymentMethodId = savedMethod._id;
+    }
+
+    await user.save();
+    res.status(201).json({ message: 'Payment method saved', paymentMethod: user.savedPaymentMethods[user.savedPaymentMethods.length - 1], paymentMethods: user.savedPaymentMethods, defaultPaymentMethodId: user.defaultPaymentMethodId || null });
+  } catch (error) {
+    console.error('Save payment method error:', error.message);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+const updatePaymentMethod = async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const paymentMethod = user.savedPaymentMethods.id(req.params.methodId);
+    if (!paymentMethod) {
+      return res.status(404).json({ message: 'Payment method not found' });
+    }
+
+    const { label, provider, type, providerPaymentMethodId, brand, last4, expMonth, expYear, billingAddress, isDefault } = req.body;
+
+    if (label !== undefined) paymentMethod.label = label;
+    if (provider !== undefined) paymentMethod.provider = provider;
+    if (type !== undefined) paymentMethod.type = type;
+    if (providerPaymentMethodId !== undefined) paymentMethod.providerPaymentMethodId = providerPaymentMethodId;
+    if (brand !== undefined) paymentMethod.brand = brand;
+    if (last4 !== undefined) paymentMethod.last4 = last4;
+    if (expMonth !== undefined) paymentMethod.expMonth = expMonth;
+    if (expYear !== undefined) paymentMethod.expYear = expYear;
+    if (billingAddress !== undefined) paymentMethod.billingAddress = billingAddress;
+
+    if (typeof isDefault === 'boolean') {
+      user.savedPaymentMethods.forEach(item => {
+        item.isDefault = false;
+      });
+      paymentMethod.isDefault = true;
+      user.defaultPaymentMethodId = paymentMethod._id;
+    }
+
+    await user.save();
+    res.json({ message: 'Payment method updated', paymentMethod, paymentMethods: user.savedPaymentMethods, defaultPaymentMethodId: user.defaultPaymentMethodId || null });
+  } catch (error) {
+    console.error('Update payment method error:', error.message);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+const deletePaymentMethod = async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const paymentMethod = user.savedPaymentMethods.id(req.params.methodId);
+    if (!paymentMethod) {
+      return res.status(404).json({ message: 'Payment method not found' });
+    }
+
+    const wasDefault = user.defaultPaymentMethodId && String(user.defaultPaymentMethodId) === String(paymentMethod._id);
+    paymentMethod.deleteOne();
+
+    if (wasDefault) {
+      const nextDefault = user.savedPaymentMethods[0] || null;
+      user.defaultPaymentMethodId = nextDefault ? nextDefault._id : null;
+      if (nextDefault) {
+        user.savedPaymentMethods.forEach(item => {
+          item.isDefault = String(item._id) === String(nextDefault._id);
+        });
+      }
+    }
+
+    await user.save();
+    res.json({ message: 'Payment method deleted', paymentMethods: user.savedPaymentMethods, defaultPaymentMethodId: user.defaultPaymentMethodId || null });
+  } catch (error) {
+    console.error('Delete payment method error:', error.message);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+const setDefaultPaymentMethod = async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const paymentMethod = user.savedPaymentMethods.id(req.params.methodId);
+    if (!paymentMethod) {
+      return res.status(404).json({ message: 'Payment method not found' });
+    }
+
+    user.savedPaymentMethods.forEach(item => {
+      item.isDefault = String(item._id) === String(paymentMethod._id);
+    });
+    user.defaultPaymentMethodId = paymentMethod._id;
+    await user.save();
+
+    res.json({ message: 'Default payment method updated', paymentMethods: user.savedPaymentMethods, defaultPaymentMethodId: user.defaultPaymentMethodId });
+  } catch (error) {
+    console.error('Default payment method error:', error.message);
     res.status(500).json({ message: 'Server Error' });
   }
 };
@@ -313,7 +652,6 @@ const forgotPassword = async (req, res) => {
     // Send email
     try {
       await sendPasswordResetEmail(user, resetToken);
-      console.log('Password reset email sent to:', user.email);
     } catch (emailError) {
       console.error('Failed to send password reset email:', emailError);
       user.resetPasswordToken = undefined;
@@ -362,7 +700,6 @@ const resetPassword = async (req, res) => {
     user.updatedAt = new Date();
     await user.save();
 
-    console.log('Password reset successful for:', user.email);
     res.json({ message: 'Password reset successful. You can now login with your new password.' });
   } catch (error) {
     console.error('Reset password error:', error);
@@ -370,4 +707,90 @@ const resetPassword = async (req, res) => {
   }
 };
 
-module.exports = { register, login, getCurrentUser, updateProfile, changePassword, forgotPassword, resetPassword };
+// Refresh access token using a valid refresh token
+const refreshToken = async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+    if (!refreshToken) {
+      return res.status(400).json({ message: 'Refresh token is required' });
+    }
+
+    const decoded = jwt.verify(refreshToken, REFRESH_TOKEN_SECRET);
+    const tokenHash = hashToken(refreshToken);
+
+    if (decoded.type !== 'user') {
+      return res.status(403).json({ message: 'Invalid refresh token type' });
+    }
+
+    const user = await User.findById(decoded.id);
+    if (!user || !user.refreshTokenHash || user.refreshTokenHash !== tokenHash) {
+      return res.status(401).json({ message: 'Invalid refresh token' });
+    }
+
+    if (user.refreshTokenExpiresAt && user.refreshTokenExpiresAt.getTime() < Date.now()) {
+      return res.status(401).json({ message: 'Refresh token expired' });
+    }
+
+    const accessToken = jwt.sign(
+      { user: { id: user.id, isAdmin: false } },
+      JWT_SECRET,
+      { expiresIn: ACCESS_TOKEN_EXPIRES }
+    );
+
+    res.json({
+      token: accessToken,
+      user: buildPublicUser(user, false)
+    });
+  } catch (error) {
+    console.error('Refresh token error:', error.message);
+    res.status(401).json({ message: 'Invalid or expired refresh token' });
+  }
+};
+
+// Logout user by revoking stored refresh token
+const logout = async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+    if (!refreshToken) {
+      return res.status(200).json({ message: 'Logged out' });
+    }
+
+    const decoded = jwt.verify(refreshToken, REFRESH_TOKEN_SECRET);
+    if (decoded.type !== 'user') {
+      return res.status(200).json({ message: 'Logged out' });
+    }
+
+    const user = await User.findById(decoded.id);
+    if (user) {
+      user.refreshTokenHash = undefined;
+      user.refreshTokenExpiresAt = undefined;
+      await user.save();
+    }
+
+    res.status(200).json({ message: 'Logged out' });
+  } catch (error) {
+    res.status(200).json({ message: 'Logged out' });
+  }
+};
+
+module.exports = {
+  register,
+  login,
+  getCurrentUser,
+  updateProfile,
+  changePassword,
+  getSavedAddresses,
+  saveAddress,
+  updateSavedAddress,
+  deleteSavedAddress,
+  setDefaultAddress,
+  getSavedPaymentMethods,
+  savePaymentMethod,
+  updatePaymentMethod,
+  deletePaymentMethod,
+  setDefaultPaymentMethod,
+  forgotPassword,
+  resetPassword,
+  refreshToken,
+  logout
+};

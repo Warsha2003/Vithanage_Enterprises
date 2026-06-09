@@ -89,6 +89,9 @@ const inventorySchema = new mongoose.Schema({
   timestamps: true 
 });
 
+inventorySchema.index({ status: 1, updatedAt: -1 });
+inventorySchema.index({ currentStock: 1 });
+
 // Update status based on current stock
 inventorySchema.pre('save', function(next) {
   if (this.currentStock === 0) {

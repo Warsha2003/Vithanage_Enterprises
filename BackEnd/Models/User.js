@@ -15,6 +15,40 @@ const CartItemSchema = new mongoose.Schema({
   }
 });
 
+const AddressSchema = new mongoose.Schema({
+  label: { type: String, trim: true, default: 'Home' },
+  recipientName: { type: String, trim: true },
+  phone: { type: String, trim: true },
+  addressLine1: { type: String, trim: true, required: true },
+  addressLine2: { type: String, trim: true, default: '' },
+  city: { type: String, trim: true, required: true },
+  state: { type: String, trim: true, default: '' },
+  postalCode: { type: String, trim: true, required: true },
+  country: { type: String, trim: true, default: 'Sri Lanka' },
+  isDefault: { type: Boolean, default: false }
+}, { _id: true });
+
+const SavedPaymentMethodSchema = new mongoose.Schema({
+  label: { type: String, trim: true, default: 'Card' },
+  provider: { type: String, trim: true, default: 'stripe' },
+  type: { type: String, enum: ['card', 'paypal', 'bank_transfer', 'cash_on_delivery'], default: 'card' },
+  providerPaymentMethodId: { type: String, trim: true },
+  brand: { type: String, trim: true },
+  last4: { type: String, trim: true },
+  expMonth: { type: Number },
+  expYear: { type: Number },
+  billingAddress: {
+    addressLine1: String,
+    addressLine2: String,
+    city: String,
+    state: String,
+    postalCode: String,
+    country: String
+  },
+  isDefault: { type: Boolean, default: false },
+  createdAt: { type: Date, default: Date.now }
+}, { _id: true });
+
 const userSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -44,6 +78,16 @@ const userSchema = new mongoose.Schema({
   country: {
     type: String,
     default: 'Sri Lanka'
+  },
+  addresses: [AddressSchema],
+  savedPaymentMethods: [SavedPaymentMethodSchema],
+  defaultAddressId: {
+    type: mongoose.Schema.Types.ObjectId,
+    default: null
+  },
+  defaultPaymentMethodId: {
+    type: mongoose.Schema.Types.ObjectId,
+    default: null
   },
   cart: [CartItemSchema],
   wishlist: [{
@@ -98,6 +142,12 @@ const userSchema = new mongoose.Schema({
     type: String
   },
   resetPasswordExpires: {
+    type: Date
+  },
+  refreshTokenHash: {
+    type: String
+  },
+  refreshTokenExpiresAt: {
     type: Date
   },
   createdAt: {

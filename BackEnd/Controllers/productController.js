@@ -1,4 +1,35 @@
 const Product = require('../Models/Product');
+const AuditLog = require('../Models/AuditLog');
+
+const recordAudit = async (req, action, entityType, entityId, description, details = {}) => {
+  try {
+    await AuditLog.create({
+      actorType: req.admin ? 'admin' : req.user ? 'user' : 'system',
+      actorId: req.admin?.id || req.user?.id || null,
+      actorModel: req.admin ? 'Admin' : req.user ? 'User' : null,
+      action,
+      entityType,
+      entityId: entityId ? String(entityId) : null,
+      description,
+      details,
+      ipAddress: req.ip || '',
+      userAgent: req.get('user-agent') || ''
+    });
+  } catch (error) {
+    console.warn('Audit log write failed:', error.message);
+  }
+};
+
+const clearCatalogCache = async (req) => {
+  const cache = req.app.get('cache');
+  if (cache && cache.flush) {
+    try {
+      await cache.flush();
+    } catch (error) {
+      console.warn('Failed to clear catalog cache:', error.message);
+    }
+  }
+};
 
 // Get all products with search, filter, and sort
 const getAllProducts = async (req, res) => {
@@ -20,14 +51,24 @@ const getAllProducts = async (req, res) => {
 
     // Build query object
     let query = {};
+    const cache = req.app.get('cache');
+    const cacheKey = `products:list:${JSON.stringify(req.query || {})}`;
 
-    // Text search on name and description
-    if (search) {
-      query.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } }
-      ];
+    if (cache) {
+      try {
+        const cached = await cache.get(cacheKey);
+        if (cached) {
+          return res.json(JSON.parse(cached));
+        }
+      } catch (error) {
+        console.warn('Product cache read failed:', error.message);
+      }
     }
+
+    // Search handling: prefer MongoDB text search (relevance) when available,
+    // fallback to regex matching on name/description if text search fails.
+    let usedTextSearch = false;
+    let textError = null;
 
     // Category filter (case-insensitive)
     if (category && category !== 'All') {
@@ -85,16 +126,47 @@ const getAllProducts = async (req, res) => {
     const limitNum = parseInt(limit) || 100;
     const skip = (pageNum - 1) * limitNum;
 
-    // Execute query
-    const products = await Product.find(query)
-      .sort(sort)
-      .skip(skip)
-      .limit(limitNum);
+    // Execute query using text search when a search term is provided
+    let products;
+    if (search) {
+      try {
+        const textQuery = Object.assign({}, query, { $text: { $search: search } });
+        // If no explicit sort requested, sort by text score
+        const textSort = Object.keys(sort).length === 0 ? { score: { $meta: 'textScore' } } : sort;
+        products = await Product.find(textQuery, { score: { $meta: 'textScore' } })
+          .sort(textSort)
+          .skip(skip)
+          .limit(limitNum);
+        usedTextSearch = true;
+      } catch (err) {
+        // If text search isn't available (no text index) or errors, fallback to regex approach
+        console.warn('Text search failed, falling back to regex search:', err.message || err);
+        textError = err;
+        query.$or = [
+          { name: { $regex: search, $options: 'i' } },
+          { description: { $regex: search, $options: 'i' } }
+        ];
+        products = await Product.find(query).sort(sort).skip(skip).limit(limitNum);
+      }
+    } else {
+      products = await Product.find(query).sort(sort).skip(skip).limit(limitNum);
+    }
 
-    // Return paginated response only if explicitly requested
+    // Compute total respecting whether text search was used
+    let total;
+    if (search && usedTextSearch) {
+      const countQuery = Object.assign({}, query, { $text: { $search: search } });
+      total = await Product.countDocuments(countQuery);
+    } else if (search && !usedTextSearch && textError) {
+      // fallback count for regex
+      total = await Product.countDocuments(query);
+    } else {
+      total = await Product.countDocuments(query);
+    }
+
+    // If client explicitly asked for paginated response, return metadata; else preserve legacy array response
     if (paginated === 'true') {
-      const total = await Product.countDocuments(query);
-      return res.json({
+      const payload = {
         products,
         pagination: {
           total,
@@ -102,10 +174,27 @@ const getAllProducts = async (req, res) => {
           limit: limitNum,
           pages: Math.ceil(total / limitNum)
         }
-      });
+      };
+
+      if (cache) {
+        try {
+          await cache.set(cacheKey, JSON.stringify(payload), 120);
+        } catch (error) {
+          console.warn('Product cache write failed:', error.message);
+        }
+      }
+
+      return res.json(payload);
     }
 
     // Default: return just the array for backward compatibility
+    if (cache) {
+      try {
+        await cache.set(cacheKey, JSON.stringify(products), 120);
+      } catch (error) {
+        console.warn('Product cache write failed:', error.message);
+      }
+    }
     res.json(products);
   } catch (error) {
     console.error(error.message);
@@ -117,7 +206,12 @@ const getAllProducts = async (req, res) => {
 const getCategories = async (req, res) => {
   try {
     const categories = await Product.distinct('category');
-    res.json(categories.filter(c => c).sort());
+    const result = categories.filter(c => c).sort();
+    const cache = req.app.get('cache');
+    if (cache) {
+      try { await cache.set('products:categories', JSON.stringify(result), 300); } catch (_) {}
+    }
+    res.json(result);
   } catch (error) {
     console.error(error.message);
     res.status(500).json({ message: 'Server Error' });
@@ -128,7 +222,12 @@ const getCategories = async (req, res) => {
 const getBrands = async (req, res) => {
   try {
     const brands = await Product.distinct('brand');
-    res.json(brands.filter(b => b).sort());
+    const result = brands.filter(b => b).sort();
+    const cache = req.app.get('cache');
+    if (cache) {
+      try { await cache.set('products:brands', JSON.stringify(result), 300); } catch (_) {}
+    }
+    res.json(result);
   } catch (error) {
     console.error(error.message);
     res.status(500).json({ message: 'Server Error' });
@@ -148,14 +247,16 @@ const getPriceRange = async (req, res) => {
       }
     ]);
     
-    if (result.length > 0) {
-      res.json({
-        min: result[0].minPrice || 0,
-        max: result[0].maxPrice || 0
-      });
-    } else {
-      res.json({ min: 0, max: 0 });
+    const payload = result.length > 0
+      ? { min: result[0].minPrice || 0, max: result[0].maxPrice || 0 }
+      : { min: 0, max: 0 };
+
+    const cache = req.app.get('cache');
+    if (cache) {
+      try { await cache.set('products:price-range', JSON.stringify(payload), 300); } catch (_) {}
     }
+
+    res.json(payload);
   } catch (error) {
     console.error(error.message);
     res.status(500).json({ message: 'Server Error' });
@@ -220,6 +321,8 @@ const addProduct = async (req, res) => {
       // Don't fail product creation if inventory creation fails; just log.
     }
     res.status(201).json(savedProduct);
+    await clearCatalogCache(req);
+    await recordAudit(req, 'product.create', 'Product', savedProduct._id, 'Created product', { name, category, brand, price, stock });
   } catch (error) {
     console.error(error.message);
     res.status(500).json({ message: 'Server Error' });
@@ -249,6 +352,8 @@ const updateProduct = async (req, res) => {
     product.featured = featured !== undefined ? featured : product.featured;
     
     const updatedProduct = await product.save();
+    await clearCatalogCache(req);
+    await recordAudit(req, 'product.update', 'Product', updatedProduct._id, 'Updated product', { name: updatedProduct.name, category: updatedProduct.category, brand: updatedProduct.brand, price: updatedProduct.price, stock: updatedProduct.stock });
     res.json(updatedProduct);
   } catch (error) {
     console.error(error.message);
@@ -268,6 +373,8 @@ const deleteProduct = async (req, res) => {
     }
     
     await product.deleteOne();
+    await clearCatalogCache(req);
+    await recordAudit(req, 'product.delete', 'Product', product._id, 'Deleted product', { name: product.name, category: product.category, brand: product.brand });
     res.json({ message: 'Product removed' });
   } catch (error) {
     console.error(error.message);
@@ -332,6 +439,8 @@ const markAsNewArrival = async (req, res) => {
     }
     
     res.json({ message: 'Product marked as new arrival', product });
+    await clearCatalogCache(req);
+    await recordAudit(req, 'product.mark_new_arrival', 'Product', product._id, 'Marked product as new arrival');
   } catch (error) {
     console.error('Error marking product as new arrival:', error.message);
     res.status(500).json({ message: 'Server Error' });
@@ -357,6 +466,8 @@ const removeFromNewArrivals = async (req, res) => {
     }
     
     res.json({ message: 'Product removed from new arrivals', product });
+    await clearCatalogCache(req);
+    await recordAudit(req, 'product.remove_new_arrival', 'Product', product._id, 'Removed product from new arrivals');
   } catch (error) {
     console.error('Error removing from new arrivals:', error.message);
     res.status(500).json({ message: 'Server Error' });
@@ -393,6 +504,44 @@ const compareProducts = async (req, res) => {
   }
 };
 
+// Recommendations endpoint - simple rule-based recommendations
+const getRecommendations = async (req, res) => {
+  try {
+    const { type, productId, ids, limit } = req.query;
+    const lim = Math.min(parseInt(limit) || 8, 50);
+
+    if (type === 'similar' && productId) {
+      const base = await Product.findById(productId);
+      if (!base) return res.status(404).json({ message: 'Base product not found' });
+
+      const recs = await Product.find({
+        _id: { $ne: base._id },
+        category: base.category
+      })
+      .sort({ averageRating: -1, featured: -1, createdAt: -1 })
+      .limit(lim);
+
+      return res.json(recs);
+    }
+
+    if (type === 'recentlyViewed' && ids) {
+      const idList = ids.split(',').slice(0, lim);
+      const recs = await Product.find({ _id: { $in: idList } }).limit(lim);
+      return res.json(recs);
+    }
+
+    // Default: featured / best sellers
+    const recs = await Product.find({ featured: true })
+      .sort({ averageRating: -1, createdAt: -1 })
+      .limit(lim);
+
+    res.json(recs);
+  } catch (error) {
+    console.error('Error fetching recommendations:', error.message || error);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
 module.exports = {
   getAllProducts, 
   getProductById, 
@@ -406,5 +555,6 @@ module.exports = {
   getCategories,
   getBrands,
   getPriceRange,
-  compareProducts
+  compareProducts,
+  getRecommendations
 };

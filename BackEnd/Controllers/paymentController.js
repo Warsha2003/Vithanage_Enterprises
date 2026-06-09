@@ -49,7 +49,11 @@ exports.processPayment = async (req, res) => {
       paymentIntentId,
       paymentMethod,
       orderData,
-      billingAddress
+      billingAddress,
+      savedPaymentMethodId,
+      savedPaymentMethodLabel,
+      providerPaymentMethodId,
+      savePaymentMethod
     } = req.body;
 
     // Verify payment intent with Stripe
@@ -178,8 +182,40 @@ exports.processPayment = async (req, res) => {
         customerEmail: user.email,
         customerName: user.name
       },
+      savedPaymentMethodId: savedPaymentMethodId || null,
+      savedPaymentMethodLabel: savedPaymentMethodLabel || undefined,
+      providerPaymentMethodId: providerPaymentMethodId || paymentIntent?.payment_method || undefined,
       succeededAt: paymentIntentId ? new Date() : null
     });
+
+    if (savePaymentMethod && paymentMethod && paymentMethod !== 'cash_on_delivery') {
+      user.savedPaymentMethods = user.savedPaymentMethods || [];
+      const duplicate = user.savedPaymentMethods.find(method =>
+        method.providerPaymentMethodId && providerPaymentMethodId && method.providerPaymentMethodId === providerPaymentMethodId
+      );
+
+      if (!duplicate) {
+        user.savedPaymentMethods.push({
+          label: savedPaymentMethodLabel || paymentMethod.toUpperCase(),
+          provider: 'stripe',
+          type: paymentMethod,
+          providerPaymentMethodId: providerPaymentMethodId || paymentIntent?.payment_method || '',
+          brand: cardDetails.brand || '',
+          last4: cardDetails.last4 || '',
+          expMonth: cardDetails.expMonth,
+          expYear: cardDetails.expYear,
+          billingAddress: billingAddress || {},
+          isDefault: user.savedPaymentMethods.length === 0
+        });
+
+        if (user.savedPaymentMethods.length === 1) {
+          user.defaultPaymentMethodId = user.savedPaymentMethods[0]._id;
+          user.savedPaymentMethods[0].isDefault = true;
+        }
+
+        await user.save();
+      }
+    }
 
     // Clear user's cart
     user.cart = [];

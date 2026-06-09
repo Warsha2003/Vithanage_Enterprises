@@ -1,5 +1,32 @@
 const Inventory = require('../Models/Inventory');
 const Product = require('../Models/Product');
+const AuditLog = require('../Models/AuditLog');
+
+const recordAudit = async (req, action, entityType, entityId, description, details = {}) => {
+  try {
+    await AuditLog.create({
+      actorType: req.admin ? 'admin' : 'system',
+      actorId: req.admin?.id || null,
+      actorModel: req.admin ? 'Admin' : null,
+      action,
+      entityType,
+      entityId: entityId ? String(entityId) : null,
+      description,
+      details,
+      ipAddress: req.ip || '',
+      userAgent: req.get('user-agent') || ''
+    });
+  } catch (error) {
+    console.warn('Inventory audit log write failed:', error.message);
+  }
+};
+
+const clearCatalogCache = async (req) => {
+  const cache = req.app.get('cache');
+  if (cache && cache.flush) {
+    try { await cache.flush(); } catch (error) { console.warn('Failed to clear cache:', error.message); }
+  }
+};
 
 // Get all inventory items with pagination and filtering
 const getAllInventory = async (req, res) => {
@@ -145,6 +172,8 @@ const addStock = async (req, res) => {
       message: 'Stock added successfully',
       data: inventory
     });
+    await clearCatalogCache(req);
+    await recordAudit(req, 'inventory.add_stock', 'Inventory', inventory._id, 'Added stock', { productId, quantity, reason, reference, notes });
   } catch (error) {
     console.error('Error adding stock:', error);
     res.status(500).json({
@@ -191,6 +220,8 @@ const removeStock = async (req, res) => {
       message: 'Stock removed successfully',
       data: inventory
     });
+    await clearCatalogCache(req);
+    await recordAudit(req, 'inventory.remove_stock', 'Inventory', inventory._id, 'Removed stock', { productId, quantity, reason, reference, notes });
   } catch (error) {
     console.error('Error removing stock:', error);
     res.status(500).json({
@@ -236,6 +267,8 @@ const adjustStock = async (req, res) => {
       message: 'Stock adjusted successfully',
       data: inventory
     });
+    await clearCatalogCache(req);
+    await recordAudit(req, 'inventory.adjust_stock', 'Inventory', inventory._id, 'Adjusted stock', { productId, newQuantity, reason, notes });
   } catch (error) {
     console.error('Error adjusting stock:', error);
     res.status(500).json({
@@ -271,6 +304,8 @@ const updateInventorySettings = async (req, res) => {
       message: 'Inventory settings updated successfully',
       data: inventory
     });
+    await clearCatalogCache(req);
+    await recordAudit(req, 'inventory.update_settings', 'Inventory', inventory._id, 'Updated inventory settings', { productId, minStockLevel, maxStockLevel, reorderPoint });
   } catch (error) {
     console.error('Error updating inventory settings:', error);
     res.status(500).json({
@@ -407,8 +442,63 @@ const initializeInventory = async (req, res) => {
       success: true,
       message: `Initialized inventory for ${initialized} products`
     });
+    await clearCatalogCache(req);
+    await recordAudit(req, 'inventory.initialize', 'Inventory', 'bulk', 'Initialized inventory records', { initialized });
   } catch (error) {
     console.error('Error initializing inventory:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+};
+
+// Bulk adjust multiple products in one request
+const bulkAdjustStock = async (req, res) => {
+  try {
+    const { updates } = req.body;
+
+    if (!Array.isArray(updates) || updates.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'updates must be a non-empty array'
+      });
+    }
+
+    const results = [];
+    for (const update of updates) {
+      const { productId, newQuantity, reason, notes } = update || {};
+      if (!productId || newQuantity === undefined || !reason) {
+        results.push({ productId, success: false, message: 'productId, newQuantity, and reason are required' });
+        continue;
+      }
+
+      try {
+        const inventory = await Inventory.adjustStock(
+          productId,
+          parseInt(newQuantity),
+          reason,
+          req.admin.id,
+          notes || ''
+        );
+        results.push({ productId, success: true, currentStock: inventory.currentStock });
+        await recordAudit(req, 'inventory.bulk_adjust_item', 'Inventory', inventory._id, 'Bulk adjusted stock item', update);
+      } catch (itemError) {
+        results.push({ productId, success: false, message: itemError.message });
+      }
+    }
+
+    await clearCatalogCache(req);
+    await recordAudit(req, 'inventory.bulk_adjust', 'Inventory', 'bulk', 'Bulk adjusted inventory', { count: updates.length });
+
+    res.json({
+      success: true,
+      message: 'Bulk inventory adjustment completed',
+      results
+    });
+  } catch (error) {
+    console.error('Error in bulk stock adjustment:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error',
@@ -428,5 +518,6 @@ module.exports = {
   getOutOfStockItems,
   getInventoryStats,
   getStockMovements,
-  initializeInventory
+  initializeInventory,
+  bulkAdjustStock
 };

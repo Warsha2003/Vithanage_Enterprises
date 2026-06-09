@@ -76,4 +76,10 @@ const productSchema = new mongoose.Schema({
     }
 });
 
+// Create a text index for relevance searches across common fields
+productSchema.index({ name: 'text', description: 'text', category: 'text', brand: 'text' });
+productSchema.index({ category: 1, brand: 1, price: 1 });
+productSchema.index({ featured: 1, createdAt: -1 });
+productSchema.index({ stock: 1 });
+
 module.exports = mongoose.model('Product', productSchema);

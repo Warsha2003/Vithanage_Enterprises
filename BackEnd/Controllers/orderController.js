@@ -1,8 +1,73 @@
+const crypto = require('crypto');
 const Order = require('../Models/Order');
 const User = require('../Models/User');
 const Product = require('../Models/Product');
+const Payment = require('../Models/Payment');
+const AuditLog = require('../Models/AuditLog');
 const { sendOrderConfirmationEmail, sendShippingUpdateEmail, sendReviewRequestEmail } = require('../Services/emailService');
 const { sendOrderStatusWhatsApp, sendOrderStatusSMS } = require('../Services/smsService');
+
+const recordAudit = async (req, action, entityType, entityId, description, details = {}) => {
+  try {
+    await AuditLog.create({
+      actorType: req.admin ? 'admin' : 'user',
+      actorId: req.admin?.id || req.user?.id || null,
+      actorModel: req.admin ? 'Admin' : 'User',
+      action,
+      entityType,
+      entityId: entityId ? String(entityId) : null,
+      description,
+      details,
+      ipAddress: req.ip || '',
+      userAgent: req.get('user-agent') || ''
+    });
+  } catch (error) {
+    console.warn('Order audit log write failed:', error.message);
+  }
+};
+
+const clearCache = async (req) => {
+  const cache = req.app.get('cache');
+  if (cache && cache.flush) {
+    try { await cache.flush(); } catch (error) { console.warn('Failed to clear cache:', error.message); }
+  }
+};
+
+const addTrackingEvent = (order, status, message, location = '') => {
+  order.tracking = order.tracking || {};
+  order.tracking.events = Array.isArray(order.tracking.events) ? order.tracking.events : [];
+  order.tracking.events.push({ status, message, location, createdAt: new Date() });
+};
+
+const buildOrderItems = async (items = []) => {
+  const orderItems = [];
+
+  for (const item of items) {
+    const productId = item?.product?._id || item?.product;
+    if (!productId) continue;
+
+    const product = await Product.findById(productId);
+    if (!product) continue;
+
+    orderItems.push({
+      product: product._id,
+      name: product.name,
+      price: product.price,
+      quantity: Math.max(1, parseInt(item.quantity) || 1)
+    });
+  }
+
+  return orderItems;
+};
+
+const buildTrackingSnapshot = (order, status = 'processing', message = 'Order created') => ({
+  courier: order.tracking?.courier || '',
+  trackingNumber: order.tracking?.trackingNumber || '',
+  trackingUrl: order.tracking?.trackingUrl || '',
+  status,
+  estimatedDeliveryDate: order.tracking?.estimatedDeliveryDate || null,
+  events: order.tracking?.events || [{ status: 'created', message, createdAt: new Date() }]
+});
 
 // Create order from payload and user's cart
 exports.createOrder = async (req, res) => {
@@ -18,18 +83,7 @@ exports.createOrder = async (req, res) => {
     if (cartItems.length === 0) return res.status(400).json({ message: 'Cart is empty' });
 
     // Normalize items
-    const orderItems = [];
-    for (const item of cartItems) {
-      const productId = item.product._id || item.product;
-      const product = await Product.findById(productId);
-      if (!product) continue;
-      orderItems.push({
-        product: product._id,
-        name: product.name,
-        price: product.price,
-        quantity: item.quantity
-      });
-    }
+    const orderItems = await buildOrderItems(cartItems);
 
     if (orderItems.length === 0) return res.status(400).json({ message: 'No valid items in cart' });
 
@@ -76,13 +130,15 @@ exports.createOrder = async (req, res) => {
 
     const order = await Order.create({
       user: userId,
+      guestCheckout: false,
       items: orderItems,
       totals: { subtotal, discount, shipping, total },
       promotion: promotionData,
       shippingAddress: shippingAddress || {},
       customer: customer || {},
       payment: { method: 'card', last4, status: 'paid' },
-      status: 'pending'
+      status: 'pending',
+      tracking: buildTrackingSnapshot({ tracking: {} }, 'processing', 'Customer checkout completed')
     });
 
     // Clear user's cart after order
@@ -148,6 +204,80 @@ exports.createOrder = async (req, res) => {
   }
 };
 
+exports.createGuestOrder = async (req, res) => {
+  try {
+    const { customer, shippingAddress, payment, items: clientItems, totals, promotion } = req.body;
+
+    if (!customer || !customer.fullName || !customer.email) {
+      return res.status(400).json({ message: 'Guest name and email are required' });
+    }
+
+    const orderItems = await buildOrderItems(Array.isArray(clientItems) ? clientItems : []);
+    if (orderItems.length === 0) {
+      return res.status(400).json({ message: 'No valid items in cart' });
+    }
+
+    const subtotal = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const shipping = totals?.shipping ?? 0;
+    const discount = totals?.discount ?? 0;
+    const total = subtotal + shipping - discount;
+    const guestToken = crypto.randomBytes(24).toString('hex');
+    const paymentMethod = payment?.method || 'card';
+    const last4 = payment?.cardNumber ? String(payment.cardNumber).slice(-4) : undefined;
+
+    const order = await Order.create({
+      user: null,
+      guestCheckout: true,
+      guestCustomer: {
+        fullName: customer.fullName,
+        email: customer.email,
+        phone: customer.phone || ''
+      },
+      guestToken,
+      items: orderItems,
+      totals: { subtotal, discount, shipping, total },
+      promotion: promotion?.code ? { code: promotion.code } : undefined,
+      shippingAddress: shippingAddress || {},
+      customer,
+      payment: { method: paymentMethod, last4, status: paymentMethod === 'cash_on_delivery' ? 'pending' : 'paid' },
+      status: 'pending',
+      tracking: buildTrackingSnapshot({ tracking: {} }, 'processing', 'Guest checkout completed')
+    });
+
+    await Payment.create({
+      user: null,
+      guestEmail: customer.email,
+      guestName: customer.fullName,
+      order: order._id,
+      paymentMethod,
+      status: paymentMethod === 'cash_on_delivery' ? 'pending' : 'succeeded',
+      amount: {
+        total,
+        currency: 'usd',
+        subtotal,
+        shipping,
+        discount
+      },
+      cardDetails: last4 ? { last4 } : {},
+      metadata: {
+        customerEmail: customer.email,
+        customerName: customer.fullName,
+        customerPhone: customer.phone || ''
+      },
+      succeededAt: paymentMethod === 'cash_on_delivery' ? null : new Date()
+    });
+
+    res.status(201).json({
+      message: 'Guest order created',
+      order,
+      guestAccessToken: guestToken
+    });
+  } catch (error) {
+    console.error('Error creating guest order:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
 // ADMIN: get all orders
 exports.adminGetAllOrders = async (req, res) => {
   try {
@@ -170,8 +300,11 @@ exports.adminUpdateOrderStatus = async (req, res) => {
     const order = await Order.findById(id);
     if (!order) return res.status(404).json({ message: 'Order not found' });
     order.status = status;
+    addTrackingEvent(order, status, `Order status updated to ${status}`);
     await order.save();
     res.status(200).json({ message: 'Order status updated', order });
+    await clearCache(req);
+    await recordAudit(req, 'order.status_update', 'Order', order._id, 'Updated order status', { status });
   } catch (error) {
     console.error('Error updating order status:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -205,6 +338,15 @@ exports.adminUpdateProcessing = async (req, res) => {
       stepIndex: indexMap[step],
       updatedAt: new Date()
     };
+    order.tracking = order.tracking || {};
+    order.tracking.status = step === 'finished' ? 'delivered' : 'processing';
+    if (step === 'on_the_way') {
+      order.tracking.status = 'in_transit';
+    }
+    if (step === 'waiting_to_delivery') {
+      order.tracking.status = 'shipped';
+    }
+    addTrackingEvent(order, order.tracking.status, `Processing step changed to ${step}`);
     await order.save();
 
     // Send shipping update email
@@ -268,6 +410,8 @@ exports.adminUpdateProcessing = async (req, res) => {
     }
 
     res.status(200).json({ message: 'Processing updated', order });
+    await clearCache(req);
+    await recordAudit(req, 'order.processing_update', 'Order', order._id, 'Updated order processing', { step });
   } catch (error) {
     console.error('Error updating processing:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -281,6 +425,46 @@ exports.getMyOrders = async (req, res) => {
     res.status(200).json(orders);
   } catch (error) {
     console.error('Error fetching orders:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+exports.getOrderTracking = async (req, res) => {
+  try {
+    const { id, orderNumber } = req.params;
+    const token = req.query.token || req.body?.token;
+    const query = id ? { _id: id } : { orderNumber };
+
+    const order = await Order.findOne(query).populate('items.product', 'name imageUrl');
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+
+    if (req.user) {
+      const ownerId = order.user ? String(order.user) : null;
+      if (ownerId !== String(req.user.id)) {
+        return res.status(403).json({ message: 'Forbidden' });
+      }
+    } else if (order.guestCheckout) {
+      if (!token || token !== order.guestToken) {
+        return res.status(401).json({ message: 'Guest tracking token required' });
+      }
+    } else {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    res.status(200).json({
+      orderNumber: order.orderNumber,
+      status: order.status,
+      processing: order.processing,
+      tracking: order.tracking,
+      returnStatus: order.returnStatus,
+      deliveredAt: order.deliveredAt,
+      createdAt: order.createdAt,
+      items: order.items,
+      totals: order.totals,
+      guestCheckout: order.guestCheckout
+    });
+  } catch (error) {
+    console.error('Error fetching order tracking:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };

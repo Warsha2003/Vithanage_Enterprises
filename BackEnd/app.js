@@ -4,7 +4,13 @@ require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+const Sentry = require('@sentry/node');
+const promClient = require('prom-client');
+const Redis = require('ioredis');
 const http = require('http');
+const { execSync } = require('child_process');
 const { Server } = require('socket.io');
 const authRoutes = require('./Routes/authRoutes');
 const adminRoutes = require('./Routes/adminRoutes');
@@ -16,6 +22,7 @@ const userRoutes = require('./Routes/userRoutes');
 const reviewRoutes = require('./Routes/reviewRoutes');
 const adminReviewRoutes = require('./Routes/adminReviewRoutes');
 const refundRoutes = require('./Routes/refundRoutes');
+const returnRoutes = require('./Routes/returnRoutes');
 const adminRefundRoutes = require('./Routes/adminRefundRoutes');
 const inventoryRoutes = require('./Routes/inventoryRoutes');
 const promotionRoutes = require('./Routes/promotionRoutes');
@@ -37,9 +44,161 @@ const io = new Server(server, {
 app.set('io', io);
 
 // Middleware
-app.use(cors());
-app.use(express.json());
+if (process.env.SENTRY_DSN) {
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    environment: process.env.NODE_ENV || 'development'
+  });
+}
+
+promClient.collectDefaultMetrics({ prefix: 'vithanage_' });
+
+const createCacheAdapter = () => {
+  const redisUrl = process.env.REDIS_URL;
+  if (redisUrl) {
+    const redis = new Redis(redisUrl, {
+      maxRetriesPerRequest: 1,
+      enableReadyCheck: true,
+      lazyConnect: true
+    });
+
+    redis.on('error', (error) => {
+      console.warn('Redis cache error:', error.message);
+    });
+
+    return {
+      kind: 'redis',
+      client: redis,
+      async get(key) {
+        return await redis.get(key);
+      },
+      async set(key, value, ttlSeconds = 300) {
+        await redis.set(key, value, 'EX', ttlSeconds);
+      },
+      async del(key) {
+        await redis.del(key);
+      },
+      async flush() {
+        await redis.flushdb();
+      }
+    };
+  }
+
+  const memoryStore = new Map();
+  return {
+    kind: 'memory',
+    async get(key) {
+      const entry = memoryStore.get(key);
+      if (!entry) return null;
+      if (entry.expiresAt && entry.expiresAt < Date.now()) {
+        memoryStore.delete(key);
+        return null;
+      }
+      return entry.value;
+    },
+    async set(key, value, ttlSeconds = 300) {
+      memoryStore.set(key, { value, expiresAt: Date.now() + ttlSeconds * 1000 });
+    },
+    async del(key) {
+      memoryStore.delete(key);
+    },
+    async flush() {
+      memoryStore.clear();
+    }
+  };
+};
+
+app.set('cache', createCacheAdapter());
+
+const httpRequestDuration = new promClient.Histogram({
+  name: 'vithanage_http_request_duration_seconds',
+  help: 'HTTP request duration in seconds',
+  labelNames: ['method', 'route', 'status_code'],
+  buckets: [0.05, 0.1, 0.25, 0.5, 1, 2, 5]
+});
+
+const httpRequestTotal = new promClient.Counter({
+  name: 'vithanage_http_requests_total',
+  help: 'Total HTTP requests',
+  labelNames: ['method', 'route', 'status_code']
+});
+
+const normalizeRoute = (req) => req.route?.path || req.path || req.originalUrl.split('?')[0] || 'unknown';
+
+const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:3000,http://localhost:5173')
+  .split(',')
+  .map(origin => origin.trim())
+  .filter(Boolean);
+
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' }
+}));
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error('Not allowed by CORS'));
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-auth-token'],
+  credentials: false,
+  optionsSuccessStatus: 200
+}));
+
+app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true }));
+
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 600,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Too many requests, please try again later.' }
+});
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Too many authentication attempts, please try again later.' }
+});
+
+app.use('/api', apiLimiter);
+app.use('/api/auth', authLimiter);
+app.use('/api/admin-auth', authLimiter);
+
+app.use((req, res, next) => {
+  const startedAt = process.hrtime.bigint();
+
+  res.on('finish', () => {
+    const durationSeconds = Number(process.hrtime.bigint() - startedAt) / 1e9;
+    const labels = {
+      method: req.method,
+      route: normalizeRoute(req),
+      status_code: String(res.statusCode)
+    };
+
+    httpRequestTotal.inc(labels);
+    httpRequestDuration.observe(labels, durationSeconds);
+
+    console.info(JSON.stringify({
+      level: 'info',
+      type: 'http_request',
+      method: req.method,
+      route: labels.route,
+      statusCode: res.statusCode,
+      durationMs: Math.round(durationSeconds * 1000),
+      ip: req.ip,
+      userAgent: req.get('user-agent') || null,
+      timestamp: new Date().toISOString()
+    }));
+  });
+
+  next();
+});
 
 // Routes
 app.get('/', (req, res) => {
@@ -49,6 +208,16 @@ app.get('/', (req, res) => {
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
+});
+
+// Prometheus metrics endpoint for monitoring systems
+app.get('/api/metrics', async (req, res) => {
+  try {
+    res.set('Content-Type', promClient.register.contentType);
+    res.end(await promClient.register.metrics());
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to collect metrics' });
+  }
 });
 
 // Auth routes
@@ -89,6 +258,8 @@ app.use('/api/reviews', reviewRoutes);
 app.use('/api/admin/reviews', adminReviewRoutes);
 // Refund routes
 app.use('/api/refunds', refundRoutes);
+// Return routes
+app.use('/api/returns', returnRoutes);
 // Admin refund routes
 app.use('/api/admin/refunds', adminRefundRoutes);
 // Inventory routes
@@ -136,6 +307,15 @@ app.use((req, res, next) => {
 app.use((err, req, res, next) => {
   console.error('❌ Error:', err.message);
   console.error('Stack:', err.stack);
+
+  if (process.env.SENTRY_DSN) {
+    Sentry.captureException(err, {
+      tags: {
+        method: req.method,
+        route: normalizeRoute(req)
+      }
+    });
+  }
   
   res.status(err.status || 500).json({
     error: {
@@ -167,12 +347,18 @@ io.on('connection', (socket) => {
 process.on('uncaughtException', (error) => {
   console.error('❌ Uncaught Exception:', error.message);
   console.error('Stack:', error.stack);
+  if (process.env.SENTRY_DSN) {
+    Sentry.captureException(error);
+  }
   // Don't exit - let the app continue running
 });
 
 process.on('unhandledRejection', (reason, promise) => {
   console.error('❌ Unhandled Rejection at:', promise);
   console.error('Reason:', reason);
+  if (process.env.SENTRY_DSN) {
+    Sentry.captureException(reason instanceof Error ? reason : new Error(String(reason)));
+  }
   // Don't exit - let the app continue running
 });
 
@@ -203,6 +389,46 @@ async function gracefulShutdown() {
   }, 10000);
 }
 
+function getListenerPid(port) {
+  try {
+    const output = execSync(`netstat -ano | findstr :${port}`, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+    const lines = output.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+
+    for (const line of lines) {
+      const parts = line.split(/\s+/);
+      const pid = Number(parts[parts.length - 1]);
+      if (!Number.isNaN(pid)) {
+        return pid;
+      }
+    }
+  } catch (error) {
+    return null;
+  }
+
+  return null;
+}
+
+function killProcessOnPort(port) {
+  const pid = getListenerPid(port);
+  if (!pid) {
+    return false;
+  }
+
+  try {
+    const processInfo = execSync(`tasklist /FI "PID eq ${pid}"`, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+    if (!/node\.exe/i.test(processInfo)) {
+      return false;
+    }
+
+    execSync(`taskkill /PID ${pid} /F`, { stdio: 'pipe' });
+    console.log(`🔧 Freed port ${port} by stopping stale node process ${pid}`);
+    return true;
+  } catch (error) {
+    console.warn(`⚠️ Could not auto-free port ${port}: ${error.message}`);
+    return false;
+  }
+}
+
 // MongoDB Connection
 const MONGODB_URI = process.env.MONGODB_URI || "mongodb+srv://admin:V2ft5D1dbTssVJzR@cluster0.fq7u6hk.mongodb.net/test";
 
@@ -217,25 +443,43 @@ mongoose.connect(MONGODB_URI, {
 })
 .then(()=>{
     const PORT = process.env.PORT || 5000;
-    
-    server.listen(PORT, () => {
+    let serverHasStarted = false;
+
+    const startServer = () => {
+      server.listen(PORT, () => {
+      if (serverHasStarted) {
+        return;
+      }
+      serverHasStarted = true;
       console.log(`✅ Server running on port ${PORT}`);
       console.log(`✅ Socket.IO ready for real-time chat`);
-    }).on('error', (err) => {
-      if (err.code === 'EADDRINUSE') {
-        console.error(`❌ Port ${PORT} is already in use`);
-        console.log('💡 Please either:');
-        console.log(`   1. Stop the other process using port ${PORT}`);
-        console.log('   2. Or set a different PORT in your .env file');
-        console.log('\nTo find and kill the process using the port:');
-        console.log(`   netstat -ano | findstr :${PORT}`);
-        console.log('   taskkill /PID <PID_NUMBER> /F');
-        process.exit(1);
-      } else {
-        console.error('❌ Server error:', err);
-        process.exit(1);
-      }
-    });
+      }).on('error', (err) => {
+        if (err.code === 'EADDRINUSE') {
+          console.warn(`⚠️ Port ${PORT} is already in use`);
+          if (process.platform === 'win32' && killProcessOnPort(PORT)) {
+            setTimeout(() => {
+              if (!server.listening && !serverHasStarted) {
+                startServer();
+              }
+            }, 250);
+            return;
+          }
+
+          console.error('💡 Please either:');
+          console.error(`   1. Stop the other process using port ${PORT}`);
+          console.error('   2. Or set a different PORT in your .env file');
+          console.error('\nTo find and kill the process using the port:');
+          console.error(`   netstat -ano | findstr :${PORT}`);
+          console.error('   taskkill /PID <PID_NUMBER> /F');
+          process.exit(1);
+        } else {
+          console.error('❌ Server error:', err);
+          process.exit(1);
+        }
+      });
+    };
+
+    startServer();
 })
 .catch((err)=> {
     console.error("❌ MongoDB connection error:", err.message);

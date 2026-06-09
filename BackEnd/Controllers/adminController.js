@@ -6,7 +6,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 // JWT Secret
-const JWT_SECRET = 'vithanage_enterprises_secret'; // In production, use environment variables
+const JWT_SECRET = process.env.JWT_SECRET || 'vithanage_enterprises_secret'; // In production, use environment variables
 
 // Get all users (admin only)
 const getAllUsers = async (req, res) => {

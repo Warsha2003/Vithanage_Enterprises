@@ -20,6 +20,12 @@ const AdminSchema = new mongoose.Schema({
     enum: ['admin', 'super_admin'],
     default: 'admin'
   },
+  refreshTokenHash: {
+    type: String
+  },
+  refreshTokenExpiresAt: {
+    type: Date
+  },
   createdAt: {
     type: Date,
     default: Date.now

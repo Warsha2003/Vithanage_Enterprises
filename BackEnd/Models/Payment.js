@@ -4,8 +4,10 @@ const paymentSchema = new mongoose.Schema({
   user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    default: null
   },
+  guestEmail: { type: String },
+  guestName: { type: String },
   order: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Order',
@@ -49,6 +51,9 @@ const paymentSchema = new mongoose.Schema({
     expMonth: Number,
     expYear: Number
   },
+  savedPaymentMethodId: { type: mongoose.Schema.Types.ObjectId, default: null },
+  savedPaymentMethodLabel: { type: String },
+  providerPaymentMethodId: { type: String },
   // Billing address
   billingAddress: {
     addressLine1: String,
@@ -88,5 +93,6 @@ paymentSchema.index({ user: 1, createdAt: -1 });
 paymentSchema.index({ order: 1 });
 paymentSchema.index({ stripePaymentIntentId: 1 });
 paymentSchema.index({ status: 1 });
+paymentSchema.index({ guestEmail: 1, createdAt: -1 });
 
 module.exports = mongoose.model('Payment', paymentSchema);

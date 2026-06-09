@@ -13,6 +13,12 @@ const POINTS_CONFIG = {
   POINTS_EXPIRY_MONTHS: 12      // Points expire after 12 months
 };
 
+const getRedemptionLimit = (orderTotal, pointsAvailable) => {
+  const maxByPercent = Math.floor((orderTotal * POINTS_CONFIG.MAX_REDEEM_PERCENT) / 100);
+  const maxByBalance = pointsAvailable * POINTS_CONFIG.POINTS_VALUE_LKR;
+  return Math.max(0, Math.min(maxByPercent, maxByBalance));
+};
+
 // Get user's loyalty points and history
 exports.getMyPoints = async (req, res) => {
   try {
@@ -35,6 +41,7 @@ exports.getMyPoints = async (req, res) => {
       currentPoints: user.loyaltyPoints,
       totalPointsEarned: user.totalPointsEarned,
       pointsValue,
+      availableRedeemValue: pointsValue,
       transactions,
       config: {
         pointsPer100LKR: POINTS_CONFIG.POINTS_PER_100_LKR,
@@ -88,7 +95,7 @@ exports.awardPointsForOrder = async (orderId) => {
 exports.redeemPoints = async (req, res) => {
   try {
     const userId = req.user?.id || req.admin?.id;
-    const { pointsToRedeem, orderId } = req.body;
+    const { pointsToRedeem, orderId, orderTotal } = req.body;
 
     if (!pointsToRedeem || pointsToRedeem < POINTS_CONFIG.MIN_REDEEM_POINTS) {
       return res.status(400).json({ 
@@ -103,6 +110,16 @@ exports.redeemPoints = async (req, res) => {
 
     if (user.loyaltyPoints < pointsToRedeem) {
       return res.status(400).json({ message: 'Insufficient points' });
+    }
+
+    if (orderTotal) {
+      const maxRedeemValue = getRedemptionLimit(Number(orderTotal), user.loyaltyPoints);
+      const requestedDiscount = pointsToRedeem * POINTS_CONFIG.POINTS_VALUE_LKR;
+      if (requestedDiscount > maxRedeemValue) {
+        return res.status(400).json({
+          message: `You can redeem up to ${maxRedeemValue} LKR for this order`
+        });
+      }
     }
 
     // Calculate discount value
@@ -133,6 +150,42 @@ exports.redeemPoints = async (req, res) => {
   } catch (error) {
     console.error('Redeem points error:', error);
     res.status(500).json({ message: 'Failed to redeem points' });
+  }
+};
+
+// Preview redemption before checkout
+exports.previewRedemption = async (req, res) => {
+  try {
+    const userId = req.user?.id || req.admin?.id;
+    const { orderTotal, pointsToRedeem } = req.body;
+
+    if (!orderTotal || Number(orderTotal) <= 0) {
+      return res.status(400).json({ message: 'Valid orderTotal is required' });
+    }
+
+    const user = await User.findById(userId).select('loyaltyPoints totalPointsEarned');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const maximumDiscount = getRedemptionLimit(Number(orderTotal), user.loyaltyPoints);
+    const requestedPoints = Math.max(0, parseInt(pointsToRedeem) || 0);
+    const requestedDiscount = requestedPoints * POINTS_CONFIG.POINTS_VALUE_LKR;
+    const canRedeem = requestedPoints >= POINTS_CONFIG.MIN_REDEEM_POINTS && requestedDiscount <= maximumDiscount;
+
+    res.json({
+      currentPoints: user.loyaltyPoints,
+      totalPointsEarned: user.totalPointsEarned,
+      orderTotal: Number(orderTotal),
+      minimumPoints: POINTS_CONFIG.MIN_REDEEM_POINTS,
+      maximumDiscount,
+      requestedPoints,
+      requestedDiscount,
+      canRedeem
+    });
+  } catch (error) {
+    console.error('Preview redemption error:', error);
+    res.status(500).json({ message: 'Failed to preview redemption' });
   }
 };
 
